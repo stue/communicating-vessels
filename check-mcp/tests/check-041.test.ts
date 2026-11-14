@@ -387,10 +387,10 @@ describe('R7 — the share path says what it stores', () => {
 });
 
 describe('R9 — version, changelog, readme', () => {
-  it('the package is 0.4.1 and the changelog says so first', () => {
-    expect(pkg.version).toBe('0.4.1');
+  it('the package is 0.4.2 and the changelog says so first', () => {
+    expect(pkg.version).toBe('0.4.2');
     const log = readFileSync(join(PKG_DIR, 'CHANGELOG.md'), 'utf8');
-    expect(log.split('\n').find((l) => l.startsWith('## '))).toBe('## 0.4.1 — 2026-11-14');
+    expect(log.split('\n').find((l) => l.startsWith('## '))).toBe('## 0.4.2 — 2026-11-14');
   });
 
   it("the README's example card is this build's output on the stored example extract, byte for byte", async () => {
@@ -399,7 +399,9 @@ describe('R9 — version, changelog, readme', () => {
     const ex = ExtractSchema.parse(JSON.parse(readFileSync(join(PKG_DIR, 'tests/fixtures/readme-example.json'), 'utf8')));
     const readme = readFileSync(join(PKG_DIR, 'README.md'), 'utf8');
     const shown = /````markdown\n([\s\S]*?)\n````/.exec(readme)?.[1];
-    expect(shown).toBe(runCheck(ex).card);
+    // 0.4.2 (R3): the README card is printed on the ledger read date, so the age sentence never enters it
+    const { LEDGER_READ_ON } = await import('../src/lifecycle.js');
+    expect(shown).toBe(runCheck(ex, { today: LEDGER_READ_ON }).card);
     expect(readme).toContain(`This is the output of \`kgauto-check ${pkg.version}\``);
   });
 });

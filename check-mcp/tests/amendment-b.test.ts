@@ -83,7 +83,8 @@ describe('B2 — the documented prefixes resolve; a partner prefix marks the sit
 describe('B3/B4 and objection 1 — the ledger', () => {
   it('a row with only a scheduled shutdown date enters as "scheduled for shutdown"', () => {
     const r = runCheck(ex([{ id: 's', model: 'gemini-3.1-flash-tts-preview' }]));
-    expect(find(r, 'gemini-3.1-flash-tts-preview')?.title).toContain("On Google's own API, `gemini-3.1-flash-tts-preview` is scheduled for shutdown not before 2026-11-17");
+    // 0.4.2: Google's page of 2026-11-14 moved this date from November 17 to December 18, 2026.
+    expect(find(r, 'gemini-3.1-flash-tts-preview')?.title).toContain("On Google's own API, `gemini-3.1-flash-tts-preview` is scheduled for shutdown not before 2026-12-18");
   });
 
   it('a quoted definition cites the page it stands on', () => {

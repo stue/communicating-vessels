@@ -1,10 +1,10 @@
-export { runCheck, renderCard, analyseModel, DESTINATION_SENTENCE } from './engine.js';
+export { runCheck, renderCard, analyseModel, DESTINATION_SENTENCE, ageSentence, STALE_AFTER_DAYS } from './engine.js';
 export type { Finding, CheckResult, Confidence, Severity, EngineOptions, ModelAnalysis } from './engine.js';
 export { ExtractSchema, CallSiteSchema, ModelMentionSchema } from './extract.js';
 export type { Extract, CallSite, ModelMention } from './extract.js';
 export { LEDGER, LEDGER_SOURCES } from './lifecycle-ledger.js';
 export type { LedgerRow, LedgerSource, LedgerWord, LedgerProvider } from './lifecycle-types.js';
-export { resolveId, lookupLedger } from './lifecycle.js';
+export { resolveId, lookupLedger, LEDGER_READ_ON } from './lifecycle.js';
 export { buildServer } from './server.js';
 export { START_CHECK_INSTRUCTIONS, SERVER_INSTRUCTIONS } from './instructions.js';
 export { OBSERVE_DAY_PLAN } from './observe-plan.js';

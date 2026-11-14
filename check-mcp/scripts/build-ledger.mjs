@@ -26,7 +26,7 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { oneRowIn } from './ledger-check.mjs';
+import { oneRowIn, quoteOn, replacementForm, PAGE_URL, htmlToText, googlePageRows, googleTableRows, googleRowCells } from './ledger-check.mjs';
 
 const args = process.argv.slice(2);
 const arg = (n, d) => {
@@ -51,15 +51,7 @@ const readOnOf = (f) => {
   return t.slice(0, 10);
 };
 
-const URL = {
-  anthropic: 'https://platform.claude.com/docs/en/about-claude/model-deprecations.md',
-  openai: 'https://developers.openai.com/api/docs/deprecations.md',
-  openaiModel: (id) => `https://developers.openai.com/api/docs/models/${id}.md`,
-  google: 'https://aistudio.google.com/docs/deprecations',
-  googleChangelog: 'https://aistudio.google.com/docs/changelog',
-  deepseekUpdates: 'https://api-docs.deepseek.com/updates',
-  deepseekNews: 'https://api-docs.deepseek.com/news',
-};
+const URL = PAGE_URL;
 
 // ── dates ────────────────────────────────────────────────────────────────
 const MONTHS = {
@@ -85,8 +77,7 @@ const log = [];
 function push(row) {
   // The quote must be on the page the row cites (whitespace-normalized).
   const src = row._file;
-  const norm = (s) => s.replace(/\s+/g, ' ').trim();
-  if (!norm(row._text).includes(norm(row.quote))) {
+  if (!quoteOn(row._text, row.quote)) {
     throw new Error(`quote for ${row.id} not found on ${src}: ${row.quote}`);
   }
   if (rows.some((r) => r.id === row.id)) {
@@ -218,6 +209,10 @@ const unbacktick = (s) =>
       (h) => /model|system/.test(h) && !/price|replacement|substitute/.test(h),
     );
     const iRepl = header.findIndex((h) => /replacement|substitute/.test(h));
+    // 0.4.2: OpenAI's page of 2026-11-14 is two tables (upcoming, past) with no dated section headings;
+    // each row carries its own "Notice date" and, upcoming, its "Status".
+    const iNotice = header.findIndex((h) => h.includes('notice date'));
+    const iStatus = header.findIndex((h) => h === 'status');
     if (iDate === -1 || iModel === -1) continue;
     const cell = cells[iModel];
     const display = /^([A-Z][A-Za-z0-9.\- ]*?) \(`/.exec(cell);
@@ -230,17 +225,23 @@ const unbacktick = (s) =>
     const dateText = cells[iDate];
     const shutdown = isoOf(dateText);
     const word = part === 'upcoming' ? 'deprecated' : shutdown && shutdown <= readOn ? 'shut down' : 'deprecated';
+    const status = iStatus === -1 ? undefined : cells[iStatus];
+    if (status !== undefined && !/^deprecated$/i.test(status)) log.push(`openai: status "${status}" on ${cell} (written as ${word})`);
     const replRaw = iRepl === -1 ? '' : cells[iRepl];
-    const replacement = replRaw && !/^-+$/.test(replRaw) ? unbacktick(replRaw) : undefined;
+    // "No one-to-one replacement" (the 2026-11-14 page; "---" before it) names no model.
+    const noRepl = /^-+$/.test(replRaw) || /^no one-to-one replacement\.?$/i.test(replRaw);
+    const replacement = replRaw && !noRepl ? unbacktick(replRaw) : undefined;
+    const where = section ?? status;
     const base = {
       provider: 'openai',
       word,
-      pageWord: part === 'upcoming' ? `Upcoming deprecations: ${section}` : `Past deprecations: ${section}`,
-      announced: isoOf(section),
+      pageWord: `${part === 'upcoming' ? 'Upcoming deprecations' : 'Past deprecations'}${where ? `: ${where}` : ''}`,
+      announced: (iNotice === -1 ? undefined : isoOf(cells[iNotice])) ?? isoOf(section),
       shutdown: /earliest/i.test(dateText) ? undefined : shutdown,
       shutdownFloor: /earliest/i.test(dateText) ? shutdown : undefined,
-      dateText: dateText.replace(/‑/g, '-'),
+      dateText: dateText.replace(/‑/g, '-').replace(/\*\*/g, '').replace(/\s+/g, ' ').trim(),
       replacement,
+      replacementForm: replacement ? replacementForm(replRaw) : undefined,
       url: URL.openai,
       readOn,
       quote: ln.trim(),
@@ -274,22 +275,6 @@ const unbacktick = (s) =>
 }
 
 // ── Google ───────────────────────────────────────────────────────────────
-function htmlToText(html) {
-  let t = html.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/g, '');
-  t = t.replace(/<\/(tr|p|h\d|li|div)>/g, '\n').replace(/<[^>]+>/g, '');
-  t = t
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;|&#x27;/g, "'")
-    .replace(/&nbsp;/g, ' ');
-  return t
-    .split('\n')
-    .map((l) => l.trim())
-    .filter(Boolean)
-    .join('\n');
-}
 {
   const fd = 'google-deprecations.html';
   const fc = 'google-changelog.html';
@@ -321,47 +306,14 @@ function htmlToText(html) {
   }
 
   // The page's own rows: the text between consecutive `---` separator lines, flattened.
-  const pageRows = dep.split(/\n---\n|\{% \/?table %\}/).map(flat);
+  const pageRows = googlePageRows(dep);
   const oneRow = (cells) => oneRowIn(pageRows, cells);
 
   // Deprecations page tables.
-  const lines = dep.split('\n');
-  let h2 = null;
-  let h3 = null;
-  let inTable = false;
-  let cur = [];
-  const tableRows = [];
-  for (const ln of lines) {
-    if (ln.startsWith('## ')) {
-      h2 = ln.slice(3).replace(/\{%.*%\}/, '').trim();
-      h3 = null;
-      continue;
-    }
-    if (ln.startsWith('### ')) {
-      h3 = ln.slice(4).replace(/\{%.*%\}/, '').trim();
-      continue;
-    }
-    if (ln.startsWith('{% table')) {
-      inTable = true;
-      cur = [];
-      continue;
-    }
-    if (ln.startsWith('{% /table')) {
-      if (cur.length) tableRows.push({ h2, h3, cells: cur });
-      inTable = false;
-      continue;
-    }
-    if (!inTable) continue;
-    if (ln === '---') {
-      if (cur.length) tableRows.push({ h2, h3, cells: cur });
-      cur = [];
-      continue;
-    }
-    if (ln.startsWith('*')) cur.push(ln.replace(/^\*\s?/, '').trim());
-    else if (cur.length) cur[cur.length - 1] += ' ' + ln;
-  }
+  const tableRows = googleTableRows(dep);
   for (const r of tableRows) {
-    const [model, , shutdownText = '', replCell = ''] = r.cells;
+    const cells = googleRowCells(r);
+    const [model, , shutdownText, replCell] = cells;
     const idm = /`([^`]+)`/.exec(model ?? '');
     if (!idm) continue; // header row
     const id = idm[1];
@@ -385,10 +337,20 @@ function htmlToText(html) {
       // Amendment B, objection 1: a date and no deprecation word is the page's schedule, written as such.
       word = 'scheduled for shutdown';
       pageWord = `shutdown date ${shutdownText}, no deprecation word on either page`;
+    } else if (/^no shutdown date announced\.?$/i.test(shutdownText.trim())) {
+      // 0.4.2 Amendment A1 (amends Amendment B, objection 1): the page lists the id with no date and no
+      // deprecation word. It is written in the page's own words, so the card never calls it "not recognised".
+      word = 'listed';
+      pageWord = shutdownText.trim();
     } else {
+      log.push(`google: ${id} not written (date cell "${shutdownText}", no deprecation word)`);
       continue;
     }
     const replacement = replCell ? unbacktick(unbacktick(replCell).replace(/\s*\([\s\S]*\)\s*$/, '')) || undefined : undefined;
+    // the same cell as `replacement` reads it (links unwrapped, a trailing parenthesis dropped), with its code marks kept
+    const replForm = replacement
+      ? replacementForm(replCell.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1').replace(/\s*\([\s\S]*\)\s*$/, ''))
+      : undefined;
     push({
       id,
       provider: 'google',
@@ -400,18 +362,17 @@ function htmlToText(html) {
       shutdownFloor: /no shutdown|n\/a/i.test(shutdownText) || routes ? undefined : shutdown,
       dateText: shutdownText || undefined,
       replacement,
+      replacementForm: replForm,
       routesTo,
       url: URL.google,
       readOn,
       section: `${r.h2}${r.h3 ? ` › ${r.h3}` : ''}`,
       ...(said && said.where === 'changelog' ? { alsoUrl: URL.googleChangelog, alsoQuote: said.sentence, alsoReadOn: readOnOf(fc) } : {}),
-      quote: [model, r.cells[1] ?? '', shutdownText, replCell].join(' | '),
+      quote: cells.join(' | '),
       _file: fd,
       // Amendment B, ruling 3: a Google table row is checked as ONE row of the page — every cell in
       // order inside a single segment between the page's own row separators, not cell by cell.
-      _text: oneRow([model, r.cells[1] ?? '', shutdownText, replCell])
-        ? [model, r.cells[1] ?? '', shutdownText, replCell].join(' | ')
-        : '',
+      _text: oneRow(cells) ? cells.join(' | ') : '',
     });
   }
 
@@ -586,8 +547,23 @@ function htmlToText(html) {
   }
 }
 
+// ── the definitions the card quotes (0.4.2) ─────────────────────────────
+// A ledger line for a word that means requests now fail quotes the provider's own definition of it.
+// Each is named here by its SENTENCE, like DeepSeek's rows, and is written only if it is on the
+// saved page; the drift check (scripts/ledger-drift.mjs) re-reads it with the rows.
+const DEFINITIONS = [
+  { provider: 'anthropic', word: 'retired', url: URL.anthropic, file: 'anthropic-deprecations.md', quote: 'The model is no longer available for use. Requests to retired models fail.' },
+  { provider: 'openai', word: 'shut down', url: URL.openai, file: 'openai-deprecations.md', quote: 'The model no longer accepts requests through the standard API.' },
+  { provider: 'google', word: 'shut down', url: URL.google, file: 'google-deprecations.html', quote: 'it is completely turned off, and the endpoint is no longer available.' },
+];
+const definitions = DEFINITIONS.map(({ provider, word, url, file, quote }) => {
+  const text = file.endsWith('.html') ? htmlToText(page(file)) : page(file);
+  if (!quoteOn(text, quote)) throw new Error(`definition for ${provider} "${word}" not found on ${file}: ${quote}`);
+  return { provider, word, url, quote };
+});
+
 // ── write ────────────────────────────────────────────────────────────────
-const ALLOWED = new Set(['deprecated', 'retired', 'shut down', 'legacy', 'rerouted', 'scheduled for shutdown']);
+const ALLOWED = new Set(['deprecated', 'retired', 'shut down', 'legacy', 'rerouted', 'scheduled for shutdown', 'listed']);
 for (const r of rows) {
   if (!ALLOWED.has(r.word)) throw new Error(`row ${r.id}: word ${r.word} not in the allowed set`);
   for (const k of Object.keys(r)) if (r[k] === undefined) delete r[k];
@@ -618,9 +594,12 @@ const ts = `/**
    .map(([p, n]) => `${p} ${n}`)
    .join(' · ')} (${rows.length} in all).
  */
-import type { LedgerRow, LedgerSource } from './lifecycle-types.js';
+import type { LedgerRow, LedgerSource, LedgerDefinition } from './lifecycle-types.js';
 
 export const LEDGER_SOURCES: readonly LedgerSource[] = ${JSON.stringify(sources, null, 2)};
+
+/** The providers' own definitions the card quotes, each a sentence on the page it cites (0.4.2). */
+export const LEDGER_DEFINITIONS: readonly LedgerDefinition[] = ${JSON.stringify(definitions, null, 2)};
 
 export const LEDGER: readonly LedgerRow[] = ${JSON.stringify(rows, null, 2)};
 `;

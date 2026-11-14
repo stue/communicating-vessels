@@ -82,7 +82,28 @@ export interface EngineOptions {
   roster?: () => ModelProfile[];
   /** Amendment B3: the user ran the CLI with --share, so the footer must not say nothing is uploaded. */
   share?: boolean;
+  /** 0.4.2 (R3), test seam: the day the card is printed, `YYYY-MM-DD`. Defaults to the machine's clock (UTC date); no network. */
+  today?: string;
 }
+
+/** 0.4.2 (R3): the card says its age only when the pages are more than this many days old. */
+export const STALE_AFTER_DAYS = 7;
+
+/** Whole days from the ledger's read date to `today` (both UTC dates). */
+export function daysSinceRead(today: string, readOn: string = LEDGER_READ_ON): number {
+  const t = Date.parse(`${today}T00:00:00Z`);
+  const r = Date.parse(`${readOn}T00:00:00Z`);
+  return Number.isNaN(t) || Number.isNaN(r) ? 0 : Math.round((t - r) / 86_400_000);
+}
+
+/** 0.4.2 (R3): the footer sentence when the pages behind the card are more than a week old, else undefined. */
+export function ageSentence(today: string, readOn: string = LEDGER_READ_ON): string | undefined {
+  const n = daysSinceRead(today, readOn);
+  if (n <= STALE_AFTER_DAYS) return undefined;
+  return `The providers’ pages behind this card were read ${n} days ago, on ${readOn}; providers change them, and the newest version of the check carries a newer read.`;
+}
+
+const machineToday = () => new Date().toISOString().slice(0, 10);
 
 export const DESTINATION_SENTENCE =
   'This check ran on your machine, against the catalog bundled with it and the providers’ deprecation pages it was built with. ' +
@@ -190,6 +211,21 @@ function ledgerLine(a: { shown: string; row: LedgerRow; via?: string; res: Resol
     case 'scheduled for shutdown':
       title = `${on} is scheduled for shutdown not before ${floor ?? date}`;
       break;
+    case 'listed': {
+      // 0.4.2 Amendment A1: the page lists the id with no date and no deprecation word — said in the page's own words.
+      // Amendment B1: what the model is, by the heading its row sits under (the row's `section`), never guessed from the id.
+      const h3 = row.section?.split(' › ')[1];
+      const among =
+        h3 === undefined
+          ? 'among its current models'
+          : /^Preview models/i.test(h3)
+            ? 'among its preview models'
+            : /^Preview agents/i.test(h3)
+              ? 'among its preview agents'
+              : `under its heading “${h3}”`;
+      title = `${on} has ${row.pageWord.charAt(0).toLowerCase()}${row.pageWord.slice(1)}: ${P}'s deprecations page lists it ${among}`;
+      break;
+    }
     default: {
       if (row.routesTo) {
         title = `${on} is deprecated; ${date && !past ? `from ${date} its requests route to` : 'its requests are routed to'} \`${row.routesTo}\``;
@@ -203,7 +239,8 @@ function ledgerLine(a: { shown: string; row: LedgerRow; via?: string; res: Resol
     }
   }
   const repl = row.replacement && row.replacement !== row.routesTo ? row.replacement : undefined;
-  if (repl) title += `; its page names \`${repl}\``;
+  // 0.4.2 Amendment A2: a replacement cell that is not a plain list of model ids is quoted in the page's words, never named.
+  if (repl) title += row.replacementForm ? `; for its replacement the page says “${repl}”` : `; its page names \`${repl}\``;
 
   const parts: string[] = [];
   if (a.via) parts.push(`The page lists the dated snapshot \`${a.via}\`.`);
@@ -216,9 +253,12 @@ function ledgerLine(a: { shown: string; row: LedgerRow; via?: string; res: Resol
     parts.push(`${P}'s page: the name is "temporarily routed to ${row.routesTo}".`);
   }
   if (parts.length === 0 || (!def && row.word !== 'legacy' && !a.via))
-    parts.unshift(`The page's line: “${row.quote.replace(/\s+/g, ' ').replace(/\[([^\]]+)\]\([^)]*\)/g, '$1').slice(0, 240)}”.`);
+    // 0.4.2: markdown markup is not the page's words — links lose their URL, bold its asterisks (OpenAI's page of 2026-11-14 bolds every date).
+    // Amendment A1: a Google table row's quote is its cells joined by " | "; an empty last cell is not quoted.
+    parts.unshift(`The page's line: “${(row.section !== undefined ? row.quote.replace(/ \| $/, '') : row.quote).replace(/\s+/g, ' ').replace(/\[([^\]]+)\]\([^)]*\)/g, '$1').replace(/\*\*/g, '').slice(0, 240)}”.`);
   if (a.checksSkip) parts.push('The catalog has no entry for it, so its limits and price were not checked.');
-  const severity: Severity = row.word === 'retired' || row.word === 'shut down' || (row.word === 'legacy' && past) ? 'red' : 'yellow';
+  const severity: Severity =
+    row.word === 'listed' ? 'info' : row.word === 'retired' || row.word === 'shut down' || (row.word === 'legacy' && past) ? 'red' : 'yellow';
   return {
     severity,
     confidence: 'certain',
@@ -397,7 +437,10 @@ export function analyseModel(
   const shownId = (cat.profile && cat.id !== res.base) || looked ? `\`${configured}\` (looked up as \`${cat.profile ? cat.id : res.base}\`)` : `\`${configured}\``;
 
   const row = hit.row;
-  if (row && profile) {
+  // 0.4.2 Amendment A1: a `listed` row says only that the page lists the id; the catalog's checks and its own
+  // lifecycle line (the model page's word) stand beside it, and it never takes the profile away.
+  const listed = row?.word === 'listed';
+  if (row && profile && !listed) {
     // A ledger word that means requests now fail: no request-shape check is meaningful.
     if (row.word === 'retired' && !row.routesTo) profile = undefined;
     else if (row.word === 'shut down') profile = undefined;
@@ -408,6 +451,8 @@ export function analyseModel(
   const lines: Line[] = [];
   if (row) {
     lines.push(placeLine(ledgerLine({ shown: shownId, row, via: hit.via, res, checksSkip: !profile }), row.provider, st));
+    const pl = listed && profile ? providerLifecycleLine(shownId, profile) : undefined;
+    if (pl && profile) lines.push(placeLine(pl, profile.provider, st));
   } else if (profile) {
     const pl = providerLifecycleLine(shownId, profile);
     if (pl) lines.push(placeLine(pl, profile.provider, st));
@@ -673,7 +718,7 @@ export function runCheck(extract: Extract, opts: EngineOptions = {}): CheckResul
 
   return {
     findings: merged,
-    card: renderCard(extract, merged, analyses, opts.share === true),
+    card: renderCard(extract, merged, analyses, opts.share === true, opts.today ?? machineToday()),
     catalogVersion: LIBRARY_VERSION,
   };
 }
@@ -694,6 +739,7 @@ export function renderCard(
   findings: Finding[],
   analyses: ReadonlyMap<string, ModelAnalysis> = new Map(),
   share = false,
+  today: string = machineToday(),
 ): string {
   const lines: string[] = [];
   lines.push(`# Communicating Vessels — the check: ${extract.project.name}`);
@@ -705,7 +751,12 @@ export function renderCard(
     const a = analyses.get(m);
     return a ? a.shown : `\`${m}\``;
   };
-  const flagged = models.filter((m) => analyses.get(m)?.row || analyses.get(m)?.profile?.providerLifecycle?.status && analyses.get(m)?.profile?.providerLifecycle?.status !== 'active').length;
+  // 0.4.2 Amendment A1: a `listed` row is not a flag; the catalog's own lifecycle word still counts.
+  const flagged = models.filter((m) => {
+    const a = analyses.get(m);
+    const pl = a?.profile?.providerLifecycle?.status;
+    return (a?.row && a.row.word !== 'listed') || (pl !== undefined && pl !== 'active');
+  }).length;
   const unknown = models.filter((m) => {
     const a = analyses.get(m);
     return a && !a.row && !a.profile;
@@ -744,6 +795,8 @@ export function renderCard(
   lines.push('');
   lines.push('---');
   lines.push(`*${share ? SHARE_DESTINATION_SENTENCE : DESTINATION_SENTENCE}*`);
+  const age = ageSentence(today);
+  if (age) lines.push(`*${age}*`);
   // Version stamp: with no install telemetry (offline by design), the card
   // itself is the only place a bug report can self-identify its versions.
   lines.push(

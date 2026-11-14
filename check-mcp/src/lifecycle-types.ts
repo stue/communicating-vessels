@@ -6,9 +6,13 @@
 export type LedgerProvider = 'anthropic' | 'openai' | 'google' | 'deepseek';
 
 /** The provider's word, mapped onto one small set. `pageWord` keeps the page's own text. */
-export type LedgerWord = 'deprecated' | 'retired' | 'shut down' | 'legacy' | 'rerouted' | 'scheduled for shutdown';
+export type LedgerWord = 'deprecated' | 'retired' | 'shut down' | 'legacy' | 'rerouted' | 'scheduled for shutdown' | 'listed';
 
-export const LEDGER_WORDS: readonly LedgerWord[] = ['deprecated', 'retired', 'shut down', 'legacy', 'rerouted', 'scheduled for shutdown'];
+/**
+ * 0.4.2 Amendment A1: `listed` is not a provider word about the model's end. It is a table row on the provider's
+ * deprecation page with no shutdown date and no deprecation word; `pageWord` keeps the page's own words for it.
+ */
+export const LEDGER_WORDS: readonly LedgerWord[] = ['deprecated', 'retired', 'shut down', 'legacy', 'rerouted', 'scheduled for shutdown', 'listed'];
 
 export interface LedgerRow {
   /** The model id exactly as the page writes it. */
@@ -27,6 +31,8 @@ export interface LedgerRow {
   dateText?: string;
   /** The replacement the page names, backticks removed. */
   replacement?: string;
+  /** 0.4.2 Amendment A2: set when the replacement cell is not a plain list of model ids — words only, or ids inside a sentence. */
+  replacementForm?: 'text' | 'ids-in-text';
   /** Where the page says requests to this id are now routed. */
   routesTo?: string;
   /** DeepSeek: the model the page said the name pointed to when it announced the discontinuation. */
@@ -46,6 +52,14 @@ export interface LedgerRow {
   alsoUrl?: string;
   alsoQuote?: string;
   alsoReadOn?: string;
+}
+
+/** 0.4.2: a provider's own definition of a word the card quotes, verbatim from the page it cites. */
+export interface LedgerDefinition {
+  provider: LedgerProvider;
+  word: LedgerWord;
+  url: string;
+  quote: string;
 }
 
 export interface LedgerSource {

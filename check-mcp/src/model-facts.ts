@@ -28,8 +28,17 @@ export function renderModelFacts(model: string): string {
           : `not before ${r.shutdownFloor}`
         : '',
     ].filter(Boolean);
+    // 0.4.2 Amendment A2: a replacement cell that is not a plain list of ids is quoted, never named.
+    const repl = r.replacement
+      ? r.replacementForm
+        ? ` · replacement, in the page’s words: “${r.replacement}”`
+        : ` · replacement the page names: \`${r.replacement}\``
+      : '';
     out.push(
-      `- ${P}'s word: **${r.word}**${dates.length ? ` (${dates.join('; ')})` : ''}${r.replacement ? ` · replacement the page names: \`${r.replacement}\`` : ''}${r.routesTo ? ` · requests routed to: ${r.routesTo}` : ''}`,
+      r.word === 'listed'
+        ? // 0.4.2 Amendment A1: listed on the page with no date and no deprecation word, in the page's own words.
+          `- ${P}'s page lists it: **${r.pageWord.charAt(0).toLowerCase()}${r.pageWord.slice(1)}**${repl}`
+        : `- ${P}'s word: **${r.word}**${dates.length ? ` (${dates.join('; ')})` : ''}${repl}${r.routesTo ? ` · requests routed to: ${r.routesTo}` : ''}`,
     );
     out.push(`- source: ${r.url} (read ${r.readOn}) — “${r.quote.replace(/\s+/g, ' ').slice(0, 300)}”`);
     if (r.alsoUrl) out.push(`- also: ${r.alsoUrl} (read ${r.alsoReadOn}) — “${r.alsoQuote}”`);
@@ -62,7 +71,7 @@ export function renderModelFacts(model: string): string {
   }
 
   const pl = p.providerLifecycle;
-  if (!a.row) {
+  if (!a.row || a.row.word === 'listed') {
     out.push(
       pl
         ? `- ${PROVIDER_NAME[p.provider as keyof typeof PROVIDER_NAME] ?? p.provider}'s word: **${pl.status}** (model page, read ${pl.readOn})${retirementFloorClause({ retirementFloor: pl.retirementFloor, readOn: pl.readOn })}${pl.replacement ? ` · names \`${pl.replacement}\`` : ''} — ${pl.url}`

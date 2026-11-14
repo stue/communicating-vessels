@@ -4,7 +4,7 @@
  * compiler's catalog; no network.
  */
 import { allProfiles, tryGetProfile, type ModelProfile } from '@warmdrift/kgauto-compiler';
-import { LEDGER, LEDGER_SOURCES } from './lifecycle-ledger.js';
+import { LEDGER, LEDGER_SOURCES, LEDGER_DEFINITIONS } from './lifecycle-ledger.js';
 import type { LedgerRow, LedgerProvider } from './lifecycle-types.js';
 
 export interface Resolution {
@@ -206,21 +206,16 @@ export const LEDGER_READ_ON = LEDGER_SOURCES.map((s) => s.readAt.slice(0, 10)).s
 
 /**
  * The provider's own definition of the consequence, verbatim from its page,
- * for the two words that mean a request now fails.
+ * for the two words that mean a request now fails. Since 0.4.2 these come from the
+ * generated ledger (LEDGER_DEFINITIONS), checked on the page like its rows: OpenAI
+ * rewrote its sentence between the 2026-11-12 and 2026-11-14 reads.
  */
-export const WORD_DEFINITION: Partial<Record<LedgerProvider, Partial<Record<LedgerRow['word'], string>>>> = {
-  anthropic: { retired: 'The model is no longer available for use. Requests to retired models fail.' },
-  openai: { 'shut down': 'At the time of the shut down, the model or endpoint will no longer be accessible.' },
-  google: { 'shut down': 'it is completely turned off, and the endpoint is no longer available.' },
-};
+export const WORD_DEFINITION: Partial<Record<LedgerProvider, Partial<Record<LedgerRow['word'], string>>>> = {};
+for (const d of LEDGER_DEFINITIONS) (WORD_DEFINITION[d.provider] ??= {})[d.word] = d.quote;
 
-/** The page each definition above stands on (Amendment B, ruling 4). */
-export const DEFINITION_PAGE: Record<LedgerProvider, string> = {
-  anthropic: 'https://platform.claude.com/docs/en/about-claude/model-deprecations.md',
-  openai: 'https://developers.openai.com/api/docs/deprecations.md',
-  google: 'https://aistudio.google.com/docs/deprecations',
-  deepseek: 'https://api-docs.deepseek.com/updates',
-};
+/** The page each definition above stands on (Amendment B, ruling 4), from the same ledger rows. */
+export const DEFINITION_PAGE: Partial<Record<LedgerProvider, string>> = {};
+for (const d of LEDGER_DEFINITIONS) DEFINITION_PAGE[d.provider] = d.url;
 
 export const PARTNER_NAME: Record<Partner, string> = {
   vertex: 'Vertex AI',

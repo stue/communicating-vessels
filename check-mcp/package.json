@@ -1,6 +1,6 @@
 {
   "name": "@warmdrift/kgauto-check",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "Point your AI at your project — kgauto's local check, as a pure CLI for coding agents. Your agent extracts the project's AI surface (identifiers and counts, never code) and this tool checks it against kgauto's verified model catalog: statuses, prices, cliffs, capability mismatches, resilience. Fully offline; --share is the one explicit opt-in exception.",
   "type": "module",
   "bin": {

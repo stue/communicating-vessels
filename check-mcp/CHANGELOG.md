@@ -1,5 +1,20 @@
 # @warmdrift/kgauto-check — changelog
 
+## 0.4.2 — 2026-11-14
+
+**Between 2026-11-12 and 2026-11-14 Google moved the shutdown dates of five preview models. 0.4.0 and 0.4.1 print the earlier dates for them; 0.4.2 carries a ledger read on 2026-11-14.**
+
+Requires `@warmdrift/kgauto-compiler@2.0.0-alpha.133`, exactly (unchanged).
+
+- **The five Google models.** On 2026-11-12 Google's deprecations page gave November 17, 2026 for all five; on 2026-11-14 it gives `gemini-3.1-flash-tts-preview`, `gemini-2.5-flash-preview-tts` and `gemini-2.5-pro-preview-tts` December 18, 2026; `gemini-2.5-flash-native-audio-preview-12-2025` March 31, 2027; and `gemini-3.1-flash-live-preview` no shutdown date, with no deprecation word, so the check no longer lists it as scheduled for shutdown. Each date is the earliest the page gives, printed as *not before*.
+- **The ledger is re-read from all four providers' pages** (2026-11-14, 21:44 UTC). Anthropic's page is unchanged and DeepSeek's sentences still stand. OpenAI rewrote its deprecations page into two tables: no OpenAI date or word moved, and twelve rows of the GPT-5 and o3 families now name `gpt-6.1-sol`, `gpt-6.1-terra` or `gpt-6-luna` as their replacement, where the earlier page named `gpt-5.6-sol`, `gpt-5.6-terra` or `gpt-5.6-luna`. A shut-down OpenAI line quotes the definition the page carries now (*"The model no longer accepts requests through the standard API."*); the earlier sentence is no longer on the page.
+- **A card says its age.** When it is printed more than seven days after the pages behind it were read, its footer says how many days ago that was, that providers change those pages, and that the newest version of the check carries a newer read. The day is your machine's clock; nothing is fetched.
+- **A drift check for the ledger** (`scripts/ledger-drift.mjs`, in the repository, not in the package): for each row, is the line it quotes still on the page it cites? It uses the generator's own row check, prints each row that moved with the page's line today, and exits 1 when any did.
+- **An id the provider's page lists is never "not recognised".** Google's deprecations page lists 32 models with *No shutdown date announced* and no deprecation word (among them `gemini-3.1-flash-live-preview`, `gemini-3.8-flash`, `gemini-4-argon`). Each is now in the ledger in the page's own words, and the card prints one informational line for it: on Google's own API the id has no shutdown date announced, and Google's deprecations page lists it among its current models, its preview models or its preview agents (the heading its row sits under), with the replacement the page names if it names one. It is never counted as flagged, and the catalog's own checks for the model still run.
+- **A replacement that is not a model id is not printed as one.** Where a page's replacement cell is a sentence (*"The most capable cyber model available to you."*) or holds ids inside a sentence (*"gpt-5, or gpt-4.1 for latency-sensitive tasks that don't require reasoning"*), the card quotes the page's words — *"for its replacement the page says “…”"* — instead of calling it a name in code marks.
+
+Carried, not built: the age sentence counts only the deprecation pages' read date, not the read dates of the model pages behind the catalog's own lifecycle lines; `--model-facts` prints no age sentence.
+
 ## 0.4.1 — 2026-11-14
 
 **A cliff line says what its evidence says, and the catalog no longer moves under the check.** From a cold read of 0.4.0 on 2026-11-14 by a reader that built none of it (the read is kept in the private working tree).

@@ -93,7 +93,8 @@ describe('C4 — no partner sentence where the provider page covers the platform
 describe('C5 — a Google earliest-possible date reads "not before"', () => {
   it('a scheduled shutdown from the deprecations table', () => {
     const ls = lifecycle(run([{ id: 'a.ts:1', model: 'gemini-3.1-flash-tts-preview', platform: 'provider-api' }]));
-    expect(ls[0]!.title).toContain('scheduled for shutdown not before 2026-11-17');
+    // 0.4.2: Google's page of 2026-11-14 moved this date from November 17 to December 18, 2026.
+    expect(ls[0]!.title).toContain('scheduled for shutdown not before 2026-12-18');
   });
 });
 

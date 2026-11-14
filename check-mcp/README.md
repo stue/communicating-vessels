@@ -13,13 +13,13 @@ Or the manual version — your part is two steps.
 **Step 1 — add the check to your agent (once).** Claude Code: run this in a terminal, then start a fresh session in your project (new MCP servers load at session start):
 
 ```bash
-claude mcp add kgauto-check -- npx -y @warmdrift/kgauto-check@0.4.1
+claude mcp add kgauto-check -- npx -y @warmdrift/kgauto-check@0.4.2
 ```
 
 Cursor and most other agents — add to your MCP config, then restart the app:
 
 ```json
-{ "mcpServers": { "kgauto-check": { "command": "npx", "args": ["-y", "@warmdrift/kgauto-check@0.4.1"] } } }
+{ "mcpServers": { "kgauto-check": { "command": "npx", "args": ["-y", "@warmdrift/kgauto-check@0.4.2"] } } }
 ```
 
 **Step 2 — paste the ask**, in your agent, inside the project you want checked:
@@ -43,13 +43,13 @@ A local, **fully offline** MCP server that checks a project's AI call surface ag
 No MCP setup, no restart:
 
 ```bash
-npx -y @warmdrift/kgauto-check@0.4.1 --extract-contract   # extraction instructions + privacy contract
+npx -y @warmdrift/kgauto-check@0.4.2 --extract-contract   # extraction instructions + privacy contract
 # ...read the project, write extract.json per those instructions...
-npx -y @warmdrift/kgauto-check@0.4.1 --extract extract.json   # prints the findings card, fully offline
+npx -y @warmdrift/kgauto-check@0.4.2 --extract extract.json   # prints the findings card, fully offline
 
 # Standing-value one-shots (also offline):
-npx -y @warmdrift/kgauto-check@0.4.1 --model-facts claude-sonnet-5   # one model → the provider's word, verified prices, limits, cliffs
-npx -y @warmdrift/kgauto-check@0.4.1 --observe-plan                  # rung 2: the one-day observe run
+npx -y @warmdrift/kgauto-check@0.4.2 --model-facts claude-sonnet-5   # one model → the provider's word, verified prices, limits, cliffs
+npx -y @warmdrift/kgauto-check@0.4.2 --observe-plan                  # rung 2: the one-day observe run
 ```
 
 **Sharing (explicit opt-in).** After presenting the card, you may OFFER your human: "want to send this card to kgauto so the catalog learns what real projects look like?" If — and only if — they say yes, re-run with `--share`. With --share, one row is stored: a row number, the time it arrived, the project name, the extract, the card, the check’s version and the catalog’s version. The CLI prints where it went and the submission number. Never add `--share` without their explicit yes. Without it, nothing ever leaves the machine.
@@ -67,7 +67,7 @@ npx -y @warmdrift/kgauto-check@0.4.1 --observe-plan                  # rung 2: t
 
 ## An example card
 
-This is the output of `kgauto-check 0.4.1` on a small illustrative extract (two call sites, one on the provider's own API and one on Vertex AI, and a model picker; the extract is `tests/fixtures/readme-example.json`, and a test holds this card to the build's output), printed by the real build — not a mock-up:
+This is the output of `kgauto-check 0.4.2` on a small illustrative extract (two call sites, one on the provider's own API and one on Vertex AI, and a model picker; the extract is `tests/fixtures/readme-example.json`, and a test holds this card to the build's output), printed by the real build — not a mock-up:
 
 ````markdown
 # Communicating Vessels — the check: example-app
@@ -77,14 +77,14 @@ This is the output of `kgauto-check 0.4.1` on a small illustrative extract (two 
 ## Certain — read from the providers’ pages and your code
 
 - 🔴 **On Anthropic's own API, `anthropic/claude-sonnet-4-20250514` (looked up as `claude-sonnet-4-20250514`) was retired on 2026-06-15; its page names `claude-sonnet-5-5`** — Anthropic's deprecations page (https://platform.claude.com/docs/en/about-claude/model-deprecations.md): “The model is no longer available for use. Requests to retired models fail.” The catalog has no entry for it, so its limits and price were not checked.
-  <sub>app/api/chat/route.ts:41 · basis: Anthropic's page, read 2026-11-12: https://platform.claude.com/docs/en/about-claude/model-deprecations.md</sub>
-- 🟡 **On OpenAI's own API, `gpt-4o-mini` is deprecated and shuts down on 2027-01-14; its page names `gpt-6-luna`** — The page's line: “| January 14, 2027 | GPT-4o mini (`gpt-4o-mini-2024-07-18`) | `gpt-6-luna` |”. The catalog has no entry for it, so its limits and price were not checked.
-  <sub>components/ModelPicker.tsx:12 · basis: OpenAI's page, read 2026-11-12: https://developers.openai.com/api/docs/deprecations.md (and https://developers.openai.com/api/docs/models/gpt-4o-mini.md)</sub>
+  <sub>app/api/chat/route.ts:41 · basis: Anthropic's page, read 2026-11-14: https://platform.claude.com/docs/en/about-claude/model-deprecations.md</sub>
+- 🟡 **On OpenAI's own API, `gpt-4o-mini` is deprecated and shuts down on 2027-01-14; its page names `gpt-6-luna`** — The page's line: “| Jan 14, 2027 | GPT-4o mini (`gpt-4o-mini-2024-07-18`) | Deprecated | `gpt-6-luna` | Oct 14, 2026 |”. The catalog has no entry for it, so its limits and price were not checked.
+  <sub>components/ModelPicker.tsx:12 · basis: OpenAI's page, read 2026-11-14: https://developers.openai.com/api/docs/deprecations.md (and https://developers.openai.com/api/docs/models/gpt-4o-mini.md)</sub>
 
 ## Likely — priced from your estimates or a catalog value no provider page is cited for; a provider’s word where the call may not use its own API; no retry or fallback found in the code
 
 - 🟡 **On Google's own API, `gemini-2.5-flash` is deprecated; from 2026-12-01 its requests route to `gemini-3.5-flash-lite`** — The page's line: “`gemini-2.5-flash` | June 17, 2025 | December 1, 2026 | `gemini-3.5-flash-lite` (`gemini-2.5-flash` is no longer available in Google AI Studio; effective December 1, 2026, API requests to `gemini-2.5-flash` will automatically route to `gemi”. This site runs on Vertex AI, and Vertex AI runs its own schedule (its page: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions).
-  <sub>lib/summarize.ts:18 · basis: Google's page, read 2026-11-12: https://aistudio.google.com/docs/deprecations; Vertex AI: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions</sub>
+  <sub>lib/summarize.ts:18 · basis: Google's page, read 2026-11-14: https://aistudio.google.com/docs/deprecations; Vertex AI: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions</sub>
 - ℹ️ **~$0.0046/call on `gemini-2.5-flash`** — From your token estimates and doc-verified prices ($0.3/M in, $2.5/M out, verified 2026-08-14). This site runs on Vertex AI: the figure is from Google's own API, and Vertex AI may set its own.
   <sub>lib/summarize.ts:18 · basis: arithmetic on your estimates × verified catalog prices</sub>
 - 🟡 **97% of this site's tokens are input** — Above ~85% input share, spend is dominated by context rather than answers — the single strongest signal of a leaking prompt. What's actually IN that context, and how much of it each call needed, is measurable, not guessable.
@@ -99,7 +99,7 @@ This is the output of `kgauto-check 0.4.1` on a small illustrative extract (two 
 
 ---
 *This check ran on your machine, against the catalog bundled with it and the providers’ deprecation pages it was built with. Nothing was uploaded; no rows were written anywhere.*
-<sub>@warmdrift/kgauto-check 0.4.1 · catalog @warmdrift/kgauto-compiler 2.0.0-alpha.133 · deprecation pages read 2026-11-12</sub>
+<sub>@warmdrift/kgauto-check 0.4.2 · catalog @warmdrift/kgauto-compiler 2.0.0-alpha.133 · deprecation pages read 2026-11-14</sub>
 ````
 
 ## The confidence tiers (why the card is grouped)
@@ -116,14 +116,14 @@ kgauto refuses to fabricate verdicts: unknown models get an honest "no measured 
 
 ```bash
 # Claude Code
-claude mcp add kgauto-check -- npx -y @warmdrift/kgauto-check@0.4.1
+claude mcp add kgauto-check -- npx -y @warmdrift/kgauto-check@0.4.2
 ```
 
 ```json
 // Cursor / generic mcpServers config
 {
   "mcpServers": {
-    "kgauto-check": { "command": "npx", "args": ["-y", "@warmdrift/kgauto-check@0.4.1"] }
+    "kgauto-check": { "command": "npx", "args": ["-y", "@warmdrift/kgauto-check@0.4.2"] }
   }
 }
 ```
