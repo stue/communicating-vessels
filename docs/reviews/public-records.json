@@ -1,0 +1,3288 @@
+{
+ "about": "The 40 projects of the 2026-11-12 test, one row each: its id, its sample, its owner group, its star band and, per run, its card lines counted by tier, verdict and kind. tally_public.py re-derives every number in the report from this file. The extracts, the cards and the owner reads stay in the private working tree.",
+ "runs": {
+  "run1": "the first 20, kgauto-check 0.3.0",
+  "first": "the second 20, kgauto-check 0.4.0 at 40d8b42, with the first cold read's verdicts",
+  "after-c": "both samples, kgauto-check 0.4.0 after Amendment C"
+ },
+ "builds": {
+  "after-c": "kgauto-check 0.4.0 · catalog 2.0.0-alpha.132 · lifecycle ledger read 2026-11-12",
+  "first": "kgauto-check 0.4.0 · catalog 2.0.0-alpha.132 · lifecycle ledger read 2026-11-12"
+ },
+ "projects": [
+  {
+   "id": "project-01",
+   "sample": "first-20",
+   "owner_group": "seasoned individual",
+   "stars_band": "under 1,000",
+   "strict_out": false,
+   "runs": {
+    "run1": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 1,
+     "flagged_silent": 0,
+     "restated_true": 1,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "certain",
+       "verdict": "false",
+       "kind": "tools-ceiling",
+       "actionable": true,
+       "count": 1
+      },
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "legacy",
+       "actionable": true,
+       "count": 1
+      },
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "preview",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "unknown-model",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "likely",
+       "verdict": "not checkable",
+       "kind": "cliff",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "likely",
+       "verdict": "not checkable",
+       "kind": "cost",
+       "actionable": false,
+       "count": 6
+      },
+      {
+       "tier": "likely",
+       "verdict": "not checkable",
+       "kind": "input-share",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "cheaper-candidates",
+       "actionable": false,
+       "count": 6
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    },
+    "after-c": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 1,
+     "flagged_silent": 0,
+     "restated_true": 1,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "unknown-model",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "likely",
+       "verdict": "not checkable",
+       "kind": "cliff",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "likely",
+       "verdict": "not checkable",
+       "kind": "cost",
+       "actionable": false,
+       "count": 6
+      },
+      {
+       "tier": "likely",
+       "verdict": "not checkable",
+       "kind": "input-share",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "likely",
+       "verdict": "true",
+       "kind": "lifecycle-catalog",
+       "actionable": true,
+       "count": 1
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "cheaper-candidates",
+       "actionable": false,
+       "count": 6
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "project-02",
+   "sample": "first-20",
+   "owner_group": "team-run",
+   "stars_band": "under 1,000",
+   "strict_out": false,
+   "runs": {
+    "run1": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 2,
+     "flagged_silent": 2,
+     "restated_true": 0,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "unknown-model",
+       "actionable": false,
+       "count": 3
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    },
+    "after-c": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 3,
+     "flagged_silent": 0,
+     "restated_true": 4,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "likely",
+       "verdict": "true",
+       "kind": "lifecycle-ledger",
+       "actionable": true,
+       "count": 4
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "project-03",
+   "sample": "first-20",
+   "owner_group": "team-run",
+   "stars_band": "under 1,000",
+   "strict_out": false,
+   "runs": {
+    "run1": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 1,
+     "flagged_silent": 1,
+     "restated_true": 0,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "unknown-model",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    },
+    "after-c": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 1,
+     "flagged_silent": 0,
+     "restated_true": 1,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "likely",
+       "verdict": "true",
+       "kind": "lifecycle-ledger",
+       "actionable": true,
+       "count": 1
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "project-04",
+   "sample": "experienced-20",
+   "owner_group": "team-run",
+   "stars_band": "10,000 or more",
+   "strict_out": false,
+   "runs": {
+    "first": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 3,
+     "flagged_silent": 0,
+     "restated_true": 3,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "lifecycle-ledger",
+       "actionable": true,
+       "count": 3
+      },
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "unknown-model",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    },
+    "after-c": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 4,
+     "flagged_silent": 0,
+     "restated_true": 4,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "likely",
+       "verdict": "true",
+       "kind": "lifecycle-ledger",
+       "actionable": true,
+       "count": 4
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "project-05",
+   "sample": "first-20",
+   "owner_group": "team-run",
+   "stars_band": "under 1,000",
+   "strict_out": true,
+   "runs": {
+    "run1": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 2,
+     "flagged_silent": 0,
+     "restated_true": 1,
+     "direction_agrees": 1,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "certain",
+       "verdict": "false",
+       "kind": "alias",
+       "actionable": true,
+       "count": 1
+      },
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "legacy",
+       "actionable": true,
+       "count": 1
+      },
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "preview",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "unknown-model",
+       "actionable": false,
+       "count": 2
+      },
+      {
+       "tier": "likely",
+       "verdict": "not checkable",
+       "kind": "cost",
+       "actionable": false,
+       "count": 4
+      },
+      {
+       "tier": "likely",
+       "verdict": "not checkable",
+       "kind": "input-share",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "cheaper-candidates",
+       "actionable": false,
+       "count": 4
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    },
+    "after-c": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 2,
+     "flagged_silent": 0,
+     "restated_true": 2,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "unknown-model",
+       "actionable": false,
+       "count": 2
+      },
+      {
+       "tier": "likely",
+       "verdict": "not checkable",
+       "kind": "cost",
+       "actionable": false,
+       "count": 3
+      },
+      {
+       "tier": "likely",
+       "verdict": "not checkable",
+       "kind": "input-share",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "likely",
+       "verdict": "true",
+       "kind": "lifecycle-catalog",
+       "actionable": true,
+       "count": 1
+      },
+      {
+       "tier": "likely",
+       "verdict": "true",
+       "kind": "lifecycle-ledger",
+       "actionable": true,
+       "count": 1
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "cheaper-candidates",
+       "actionable": false,
+       "count": 3
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "project-06",
+   "sample": "experienced-20",
+   "owner_group": "team-run",
+   "stars_band": "10,000 or more",
+   "strict_out": false,
+   "runs": {
+    "first": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 1,
+     "flagged_silent": 0,
+     "restated_true": 1,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "lifecycle-ledger",
+       "actionable": true,
+       "count": 1
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    },
+    "after-c": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 1,
+     "flagged_silent": 0,
+     "restated_true": 1,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "likely",
+       "verdict": "true",
+       "kind": "lifecycle-ledger",
+       "actionable": true,
+       "count": 1
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "project-07",
+   "sample": "experienced-20",
+   "owner_group": "team-run",
+   "stars_band": "10,000 or more",
+   "strict_out": false,
+   "runs": {
+    "first": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 2,
+     "flagged_silent": 0,
+     "restated_true": 2,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "lifecycle-ledger",
+       "actionable": true,
+       "count": 2
+      },
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "unknown-model",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    },
+    "after-c": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 2,
+     "flagged_silent": 0,
+     "restated_true": 2,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "unknown-model",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "likely",
+       "verdict": "true",
+       "kind": "lifecycle-ledger",
+       "actionable": true,
+       "count": 2
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "project-08",
+   "sample": "first-20",
+   "owner_group": "newer individual",
+   "stars_band": "under 1,000",
+   "strict_out": false,
+   "runs": {
+    "run1": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 4,
+     "flagged_silent": 1,
+     "restated_true": 2,
+     "direction_agrees": 1,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "certain",
+       "verdict": "false",
+       "kind": "alias",
+       "actionable": true,
+       "count": 1
+      },
+      {
+       "tier": "certain",
+       "verdict": "false",
+       "kind": "tools-ceiling",
+       "actionable": true,
+       "count": 2
+      },
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "alias",
+       "actionable": true,
+       "count": 1
+      },
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "legacy",
+       "actionable": true,
+       "count": 1
+      },
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "no-fallback",
+       "actionable": false,
+       "count": 2
+      },
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "unknown-model",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "likely",
+       "verdict": "not checkable",
+       "kind": "cost",
+       "actionable": false,
+       "count": 4
+      },
+      {
+       "tier": "likely",
+       "verdict": "not checkable",
+       "kind": "input-share",
+       "actionable": false,
+       "count": 3
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "cheaper-candidates",
+       "actionable": false,
+       "count": 4
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    },
+    "after-c": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 4,
+     "flagged_silent": 0,
+     "restated_true": 4,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "likely",
+       "verdict": "not checkable",
+       "kind": "cost",
+       "actionable": false,
+       "count": 3
+      },
+      {
+       "tier": "likely",
+       "verdict": "not checkable",
+       "kind": "input-share",
+       "actionable": false,
+       "count": 2
+      },
+      {
+       "tier": "likely",
+       "verdict": "not checkable",
+       "kind": "no-fallback",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "likely",
+       "verdict": "true",
+       "kind": "lifecycle-catalog",
+       "actionable": true,
+       "count": 1
+      },
+      {
+       "tier": "likely",
+       "verdict": "true",
+       "kind": "lifecycle-ledger",
+       "actionable": true,
+       "count": 3
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "cheaper-candidates",
+       "actionable": false,
+       "count": 3
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "project-09",
+   "sample": "first-20",
+   "owner_group": "team-run",
+   "stars_band": "10,000 or more",
+   "strict_out": false,
+   "runs": {
+    "run1": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 5,
+     "flagged_silent": 3,
+     "restated_true": 2,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "legacy",
+       "actionable": true,
+       "count": 2
+      },
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "no-fallback",
+       "actionable": false,
+       "count": 3
+      },
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "unknown-model",
+       "actionable": false,
+       "count": 3
+      },
+      {
+       "tier": "likely",
+       "verdict": "not checkable",
+       "kind": "cost",
+       "actionable": false,
+       "count": 3
+      },
+      {
+       "tier": "likely",
+       "verdict": "not checkable",
+       "kind": "input-share",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "cheaper-candidates",
+       "actionable": false,
+       "count": 3
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    },
+    "after-c": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 5,
+     "flagged_silent": 0,
+     "restated_true": 5,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "likely",
+       "verdict": "not checkable",
+       "kind": "cost",
+       "actionable": false,
+       "count": 3
+      },
+      {
+       "tier": "likely",
+       "verdict": "not checkable",
+       "kind": "input-share",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "likely",
+       "verdict": "not checkable",
+       "kind": "no-fallback",
+       "actionable": false,
+       "count": 3
+      },
+      {
+       "tier": "likely",
+       "verdict": "true",
+       "kind": "lifecycle-catalog",
+       "actionable": true,
+       "count": 1
+      },
+      {
+       "tier": "likely",
+       "verdict": "true",
+       "kind": "lifecycle-ledger",
+       "actionable": true,
+       "count": 4
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "cheaper-candidates",
+       "actionable": false,
+       "count": 3
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "project-10",
+   "sample": "experienced-20",
+   "owner_group": "team-run",
+   "stars_band": "10,000 or more",
+   "strict_out": false,
+   "runs": {
+    "first": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 4,
+     "flagged_silent": 0,
+     "restated_true": 3,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "certain",
+       "verdict": "not checkable",
+       "kind": "lifecycle-ledger",
+       "actionable": true,
+       "count": 1
+      },
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "lifecycle-ledger",
+       "actionable": true,
+       "count": 3
+      },
+      {
+       "tier": "likely",
+       "verdict": "not checkable",
+       "kind": "lifecycle-ledger",
+       "actionable": true,
+       "count": 1
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    },
+    "after-c": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 5,
+     "flagged_silent": 0,
+     "restated_true": 5,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "likely",
+       "verdict": "true",
+       "kind": "lifecycle-ledger",
+       "actionable": true,
+       "count": 5
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "project-11",
+   "sample": "first-20",
+   "owner_group": "seasoned individual",
+   "stars_band": "under 1,000",
+   "strict_out": false,
+   "runs": {
+    "run1": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 2,
+     "flagged_silent": 1,
+     "restated_true": 1,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "alias",
+       "actionable": true,
+       "count": 1
+      },
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "unknown-model",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "likely",
+       "verdict": "not checkable",
+       "kind": "cost",
+       "actionable": false,
+       "count": 4
+      },
+      {
+       "tier": "likely",
+       "verdict": "not checkable",
+       "kind": "input-share",
+       "actionable": false,
+       "count": 3
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "cheaper-candidates",
+       "actionable": false,
+       "count": 3
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    },
+    "after-c": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 2,
+     "flagged_silent": 0,
+     "restated_true": 2,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "likely",
+       "verdict": "not checkable",
+       "kind": "cost",
+       "actionable": false,
+       "count": 4
+      },
+      {
+       "tier": "likely",
+       "verdict": "not checkable",
+       "kind": "input-share",
+       "actionable": false,
+       "count": 3
+      },
+      {
+       "tier": "likely",
+       "verdict": "true",
+       "kind": "lifecycle-ledger",
+       "actionable": true,
+       "count": 2
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "cheaper-candidates",
+       "actionable": false,
+       "count": 4
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "project-12",
+   "sample": "experienced-20",
+   "owner_group": "team-run",
+   "stars_band": "10,000 or more",
+   "strict_out": false,
+   "runs": {
+    "first": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 3,
+     "flagged_silent": 0,
+     "restated_true": 3,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "lifecycle-ledger",
+       "actionable": true,
+       "count": 3
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    },
+    "after-c": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 3,
+     "flagged_silent": 0,
+     "restated_true": 3,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "likely",
+       "verdict": "true",
+       "kind": "lifecycle-ledger",
+       "actionable": true,
+       "count": 3
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "project-13",
+   "sample": "first-20",
+   "owner_group": "newer individual",
+   "stars_band": "under 1,000",
+   "strict_out": false,
+   "runs": {
+    "run1": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 2,
+     "flagged_silent": 2,
+     "restated_true": 0,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "unknown-model",
+       "actionable": false,
+       "count": 3
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    },
+    "after-c": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 3,
+     "flagged_silent": 1,
+     "restated_true": 2,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "unknown-model",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "likely",
+       "verdict": "true",
+       "kind": "lifecycle-ledger",
+       "actionable": true,
+       "count": 2
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "project-14",
+   "sample": "first-20",
+   "owner_group": "seasoned individual",
+   "stars_band": "under 1,000",
+   "strict_out": false,
+   "runs": {
+    "run1": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 1,
+     "flagged_silent": 1,
+     "restated_true": 0,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "unknown-model",
+       "actionable": false,
+       "count": 2
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    },
+    "after-c": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 1,
+     "flagged_silent": 0,
+     "restated_true": 1,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "unknown-model",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "likely",
+       "verdict": "true",
+       "kind": "lifecycle-ledger",
+       "actionable": true,
+       "count": 1
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "project-15",
+   "sample": "first-20",
+   "owner_group": "newer individual",
+   "stars_band": "under 1,000",
+   "strict_out": false,
+   "runs": {
+    "run1": {
+     "date": "2026-11-12",
+     "card": false,
+     "holds_flagged_ids": 0,
+     "flagged_silent": 0,
+     "restated_true": 0,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": []
+    },
+    "after-c": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 0,
+     "flagged_silent": 0,
+     "restated_true": 0,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": []
+    }
+   }
+  },
+  {
+   "id": "project-16",
+   "sample": "first-20",
+   "owner_group": "seasoned individual",
+   "stars_band": "under 1,000",
+   "strict_out": false,
+   "runs": {
+    "run1": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 3,
+     "flagged_silent": 1,
+     "restated_true": 0,
+     "direction_agrees": 2,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "certain",
+       "verdict": "false",
+       "kind": "alias",
+       "actionable": true,
+       "count": 2
+      },
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "no-fallback",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "unknown-model",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "likely",
+       "verdict": "not checkable",
+       "kind": "cost",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "cheaper-candidates",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    },
+    "after-c": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 3,
+     "flagged_silent": 0,
+     "restated_true": 3,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "likely",
+       "verdict": "true",
+       "kind": "lifecycle-ledger",
+       "actionable": true,
+       "count": 3
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "project-17",
+   "sample": "experienced-20",
+   "owner_group": "team-run",
+   "stars_band": "10,000 or more",
+   "strict_out": false,
+   "runs": {
+    "first": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 2,
+     "flagged_silent": 0,
+     "restated_true": 2,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "lifecycle-ledger",
+       "actionable": true,
+       "count": 2
+      },
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "unknown-model",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    },
+    "after-c": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 2,
+     "flagged_silent": 0,
+     "restated_true": 2,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "unknown-model",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "likely",
+       "verdict": "true",
+       "kind": "lifecycle-ledger",
+       "actionable": true,
+       "count": 2
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "project-18",
+   "sample": "first-20",
+   "owner_group": "team-run",
+   "stars_band": "under 1,000",
+   "strict_out": false,
+   "runs": {
+    "run1": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 5,
+     "flagged_silent": 2,
+     "restated_true": 3,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "legacy",
+       "actionable": true,
+       "count": 3
+      },
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "no-fallback",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "unknown-model",
+       "actionable": false,
+       "count": 2
+      },
+      {
+       "tier": "likely",
+       "verdict": "not checkable",
+       "kind": "cost",
+       "actionable": false,
+       "count": 4
+      },
+      {
+       "tier": "likely",
+       "verdict": "not checkable",
+       "kind": "input-share",
+       "actionable": false,
+       "count": 3
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "cheaper-candidates",
+       "actionable": false,
+       "count": 4
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    },
+    "after-c": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 5,
+     "flagged_silent": 0,
+     "restated_true": 5,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "likely",
+       "verdict": "not checkable",
+       "kind": "cost",
+       "actionable": false,
+       "count": 4
+      },
+      {
+       "tier": "likely",
+       "verdict": "not checkable",
+       "kind": "input-share",
+       "actionable": false,
+       "count": 3
+      },
+      {
+       "tier": "likely",
+       "verdict": "not checkable",
+       "kind": "no-fallback",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "likely",
+       "verdict": "true",
+       "kind": "lifecycle-catalog",
+       "actionable": true,
+       "count": 3
+      },
+      {
+       "tier": "likely",
+       "verdict": "true",
+       "kind": "lifecycle-ledger",
+       "actionable": true,
+       "count": 2
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "cheaper-candidates",
+       "actionable": false,
+       "count": 4
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "project-19",
+   "sample": "first-20",
+   "owner_group": "seasoned individual",
+   "stars_band": "under 1,000",
+   "strict_out": true,
+   "runs": {
+    "run1": {
+     "date": "2026-11-12",
+     "card": false,
+     "holds_flagged_ids": 0,
+     "flagged_silent": 0,
+     "restated_true": 0,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": []
+    },
+    "after-c": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 17,
+     "flagged_silent": 0,
+     "restated_true": 17,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "unknown-model",
+       "actionable": false,
+       "count": 6
+      },
+      {
+       "tier": "likely",
+       "verdict": "true",
+       "kind": "lifecycle-ledger",
+       "actionable": true,
+       "count": 17
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "project-20",
+   "sample": "experienced-20",
+   "owner_group": "team-run",
+   "stars_band": "10,000 or more",
+   "strict_out": false,
+   "runs": {
+    "first": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 0,
+     "flagged_silent": 0,
+     "restated_true": 0,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": []
+    },
+    "after-c": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 0,
+     "flagged_silent": 0,
+     "restated_true": 0,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": []
+    }
+   }
+  },
+  {
+   "id": "project-21",
+   "sample": "experienced-20",
+   "owner_group": "team-run",
+   "stars_band": "10,000 or more",
+   "strict_out": false,
+   "runs": {
+    "first": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 1,
+     "flagged_silent": 0,
+     "restated_true": 1,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "lifecycle-catalog",
+       "actionable": true,
+       "count": 1
+      },
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "unknown-model",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    },
+    "after-c": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 1,
+     "flagged_silent": 0,
+     "restated_true": 1,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "unknown-model",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "likely",
+       "verdict": "true",
+       "kind": "lifecycle-catalog",
+       "actionable": true,
+       "count": 1
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "project-22",
+   "sample": "experienced-20",
+   "owner_group": "team-run",
+   "stars_band": "10,000 or more",
+   "strict_out": false,
+   "runs": {
+    "first": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 3,
+     "flagged_silent": 0,
+     "restated_true": 2,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "certain",
+       "verdict": "false",
+       "kind": "lifecycle-ledger",
+       "actionable": true,
+       "count": 1
+      },
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "lifecycle-catalog",
+       "actionable": true,
+       "count": 2
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    },
+    "after-c": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 3,
+     "flagged_silent": 0,
+     "restated_true": 3,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "likely",
+       "verdict": "true",
+       "kind": "lifecycle-catalog",
+       "actionable": true,
+       "count": 2
+      },
+      {
+       "tier": "likely",
+       "verdict": "true",
+       "kind": "lifecycle-ledger",
+       "actionable": true,
+       "count": 1
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "project-23",
+   "sample": "first-20",
+   "owner_group": "newer individual",
+   "stars_band": "under 1,000",
+   "strict_out": false,
+   "runs": {
+    "run1": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 1,
+     "flagged_silent": 1,
+     "restated_true": 0,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "unknown-model",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    },
+    "after-c": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 1,
+     "flagged_silent": 0,
+     "restated_true": 1,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "likely",
+       "verdict": "true",
+       "kind": "lifecycle-ledger",
+       "actionable": true,
+       "count": 1
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "project-24",
+   "sample": "first-20",
+   "owner_group": "newer individual",
+   "stars_band": "under 1,000",
+   "strict_out": false,
+   "runs": {
+    "run1": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 1,
+     "flagged_silent": 1,
+     "restated_true": 0,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "no-fallback",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "likely",
+       "verdict": "not checkable",
+       "kind": "cost",
+       "actionable": false,
+       "count": 2
+      },
+      {
+       "tier": "likely",
+       "verdict": "not checkable",
+       "kind": "input-share",
+       "actionable": false,
+       "count": 2
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "cheaper-candidates",
+       "actionable": false,
+       "count": 2
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    },
+    "after-c": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 1,
+     "flagged_silent": 0,
+     "restated_true": 1,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "likely",
+       "verdict": "not checkable",
+       "kind": "cost",
+       "actionable": false,
+       "count": 2
+      },
+      {
+       "tier": "likely",
+       "verdict": "not checkable",
+       "kind": "input-share",
+       "actionable": false,
+       "count": 2
+      },
+      {
+       "tier": "likely",
+       "verdict": "not checkable",
+       "kind": "no-fallback",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "likely",
+       "verdict": "true",
+       "kind": "lifecycle-ledger",
+       "actionable": true,
+       "count": 1
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "cheaper-candidates",
+       "actionable": false,
+       "count": 2
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "project-25",
+   "sample": "experienced-20",
+   "owner_group": "team-run",
+   "stars_band": "10,000 or more",
+   "strict_out": false,
+   "runs": {
+    "first": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 0,
+     "flagged_silent": 0,
+     "restated_true": 0,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": []
+    },
+    "after-c": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 0,
+     "flagged_silent": 0,
+     "restated_true": 0,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": []
+    }
+   }
+  },
+  {
+   "id": "project-26",
+   "sample": "first-20",
+   "owner_group": "seasoned individual",
+   "stars_band": "under 1,000",
+   "strict_out": false,
+   "runs": {
+    "run1": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 0,
+     "flagged_silent": 0,
+     "restated_true": 0,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "no-fallback",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "unknown-model",
+       "actionable": false,
+       "count": 2
+      },
+      {
+       "tier": "likely",
+       "verdict": "not checkable",
+       "kind": "cost",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "likely",
+       "verdict": "not checkable",
+       "kind": "input-share",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "cheaper-candidates",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    },
+    "after-c": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 0,
+     "flagged_silent": 0,
+     "restated_true": 0,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "unknown-model",
+       "actionable": false,
+       "count": 2
+      },
+      {
+       "tier": "likely",
+       "verdict": "not checkable",
+       "kind": "cost",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "likely",
+       "verdict": "not checkable",
+       "kind": "input-share",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "likely",
+       "verdict": "not checkable",
+       "kind": "no-fallback",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "cheaper-candidates",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "project-27",
+   "name": "openclaw/openclaw",
+   "sample": "experienced-20",
+   "owner_group": "team-run",
+   "stars_band": "10,000 or more",
+   "strict_out": false,
+   "runs": {
+    "first": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 1,
+     "flagged_silent": 0,
+     "restated_true": 1,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "lifecycle-ledger",
+       "actionable": true,
+       "count": 1
+      },
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "unknown-model",
+       "actionable": false,
+       "count": 3
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    },
+    "after-c": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 2,
+     "flagged_silent": 0,
+     "restated_true": 2,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "unknown-model",
+       "actionable": false,
+       "count": 2
+      },
+      {
+       "tier": "likely",
+       "verdict": "true",
+       "kind": "lifecycle-ledger",
+       "actionable": true,
+       "count": 2
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "project-28",
+   "sample": "experienced-20",
+   "owner_group": "team-run",
+   "stars_band": "10,000 or more",
+   "strict_out": false,
+   "runs": {
+    "first": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 4,
+     "flagged_silent": 0,
+     "restated_true": 3,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "certain",
+       "verdict": "false",
+       "kind": "lifecycle-ledger",
+       "actionable": true,
+       "count": 1
+      },
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "lifecycle-ledger",
+       "actionable": true,
+       "count": 3
+      },
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "unknown-model",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    },
+    "after-c": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 4,
+     "flagged_silent": 0,
+     "restated_true": 4,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "likely",
+       "verdict": "true",
+       "kind": "lifecycle-ledger",
+       "actionable": true,
+       "count": 4
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "project-29",
+   "sample": "first-20",
+   "owner_group": "newer individual",
+   "stars_band": "under 1,000",
+   "strict_out": false,
+   "runs": {
+    "run1": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 1,
+     "flagged_silent": 0,
+     "restated_true": 1,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "legacy",
+       "actionable": true,
+       "count": 1
+      },
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "no-fallback",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "unknown-model",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "likely",
+       "verdict": "not checkable",
+       "kind": "cost",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "cheaper-candidates",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    },
+    "after-c": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 1,
+     "flagged_silent": 0,
+     "restated_true": 1,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "unknown-model",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "likely",
+       "verdict": "not checkable",
+       "kind": "cost",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "likely",
+       "verdict": "not checkable",
+       "kind": "no-fallback",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "likely",
+       "verdict": "true",
+       "kind": "lifecycle-ledger",
+       "actionable": true,
+       "count": 1
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "cheaper-candidates",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "project-30",
+   "sample": "experienced-20",
+   "owner_group": "team-run",
+   "stars_band": "10,000 or more",
+   "strict_out": false,
+   "runs": {
+    "first": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 0,
+     "flagged_silent": 0,
+     "restated_true": 0,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "unknown-model",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    },
+    "after-c": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 0,
+     "flagged_silent": 0,
+     "restated_true": 0,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "unknown-model",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "project-31",
+   "name": "firecrawl/open-lovable",
+   "sample": "first-20",
+   "owner_group": "team-run",
+   "stars_band": "10,000 or more",
+   "strict_out": false,
+   "runs": {
+    "run1": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 4,
+     "flagged_silent": 4,
+     "restated_true": 0,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "unknown-model",
+       "actionable": false,
+       "count": 5
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    },
+    "after-c": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 4,
+     "flagged_silent": 0,
+     "restated_true": 4,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "unknown-model",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "likely",
+       "verdict": "true",
+       "kind": "lifecycle-ledger",
+       "actionable": true,
+       "count": 4
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "project-32",
+   "name": "Mintplex-Labs/anything-llm",
+   "sample": "experienced-20",
+   "owner_group": "team-run",
+   "stars_band": "10,000 or more",
+   "strict_out": false,
+   "runs": {
+    "first": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 4,
+     "flagged_silent": 0,
+     "restated_true": 3,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "certain",
+       "verdict": "false",
+       "kind": "lifecycle-ledger",
+       "actionable": true,
+       "count": 1
+      },
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "lifecycle-catalog",
+       "actionable": true,
+       "count": 1
+      },
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "lifecycle-ledger",
+       "actionable": true,
+       "count": 2
+      },
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "unknown-model",
+       "actionable": false,
+       "count": 2
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    },
+    "after-c": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 5,
+     "flagged_silent": 0,
+     "restated_true": 5,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "unknown-model",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "likely",
+       "verdict": "true",
+       "kind": "lifecycle-catalog",
+       "actionable": true,
+       "count": 1
+      },
+      {
+       "tier": "likely",
+       "verdict": "true",
+       "kind": "lifecycle-ledger",
+       "actionable": true,
+       "count": 4
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "project-33",
+   "sample": "experienced-20",
+   "owner_group": "team-run",
+   "stars_band": "10,000 or more",
+   "strict_out": false,
+   "runs": {
+    "first": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 3,
+     "flagged_silent": 0,
+     "restated_true": 3,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "lifecycle-catalog",
+       "actionable": true,
+       "count": 1
+      },
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "lifecycle-ledger",
+       "actionable": true,
+       "count": 2
+      },
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "unknown-model",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    },
+    "after-c": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 3,
+     "flagged_silent": 0,
+     "restated_true": 3,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "unknown-model",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "likely",
+       "verdict": "true",
+       "kind": "lifecycle-catalog",
+       "actionable": true,
+       "count": 1
+      },
+      {
+       "tier": "likely",
+       "verdict": "true",
+       "kind": "lifecycle-ledger",
+       "actionable": true,
+       "count": 2
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "project-34",
+   "sample": "experienced-20",
+   "owner_group": "team-run",
+   "stars_band": "10,000 or more",
+   "strict_out": false,
+   "runs": {
+    "first": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 4,
+     "flagged_silent": 0,
+     "restated_true": 4,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "lifecycle-catalog",
+       "actionable": true,
+       "count": 1
+      },
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "lifecycle-ledger",
+       "actionable": true,
+       "count": 3
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    },
+    "after-c": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 4,
+     "flagged_silent": 0,
+     "restated_true": 4,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "likely",
+       "verdict": "true",
+       "kind": "lifecycle-catalog",
+       "actionable": true,
+       "count": 1
+      },
+      {
+       "tier": "likely",
+       "verdict": "true",
+       "kind": "lifecycle-ledger",
+       "actionable": true,
+       "count": 3
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "project-35",
+   "sample": "experienced-20",
+   "owner_group": "team-run",
+   "stars_band": "10,000 or more",
+   "strict_out": false,
+   "runs": {
+    "first": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 0,
+     "flagged_silent": 0,
+     "restated_true": 0,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": []
+    },
+    "after-c": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 0,
+     "flagged_silent": 0,
+     "restated_true": 0,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": []
+    }
+   }
+  },
+  {
+   "id": "project-36",
+   "sample": "first-20",
+   "owner_group": "seasoned individual",
+   "stars_band": "under 1,000",
+   "strict_out": false,
+   "runs": {
+    "run1": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 4,
+     "flagged_silent": 3,
+     "restated_true": 0,
+     "direction_agrees": 1,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "certain",
+       "verdict": "false",
+       "kind": "alias",
+       "actionable": true,
+       "count": 1
+      },
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "no-fallback",
+       "actionable": false,
+       "count": 2
+      },
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "unknown-model",
+       "actionable": false,
+       "count": 4
+      },
+      {
+       "tier": "likely",
+       "verdict": "not checkable",
+       "kind": "cost",
+       "actionable": false,
+       "count": 3
+      },
+      {
+       "tier": "likely",
+       "verdict": "not checkable",
+       "kind": "input-share",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "cheaper-candidates",
+       "actionable": false,
+       "count": 3
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    },
+    "after-c": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 4,
+     "flagged_silent": 0,
+     "restated_true": 4,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "unknown-model",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "likely",
+       "verdict": "not checkable",
+       "kind": "cost",
+       "actionable": false,
+       "count": 2
+      },
+      {
+       "tier": "likely",
+       "verdict": "not checkable",
+       "kind": "input-share",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "likely",
+       "verdict": "not checkable",
+       "kind": "no-fallback",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "likely",
+       "verdict": "true",
+       "kind": "lifecycle-ledger",
+       "actionable": true,
+       "count": 4
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "cheaper-candidates",
+       "actionable": false,
+       "count": 2
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "project-37",
+   "sample": "experienced-20",
+   "owner_group": "team-run",
+   "stars_band": "10,000 or more",
+   "strict_out": false,
+   "runs": {
+    "first": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 0,
+     "flagged_silent": 0,
+     "restated_true": 0,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    },
+    "after-c": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 0,
+     "flagged_silent": 0,
+     "restated_true": 0,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "project-38",
+   "sample": "experienced-20",
+   "owner_group": "team-run",
+   "stars_band": "10,000 or more",
+   "strict_out": false,
+   "runs": {
+    "first": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 0,
+     "flagged_silent": 0,
+     "restated_true": 0,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "unknown-model",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    },
+    "after-c": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 0,
+     "flagged_silent": 0,
+     "restated_true": 0,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "unknown-model",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "project-39",
+   "sample": "first-20",
+   "owner_group": "team-run",
+   "stars_band": "under 1,000",
+   "strict_out": false,
+   "runs": {
+    "run1": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 2,
+     "flagged_silent": 2,
+     "restated_true": 0,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "certain",
+       "verdict": "false",
+       "kind": "preview",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "unknown-model",
+       "actionable": false,
+       "count": 4
+      },
+      {
+       "tier": "likely",
+       "verdict": "not checkable",
+       "kind": "cliff",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "likely",
+       "verdict": "not checkable",
+       "kind": "cost",
+       "actionable": false,
+       "count": 3
+      },
+      {
+       "tier": "likely",
+       "verdict": "not checkable",
+       "kind": "input-share",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "cheaper-candidates",
+       "actionable": false,
+       "count": 2
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    },
+    "after-c": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 2,
+     "flagged_silent": 0,
+     "restated_true": 2,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "unknown-model",
+       "actionable": false,
+       "count": 2
+      },
+      {
+       "tier": "likely",
+       "verdict": "not checkable",
+       "kind": "cliff",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "likely",
+       "verdict": "not checkable",
+       "kind": "cost",
+       "actionable": false,
+       "count": 3
+      },
+      {
+       "tier": "likely",
+       "verdict": "not checkable",
+       "kind": "input-share",
+       "actionable": false,
+       "count": 1
+      },
+      {
+       "tier": "likely",
+       "verdict": "true",
+       "kind": "lifecycle-ledger",
+       "actionable": true,
+       "count": 2
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "cheaper-candidates",
+       "actionable": false,
+       "count": 2
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "project-40",
+   "sample": "experienced-20",
+   "owner_group": "team-run",
+   "stars_band": "10,000 or more",
+   "strict_out": false,
+   "runs": {
+    "first": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 3,
+     "flagged_silent": 0,
+     "restated_true": 3,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "certain",
+       "verdict": "true",
+       "kind": "lifecycle-ledger",
+       "actionable": true,
+       "count": 3
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    },
+    "after-c": {
+     "date": "2026-11-12",
+     "card": true,
+     "holds_flagged_ids": 3,
+     "flagged_silent": 0,
+     "restated_true": 3,
+     "direction_agrees": 0,
+     "partner_lines": 0,
+     "partner_true": 0,
+     "lines": [
+      {
+       "tier": "likely",
+       "verdict": "true",
+       "kind": "lifecycle-ledger",
+       "actionable": true,
+       "count": 3
+      },
+      {
+       "tier": "measurable-only",
+       "verdict": "not checkable",
+       "kind": "observe-standing",
+       "actionable": false,
+       "count": 1
+      }
+     ]
+    }
+   }
+  }
+ ]
+}

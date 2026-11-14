@@ -1,0 +1,118 @@
+{
+  "name": "@warmdrift/kgauto-compiler",
+  "version": "2.0.0-alpha.133",
+  "description": "Prompt compiler with executable provider knowledge for multi-model AI apps: normalized multi-provider transport with fallback chains, compile-time cliff guards, a curated model registry, and a telemetry flight recorder. Swap models without rewriting prompts.",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    },
+    "./dialect": {
+      "types": "./dist/dialect.d.ts",
+      "import": "./dist/dialect.mjs",
+      "require": "./dist/dialect.js"
+    },
+    "./profiles": {
+      "types": "./dist/profiles.d.ts",
+      "import": "./dist/profiles.mjs",
+      "require": "./dist/profiles.js"
+    },
+    "./brain-proxy": {
+      "types": "./dist/brain-proxy.d.ts",
+      "import": "./dist/brain-proxy.mjs",
+      "require": "./dist/brain-proxy.js"
+    },
+    "./key-health": {
+      "types": "./dist/key-health.d.ts",
+      "import": "./dist/key-health.mjs",
+      "require": "./dist/key-health.js"
+    },
+    "./glassbox": {
+      "types": "./dist/glassbox/index.d.ts",
+      "import": "./dist/glassbox/index.mjs",
+      "require": "./dist/glassbox/index.js"
+    },
+    "./glassbox-routes": {
+      "types": "./dist/glassbox-routes/index.d.ts",
+      "import": "./dist/glassbox-routes/index.mjs",
+      "require": "./dist/glassbox-routes/index.js"
+    },
+    "./glassbox-routes/format": {
+      "types": "./dist/glassbox-routes/format.d.ts",
+      "import": "./dist/glassbox-routes/format.mjs",
+      "require": "./dist/glassbox-routes/format.js"
+    },
+    "./probe": {
+      "types": "./dist/probe.d.ts",
+      "import": "./dist/probe.mjs",
+      "require": "./dist/probe.js"
+    },
+    "./glassbox-routes/react": {
+      "types": "./dist/glassbox-routes/react/index.d.ts",
+      "import": "./dist/glassbox-routes/react/index.mjs",
+      "require": "./dist/glassbox-routes/react/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "npm run typecheck:fixtures && tsup src/index.ts src/dialect.ts src/profiles.ts src/brain-proxy.ts src/key-health.ts src/probe.ts src/glassbox/index.ts src/glassbox-routes/index.ts src/glassbox-routes/format.ts src/glassbox-routes/react/index.ts --format cjs,esm --dts --clean --external react --external react-dom",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:stress": "node scripts/stress-test.mjs",
+    "typecheck": "tsc --noEmit",
+    "typecheck:fixtures": "tsc -p tsconfig.typecheck.json",
+    "prepublishOnly": "npm run typecheck && npm run build && npm run test"
+  },
+  "keywords": [
+    "ai",
+    "llm",
+    "prompt-compiler",
+    "model-router",
+    "anthropic",
+    "openai",
+    "gemini",
+    "deepseek",
+    "prompt-cache",
+    "model-fallback"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/stue/kgauto.git",
+    "directory": "v2"
+  },
+  "homepage": "https://model-check-alpha.vercel.app/dev",
+  "peerDependencies": {
+    "js-tiktoken": ">=1.0.0",
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
+  },
+  "peerDependenciesMeta": {
+    "js-tiktoken": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.2.15",
+    "@types/react-dom": "^19.2.3",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "tsup": "^8.4.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.1.0"
+  }
+}

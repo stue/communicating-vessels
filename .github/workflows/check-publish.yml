@@ -1,0 +1,94 @@
+name: check — publish to npm (trusted publishing)
+
+# Publishes check-mcp as @warmdrift/kgauto-check with npm provenance, through npm trusted
+# publishing (OIDC): the runner mints a short-lived token, npm verifies it against the trusted
+# publisher configured on the package, and no long-lived npm token exists anywhere.
+#
+# Written from npm's page "Trusted publishing for npm packages",
+#   https://docs.npmjs.com/trusted-publishers
+# read 2026-11-14T19:40:31Z (sha256 of the page as served: f85c8407830317df5e9d7e5df66d41852b79cd684712cd2e17b8a76e3c12bbc6).
+# What the page says, and where it shows up below:
+#   - "The critical requirement is the id-token: write permission"           → permissions
+#   - "requires npm CLI version 11.5.1 or later and Node version 22.14.0 or higher" → the version gate
+#   - provenance is generated automatically on trusted publishing from GitHub Actions;
+#     "you don't need to add the --provenance flag"                         → plain `npm publish`
+#   - the workflow filename configured on npmjs.com must match exactly, including `.yml`
+#   - "your package's repository.url field in package.json must exactly match your GitHub repository"
+#   - GitHub-hosted runners only; self-hosted runners are not supported      → ubuntu-latest
+#
+# DISPATCH ONLY. Publishing is an outward act; there is no push or tag trigger on purpose.
+# NOT RUN until the console step exists: on npmjs.com, @warmdrift/kgauto-check → Settings →
+# Trusted publisher → GitHub Actions, with this repository's owner and name, the workflow
+# filename `check-publish.yml` and the environment name `npm-publish` (the job's environment
+# below; create it under this repository's Settings → Environments, with its protection rules).
+# Until then npm refuses the OIDC exchange and this fails loudly.
+# Allowed actions (re-read 2026-11-14T20:26:42Z, same page, same sha256): "npm stage publish is
+# always allowed. Choose whether this trusted publisher can also publish directly with npm
+# publish or manage dist-tags with npm dist-tag." This workflow ends in plain `npm publish`, so
+# the trusted publisher must be allowed to publish directly, not stage-only; a stage-only
+# publisher refuses the last step.
+#
+# Pinned (read 2026-11-14T20:26Z): npm 11.21.2, the newest npm 11 on the registry (its engines:
+# node ^20.17.0 || >=22.9.0); actions/checkout v6.1.0 and actions/setup-node v6.5.0, the newest
+# v6 tags (the page's example uses @v6), each by its commit SHA.
+# check-mcp/package.json's `repository.url` must also name THIS repository (at export
+# 2026-11-14 it named the private working tree's), or the step below stops the run.
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Pack and check without publishing.'
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+  id-token: write   # the OIDC token npm verifies
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: npm-publish
+    defaults:
+      run:
+        working-directory: check-mcp
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803   # v6.1.0
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38   # v6.5.0
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+          package-manager-cache: false   # npm's example: no caching in release builds
+      - name: npm and node versions trusted publishing needs
+        run: |
+          npm install -g npm@11.21.2
+          echo "npm $(npm --version) / node $(node --version)"
+          node -e '
+            const cmp = (v, min) => { const a = v.replace(/^v/, "").split(".").map(Number); for (let i = 0; i < 3; i++) { if (a[i] !== min[i]) return a[i] > min[i]; } return true; };
+            const npmV = require("child_process").execSync("npm --version").toString().trim();
+            if (!cmp(npmV, [11, 5, 1])) { console.error(`npm >= 11.5.1 required, got ${npmV}`); process.exit(1); }
+            if (!cmp(process.version, [22, 14, 0])) { console.error(`node >= 22.14.0 required, got ${process.version}`); process.exit(1); }
+          '
+      # Amendment A6 (2026-11-14): check-mcp's repository.url (and v2's repository.url and
+      # homepage) are left naming the private working tree in the export of 2026-11-14. They
+      # move in the release that first publishes from this repository, and this step is the
+      # gate that forces it: until the url names this repository, the publish stops here.
+      - name: repository.url names this repository
+        run: |
+          node -e '
+            const p = require("./package.json");
+            const url = (p.repository && p.repository.url) || "";
+            const want = `github.com/${process.env.GITHUB_REPOSITORY}`;
+            if (!url.replace(/\.git$/, "").endsWith(want)) { console.error(`check-mcp/package.json repository.url is "${url}"; npm matches it against ${want}`); process.exit(1); }
+          '
+      - run: npm ci
+      - run: npm run build
+      - run: npx vitest run
+      - name: pack (dry run)
+        if: ${{ inputs.dry_run }}
+        run: npm publish --dry-run
+      - name: publish
+        if: ${{ !inputs.dry_run }}
+        run: npm publish

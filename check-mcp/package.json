@@ -1,0 +1,52 @@
+{
+  "name": "@warmdrift/kgauto-check",
+  "version": "0.4.1",
+  "description": "Point your AI at your project — kgauto's local check, as a pure CLI for coding agents. Your agent extracts the project's AI surface (identifiers and counts, never code) and this tool checks it against kgauto's verified model catalog: statuses, prices, cliffs, capability mismatches, resilience. Fully offline; --share is the one explicit opt-in exception.",
+  "type": "module",
+  "bin": {
+    "kgauto-check": "dist/bin.js"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsup src/index.ts src/bin.ts --format esm --dts --clean",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "smoke": "npm run build && node scripts/smoke-stdio.mjs && node scripts/smoke-cli.mjs",
+    "prepublishOnly": "npm run typecheck && npm run test && npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "kgauto",
+    "llm",
+    "model-catalog",
+    "ai-cost",
+    "prompt-compiler"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/stue/kgauto.git",
+    "directory": "check-mcp"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "@warmdrift/kgauto-compiler": "2.0.0-alpha.133",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.4.0",
+    "vitest": "^2.0.0"
+  }
+}

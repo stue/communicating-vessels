@@ -1,0 +1,16 @@
+{
+  "project": { "name": "example-app", "description": "illustrative extract for the README's example card" },
+  "callSites": [
+    { "id": "app/api/chat/route.ts:41", "model": "anthropic/claude-sonnet-4-20250514", "modelSelection": "hardcoded", "platform": "provider-api" },
+    {
+      "id": "lib/summarize.ts:18",
+      "model": "gemini-2.5-flash",
+      "modelSelection": "hardcoded",
+      "platform": "vertex",
+      "archetype": "summarize",
+      "estInputTokens": 12000,
+      "estOutputTokens": 400
+    }
+  ],
+  "models": [{ "model": "gpt-4o-mini", "where": "components/ModelPicker.tsx:12", "modelSelection": "config", "platform": "provider-api" }]
+}
