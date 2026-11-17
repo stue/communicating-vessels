@@ -144,7 +144,7 @@ export function advisorRuleCrossFamilyFit(
       recommendationType: 'model-swap',
       recommendedModels: [...candidates],
       docsUrl:
-        'https://github.com/stue/command-center/blob/main/interfaces/kgauto.md#best-practice-advisories',
+        'https://github.com/stue/communicating-vessels/blob/main/v2/README.md#structured-advisories-api-alpha29',
     },
   ];
 }

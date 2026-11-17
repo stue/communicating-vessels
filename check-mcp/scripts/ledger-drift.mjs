@@ -1,32 +1,45 @@
 #!/usr/bin/env node
 /**
  * ledger-drift.mjs (0.4.2, R2) — can be run on any day: for each row of the lifecycle ledger, is the
- * line it quotes still on the page it cites? Read-only. It uses the generator's own checks
- * (scripts/ledger-check.mjs: `oneRowIn` for a Google table row, `quoteOn` for every other quote),
- * never a second matcher.
+ * line it quotes still on the page it cites? Read-only. It uses the generator's own checks — since
+ * 0.4.3 in the package's source (src/ledger-check.mjs: `rowTests` for what a row rests on,
+ * `quoteStands` — `oneRowIn` for a Google table row, `quoteOn` for every other quote), the same
+ * functions the shipped check reads its pages with at run time — never a second matcher.
  *
  *   node scripts/ledger-drift.mjs --pages <dir> [--ledger <file>]
- *   node scripts/ledger-drift.mjs --fetch [--ledger <file>]
+ *   node scripts/ledger-drift.mjs --fetch [--discard-pages] [--ledger <file>]
  *
  * <dir> holds the pages under the names scripts/build-ledger.mjs reads (its head lists them).
  * --ledger defaults to src/lifecycle-ledger.ts; any file in the generator's shape is read the same
  * way (e.g. `git show <sha>:check-mcp/src/lifecycle-ledger.ts > old.ts`).
- * --fetch fetches the pages the ledger cites into a new temporary directory first and prints each
- * URL with its UTC time, bytes and sha256; without it nothing is fetched.
+ * --fetch fetches the pages the ledger cites into a new temporary directory (mkdtemp) first and
+ * prints each URL with its UTC time, bytes and sha256, then `pages saved in <dir>`; without it
+ * nothing is fetched.
+ * --discard-pages (Amendment A1, 0.4.3): with --fetch, when the run is clean (exit 0: nothing moved,
+ * every row checked), the folder this run created with mkdtemp is removed and one line,
+ * `pages removed (clean run)`, is printed before the final summary line — the last line stays
+ * `N rows moved — M rows checked of M` and the exit codes are unchanged. On exit 1 or 2 the folder is
+ * kept. A directory passed with --pages <dir> is never removed, with or without the flag. Without the
+ * flag nothing changes.
+ * Test seam (no network in a test): with KGAUTO_LEDGER_DRIFT_FETCH_FROM=<dir>, --fetch copies the pages
+ * and their read times from <dir> instead of requesting them; everything else about --fetch is the same.
  *
  * Checked per row: its `quote` on its `url`, its `note` on the same page, its `alsoQuote` on its
  * `alsoUrl`; and each definition the card quotes (LEDGER_DEFINITIONS, since 0.4.2) on its page.
+ * 0.4.3 (R3): a page whose shape is not the one this version reads (src/ledger-check.mjs, PAGE_SHAPES)
+ * is treated as not saved: its rows are not checked, and the missing piece is printed.
  * Prints every row that is not on its page, with the page's current line for that id when there
  * is one, then `N rows moved`.
  * Exit 0: nothing moved and every row was checked · 1: a row or a definition moved · 2: a page
- * was not saved, so some rows were not checked (never reported as 0 moved), or a usage error.
+ * was not saved (or not the page this version reads), so some rows were not checked (never reported
+ * as 0 moved), or a usage error.
  */
-import { readFileSync, writeFileSync, existsSync, mkdtempSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdtempSync, rmSync, copyFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { oneRowIn, quoteOn, PAGE_URL, pageFileOf, htmlToText, googlePageRows, googleTableRows, googleRowCells } from './ledger-check.mjs';
+import { PAGE_URL, pageFileOf, pageTextOf, pageShapeMisses, rowTests, quoteStands, quoteOn, googleTableRows, googleRowCells } from '../src/ledger-check.mjs';
 
 const args = process.argv.slice(2);
 const arg = (n) => {
@@ -36,9 +49,10 @@ const arg = (n) => {
 const HERE = dirname(fileURLToPath(import.meta.url));
 const LEDGER_FILE = arg('--ledger') ?? join(HERE, '..', 'src', 'lifecycle-ledger.ts');
 const FETCH = args.includes('--fetch');
+const DISCARD = args.includes('--discard-pages');
 let PAGES = arg('--pages');
 if (!PAGES && !FETCH) {
-  console.error('usage: node scripts/ledger-drift.mjs --pages <dir> [--ledger <file>]   |   --fetch [--ledger <file>]');
+  console.error('usage: node scripts/ledger-drift.mjs --pages <dir> [--ledger <file>]   |   --fetch [--discard-pages] [--ledger <file>]');
   process.exit(2);
 }
 
@@ -63,13 +77,28 @@ if (!ROWS) {
 }
 
 // ── --fetch: the pages the ledger cites, into a new temporary directory ──
+/** The folder this run created itself (Amendment A1: the only folder --discard-pages may remove). */
+let CREATED;
 if (FETCH) {
   PAGES = mkdtempSync(join(tmpdir(), 'kgauto-ledger-drift-'));
+  CREATED = PAGES;
   const urls = [...new Set([...SOURCES.map((s) => s.url), ...(DEFINITIONS ?? []).map((d) => d.url)])];
   const times = {};
+  const seam = process.env.KGAUTO_LEDGER_DRIFT_FETCH_FROM;
+  const seamTimes = seam ? JSON.parse(readFileSync(join(seam, 'read-times.json'), 'utf8')) : {};
   for (const url of urls) {
     const file = pageFileOf(url);
     if (!file) continue;
+    if (seam) {
+      if (!existsSync(join(seam, file))) {
+        console.log(`copy ${file} — not in ${seam} (test seam), not saved`);
+        continue;
+      }
+      copyFileSync(join(seam, file), join(PAGES, file));
+      times[file] = seamTimes[file];
+      console.log(`copied ${file} from ${seam} (test seam)`);
+      continue;
+    }
     const at = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
     try {
       const res = await fetch(url, { redirect: 'follow' });
@@ -91,35 +120,33 @@ if (FETCH) {
 
 // ── the pages, read as the generator reads them ─────────────────────────
 const cache = new Map();
-/** The page's text for a URL, as the generator checks against it, or undefined when it was not saved. */
+/** file → the pieces of its shape it lacks (0.4.3, R3) */
+const notThePage = new Map();
+/** The page's text for a URL, as the generator checks against it, or undefined when it was not saved or is not the page this version reads. */
 function pageText(url) {
   if (cache.has(url)) return cache.get(url);
   const file = pageFileOf(url);
   let text;
   if (file && existsSync(join(PAGES, file))) {
-    const raw = readFileSync(join(PAGES, file), 'utf8');
-    text = file.endsWith('.html') ? htmlToText(raw) : raw;
+    text = pageTextOf(file, readFileSync(join(PAGES, file), 'utf8'));
+    const missing = pageShapeMisses(file, text);
+    if (missing.length) {
+      notThePage.set(file, missing);
+      text = undefined;
+    }
   }
   cache.set(url, text);
   return text;
 }
-const isGoogleTableRow = (r) => r.url === PAGE_URL.google && r.section !== undefined;
 const flat = (s) => s.replace(/\s+/g, ' ').trim();
 
-/** Is the quote on its page, by the generator's own check for that kind of row? */
-function onPage(row, url, quote, asTableRow) {
-  const text = pageText(url);
-  if (text === undefined) return undefined;
-  return asTableRow ? oneRowIn(googlePageRows(text), quote.split(' | ')) : quoteOn(text, quote);
-}
-
-const cellsOf = (line) => line.split(/(?<!\\)\|/).slice(1, -1);
 /**
  * The page's current line for a row's id: Google's table row in the ledger's own shape; else, in
  * order, a table line naming the row's display name (a `matchedBy: display-name` row), a table line
  * with the id in the same cell the quote had it in, any line with the id in backticks, any line
  * with the id as a word. Display only — whether the row moved is decided by the checks above.
  */
+const cellsOf = (line) => line.split(/(?<!\\)\|/).slice(1, -1);
 function currentLine(row) {
   const { url, id, quote } = row;
   const text = pageText(url);
@@ -144,18 +171,15 @@ const moved = [];
 const notChecked = new Map(); // file → count
 let checked = 0;
 for (const r of ROWS) {
-  const tests = [{ url: r.url, quote: r.quote, what: 'quote', table: isGoogleTableRow(r) }];
-  if (r.note) tests.push({ url: r.url, quote: r.note, what: 'note', table: false });
-  if (r.alsoUrl && r.alsoQuote) tests.push({ url: r.alsoUrl, quote: r.alsoQuote, what: 'also', table: false });
   const gone = [];
   let missing = false;
-  for (const t of tests) {
-    const ok = onPage(r, t.url, t.quote, t.table);
-    if (ok === undefined) {
+  for (const t of rowTests(r)) {
+    const text = pageText(t.url);
+    if (text === undefined) {
       const f = pageFileOf(t.url) ?? t.url;
       notChecked.set(f, (notChecked.get(f) ?? 0) + 1);
       missing = true;
-    } else if (!ok) gone.push(t);
+    } else if (!quoteStands(text, t.quote, t.table)) gone.push(t);
   }
   if (missing) continue;
   checked++;
@@ -188,7 +212,7 @@ try {
 } catch {
   /* read-times.json is optional here */
 }
-const t = Object.values(times).sort();
+const t = Object.values(times).filter(Boolean).sort();
 console.log(`pages: ${PAGES}${t.length ? ` — read ${t[0]}${t.at(-1) !== t[0] ? ` … ${t.at(-1)}` : ''}` : ''}`);
 console.log('');
 for (const { r, gone } of moved) {
@@ -204,13 +228,26 @@ if (moved.length) console.log('');
 for (const l of defLines) console.log(l);
 console.log(DEFINITIONS ? `definitions: ${DEFINITIONS.length} checked` : 'definitions: none in this ledger file (written before 0.4.2)');
 if (DEFINITIONS) console.log(`${defsMoved} definition${defsMoved === 1 ? '' : 's'} moved`);
-for (const [f, n] of notChecked) console.log(`not checked: ${n} row(s) cite ${f}, which is not in ${PAGES}`);
+for (const [f, n] of notChecked) {
+  const odd = notThePage.get(f);
+  console.log(
+    odd
+      ? `not checked: ${n} row(s) cite ${f}, which is not the page this version reads (it lacks ${odd.join('; ')})`
+      : `not checked: ${n} row(s) cite ${f}, which is not in ${PAGES}`,
+  );
+}
 const byProvider = {};
 for (const { r } of moved) byProvider[r.provider] = (byProvider[r.provider] ?? 0) + 1;
 const per = Object.entries(byProvider).map(([p, n]) => `${p} ${n}`).join(', ');
 const skipped = [...notChecked.values()].reduce((a, b) => a + b, 0);
+const code = moved.length || defsMoved ? 1 : notChecked.size ? 2 : 0;
+// Amendment A1: a clean run removes the folder it created itself; the summary stays the last line.
+if (DISCARD && CREATED && code === 0) {
+  rmSync(CREATED, { recursive: true, force: true });
+  console.log('pages removed (clean run)');
+}
 console.log(
   `${moved.length} row${moved.length === 1 ? '' : 's'} moved${per ? ` (${per})` : ''} — ${checked} rows checked of ${ROWS.length}` +
     (skipped ? `; ${ROWS.length - checked} not checked` : ''),
 );
-process.exitCode = moved.length || defsMoved ? 1 : notChecked.size ? 2 : 0;
+process.exitCode = code;

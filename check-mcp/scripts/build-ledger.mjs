@@ -17,16 +17,35 @@
  *   deepseek-updates.html       https://api-docs.deepseek.com/updates
  *   deepseek-news.html          https://api-docs.deepseek.com/news
  *   read-times.json             { "<file>": "<ISO UTC time of the curl>" }
+ *   google-model-pages.json     0.4.3 (R6): { "<id>": { "status": <HTTP status>, "at": "<ISO UTC time>" } } for each
+ *                               changelog row's id — Google's model page https://aistudio.google.com/docs/models/<id>.
+ *                               Written by this script with --fetch-model-pages (its only request, a GET per id);
+ *                               without the flag the file must already be in <dir>.
  *
  * DeepSeek's pages are prose, not tables: their rows are named below by the
  * SENTENCE they come from, and the generator checks that sentence is on the
  * saved page before it writes the row.
+ *
+ * 0.4.3 (R3): before any row is written, every page is checked against the shape this version expects of
+ * it (src/ledger-check.mjs, PAGE_SHAPES — the same check the run-time read makes). A page whose shape
+ * differs stops the generator with the page and the missing piece named; no ledger is written.
  */
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { oneRowIn, quoteOn, replacementForm, PAGE_URL, htmlToText, googlePageRows, googleTableRows, googleRowCells } from './ledger-check.mjs';
+import {
+  oneRowIn,
+  quoteOn,
+  replacementForm,
+  PAGE_URL,
+  htmlToText,
+  googlePageRows,
+  googleTableRows,
+  googleRowCells,
+  pageTextOf,
+  pageShapeMisses,
+} from '../src/ledger-check.mjs';
 
 const args = process.argv.slice(2);
 const arg = (n, d) => {
@@ -35,12 +54,29 @@ const arg = (n, d) => {
 };
 const PAGES = arg('--pages');
 if (!PAGES) {
-  console.error('usage: node scripts/build-ledger.mjs --pages <dir> [--out <file>] [--print]');
+  console.error('usage: node scripts/build-ledger.mjs --pages <dir> [--out <file>] [--print] [--fetch-model-pages]');
   process.exit(1);
 }
 const HERE = dirname(fileURLToPath(import.meta.url));
 const OUT = arg('--out', join(HERE, '..', 'src', 'lifecycle-ledger.ts'));
 const PRINT = args.includes('--print');
+
+// ── 0.4.3 (R3): each page is the page this version reads, or nothing is written ──
+{
+  const fixed = ['anthropic-deprecations.md', 'openai-deprecations.md', 'google-deprecations.html', 'google-changelog.html', 'deepseek-updates.html', 'deepseek-news.html'];
+  const models = ['gpt-4o', 'gpt-4o-mini', 'gpt-4.1', 'gpt-4.1-mini'].map((id) => `openai-model-${id}.md`).filter((f) => existsSync(join(PAGES, f)));
+  for (const f of [...fixed, ...models]) {
+    if (!existsSync(join(PAGES, f))) {
+      console.error(`stop: ${f} is not in ${PAGES}; no ledger written`);
+      process.exit(1);
+    }
+    const missing = pageShapeMisses(f, pageTextOf(f, readFileSync(join(PAGES, f), 'utf8')));
+    if (missing.length) {
+      console.error(`stop: ${f} is not the page this version reads — it lacks ${missing.join('; ')}. No ledger written.`);
+      process.exit(1);
+    }
+  }
+}
 
 const readTimes = JSON.parse(readFileSync(join(PAGES, 'read-times.json'), 'utf8'));
 const page = (f) => readFileSync(join(PAGES, f), 'utf8');
@@ -480,6 +516,91 @@ const unbacktick = (s) =>
   }
 }
 
+// ── 0.4.3 (R6): changelog rows — a model the changelog names in words ───
+// Google's changelog never writes these ids in a sentence about their end; it names the model ("Gemini 1.0 Pro").
+// Each row is named here by its SENTENCE and the date heading it sits under, like DeepSeek's, and is written only
+// if that sentence is on the saved page under that heading. `namedAs` marks the row: the link from the id to the
+// name is ours, and the card never prints such a row as Certain. No other changelog row in this release.
+{
+  const fc = 'google-changelog.html';
+  const chg = htmlToText(page(fc));
+  const flatC = (s) => s.replace(/\s+/g, ' ').trim();
+  /** The text under `## <heading>` up to the next `## `, flattened; throws when the heading is absent. */
+  const entry = (heading) => {
+    const lines = chg.split('\n');
+    const i = lines.findIndex((l) => l.startsWith(`## ${heading}`) && /^(\s|$)/.test(l.slice(3 + heading.length)));
+    if (i === -1) throw new Error(`changelog: no entry headed "${heading}" on ${fc}`);
+    const out = [];
+    for (const l of lines.slice(i + 1)) {
+      if (l.startsWith('## ')) break;
+      out.push(l);
+    }
+    return flatC(out.join('\n'));
+  };
+  const said = (heading, sentence) => {
+    if (!entry(heading).includes(flatC(sentence))) throw new Error(`changelog: "${sentence}" is not under "${heading}" on ${fc}`);
+  };
+  const NAMED = [
+    { ids: ['gemini-1.0-pro', 'gemini-pro'], namedAs: 'Gemini 1.0 Pro', heading: 'February 18, 2025', quote: 'Gemini 1.0 Pro is no longer supported.' },
+    {
+      ids: ['gemini-1.0-pro-vision', 'gemini-pro-vision'],
+      namedAs: 'Gemini 1.0 Pro Vision',
+      heading: 'July 12, 2024',
+      quote: 'Support for Gemini 1.0 Pro Vision removed from Google AI services and tools.',
+    },
+  ];
+  // The changelog's own introduction of the id, where it has one (December 13 2023): the only place a Google page read carries it.
+  const INTRO = {
+    'gemini-pro': { heading: 'December 13 2023', quote: 'gemini-pro: New text model for a wide variety of tasks.' },
+    'gemini-pro-vision': { heading: 'December 13 2023', quote: 'gemini-pro-vision: New multimodal model for a wide variety of tasks.' },
+  };
+  // Google's model page for each id, requested at build time only (never at run time: that request would carry an id).
+  const mpFile = join(PAGES, 'google-model-pages.json');
+  const ids = NAMED.flatMap((n) => n.ids);
+  if (args.includes('--fetch-model-pages')) {
+    const got = {};
+    for (const id of ids) {
+      const at = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
+      try {
+        const res = await fetch(URL.googleModel(id), { redirect: 'follow' });
+        await res.arrayBuffer();
+        got[id] = { status: res.status, at };
+        console.log(`model page ${URL.googleModel(id)} ${at} HTTP ${res.status}`);
+      } catch (e) {
+        console.log(`model page ${URL.googleModel(id)} ${at} failed: ${e.message} — not recorded`);
+      }
+    }
+    writeFileSync(mpFile, `${JSON.stringify(got, null, 2)}\n`);
+  }
+  if (!existsSync(mpFile)) throw new Error(`${mpFile} is missing: run with --fetch-model-pages once to record Google's model pages for ${ids.join(', ')}`);
+  const modelPages = JSON.parse(readFileSync(mpFile, 'utf8'));
+  for (const n of NAMED) {
+    said(n.heading, n.quote);
+    for (const id of n.ids) {
+      const intro = INTRO[id];
+      if (intro) said(intro.heading, intro.quote);
+      const mp = modelPages[id];
+      push({
+        id,
+        provider: 'google',
+        word: 'no longer supported',
+        pageWord: n.quote.replace(/\.$/, ''),
+        announced: isoOf(n.heading),
+        dateText: n.heading,
+        url: URL.googleChangelog,
+        readOn: readOnOf(fc),
+        quote: n.quote,
+        namedAs: n.namedAs,
+        entryHeading: n.heading,
+        ...(intro ? { alsoUrl: URL.googleChangelog, alsoQuote: intro.quote, alsoReadOn: readOnOf(fc), alsoHeading: intro.heading } : {}),
+        ...(mp ? { modelPage: { url: URL.googleModel(id), status: mp.status, at: mp.at } } : {}),
+        _file: fc,
+        _text: chg,
+      });
+    }
+  }
+}
+
 // ── DeepSeek (prose pages: each row names its sentence) ─────────────────
 {
   const fu = 'deepseek-updates.html';
@@ -563,7 +684,7 @@ const definitions = DEFINITIONS.map(({ provider, word, url, file, quote }) => {
 });
 
 // ── write ────────────────────────────────────────────────────────────────
-const ALLOWED = new Set(['deprecated', 'retired', 'shut down', 'legacy', 'rerouted', 'scheduled for shutdown', 'listed']);
+const ALLOWED = new Set(['deprecated', 'retired', 'shut down', 'legacy', 'rerouted', 'scheduled for shutdown', 'listed', 'no longer supported']);
 for (const r of rows) {
   if (!ALLOWED.has(r.word)) throw new Error(`row ${r.id}: word ${r.word} not in the allowed set`);
   for (const k of Object.keys(r)) if (r[k] === undefined) delete r[k];

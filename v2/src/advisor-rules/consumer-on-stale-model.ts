@@ -511,7 +511,7 @@ function staleModelFromProfile(
   return { advisory, sentence };
 }
 
-const DOCS_URL = 'https://github.com/stue/command-center/blob/main/interfaces/kgauto.md#best-practice-advisories';
+const DOCS_URL = 'https://github.com/stue/communicating-vessels/blob/main/v2/README.md#structured-advisories-api-alpha29';
 
 /** The alpha.41 path: open cron findings for (appId, archetype), unchanged. */
 function staleModelFromFindings(ir: PromptIR): BestPracticeAdvisory[] {

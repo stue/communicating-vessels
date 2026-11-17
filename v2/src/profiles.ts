@@ -264,12 +264,43 @@ export interface LoweringSpec {
    * discount precedent), so no migration column is needed for it.
    */
   rejects?: RejectedRequestShape[];
+  /**
+   * alpha.134 — the request this model accepts to run WITHOUT up-front
+   * thinking, and the highest effort at which it accepts it. Written from the
+   * per-model table on https://platform.claude.com/docs/en/build-with-claude/thinking
+   * (each profile cites its read). Absent when the page lists no accepted
+   * off-switch ("Thinking can't be turned off on these models"). Sent only
+   * when a `thinking_with_short_output` cliff fires (lowering `thinking:
+   * { type }` on the plain-fetch wire; `providerOptions.anthropic` on the AI
+   * SDK adapter), and withheld — said as a mutation — when the effort in force
+   * is above `effortAtMost` (the page: a 400). Lives in `lowering` (the jsonb
+   * column rides every transport verbatim, as `rejects` does).
+   */
+  thinkingOff?: { type: 'disabled' | 'between_tools'; effortAtMost?: 'low' | 'medium' | 'high' };
+  /**
+   * alpha.134 — the model's effort knob, from
+   * https://platform.claude.com/docs/en/build-with-claude/effort (each profile
+   * cites its read): the request field, the level that applies when the
+   * request sends none, and the highest level the model takes. kgauto sends no
+   * effort on the plain-fetch wire; the adapter's short-output path sends
+   * `low` (R2).
+   */
+  effort?: { field: 'output_config.effort'; default: 'low' | 'medium' | 'high'; max: 'high' | 'xhigh' | 'max' };
 }
+
+/** alpha.134 — effort levels in the effort page's order ("low", "medium", "high", "xhigh", "max"). */
+export const EFFORT_LEVELS = ['low', 'medium', 'high', 'xhigh', 'max'] as const;
+export type EffortLevel = (typeof EFFORT_LEVELS)[number];
 
 /**
  * alpha.121 — the documented-400 request shapes (Claude Opus 5.5 / Sonnet 5.5
  * migration guides, read 2026-10-06):
  *   - `thinking_control`   `thinking: {type:'disabled'}` or `{type:'enabled', budget_tokens}`
+ *                          — listed (alpha.134, R1) only where the page rejects BOTH;
+ *                          a model that accepts `disabled` (Haiku 5.5, Opus 5,
+ *                          Sonnet 5) or `between_tools` names it in
+ *                          `lowering.thinkingOff`, and the per-model types the gate
+ *                          drops live in THINKING_TYPES_REJECTED (request-shapes.ts)
  *   - `forced_tool_choice` `tool_choice` of type `any` or `tool`
  *   - `sampling_params`    `temperature` / `top_p` / `top_k`
  *   - `assistant_prefill`  `messages` ending with an assistant turn
@@ -825,7 +856,21 @@ const PROFILES_RAW: ModelProfile[] = [
     // and later models". The model's own page (read 06:12:04Z) places it in that class:
     // Claude Fable 5 (overview: "Model ID: `claude-fable-5`", "**Legacy.** Released June 9, 2026.").
     // (was: `lowering: ANTHROPIC_LOWERING_BASE`, no rejects, until alpha.133.)
-    lowering: { ...ANTHROPIC_LOWERING_BASE, rejects: ['assistant_prefill'] },
+    // alpha.134 (Amendment A 12) — thinking_control, read 2026-11-15T06:45:59Z on https://platform.claude.com/docs/en/build-with-claude/thinking.md,
+    // per-model table row "Claude Fable 5": `"enabled"` with `budget_tokens` → "400 error",
+    // `"between_tools"` → "400 error", `"disabled"` → "400 error"; prose: "Claude Fable 5.2, …, Claude
+    // Fable 5, … reject `thinking: {type: "disabled"}`. Thinking can't be turned off on these models."
+    // Both halves of the shape are 400s, so it is listed; the three rejected types are
+    // THINKING_TYPES_REJECTED's row. No thinkingOff. (was: rejects ['assistant_prefill'], until alpha.134.)
+    lowering: {
+      ...ANTHROPIC_LOWERING_BASE,
+      rejects: ['thinking_control', 'assistant_prefill'],
+      // alpha.134 (Amendment C 3) — https://platform.claude.com/docs/en/build-with-claude/effort.md (read
+      // 2026-11-15T06:46:00Z), section "Claude Fable 5 & Claude Mythos 5": "**Start with `high`, the default, for
+      // most tasks**, use `xhigh` for the most capability-sensitive workloads"; the `max` and `xhigh` rows of the
+      // levels table each list "Claude Fable 5". No thinkingOff (Amendment A 12).
+      effort: { field: 'output_config.effort', default: 'high', max: 'max' },
+    },
     recovery: [
       {
         signal: 'rate_limit',
@@ -924,6 +969,11 @@ const PROFILES_RAW: ModelProfile[] = [
       ...ANTHROPIC_LOWERING_BASE,
       cache: { ...ANTHROPIC_LOWERING_BASE.cache, discount: 0.025 },
       rejects: ['thinking_control', 'forced_tool_choice', 'sampling_params', 'assistant_prefill'],
+      // alpha.134 (R1) — no `thinkingOff`: https://platform.claude.com/docs/en/build-with-claude/thinking.md (read 2026-11-15T06:45:59Z), per-model table row
+      // "Claude Fable 5.1": `"enabled"`, `"between_tools"` and `"disabled"` each → "400 error" ("Thinking can't be
+      // turned off on these models"), so `thinking_control` stays listed and no off-switch is written.
+      // https://platform.claude.com/docs/en/build-with-claude/effort.md (read 2026-11-15T06:46:00Z): "Claude Fable 5.1 supports all five effort levels. **Start with `high`, the default.**"; `max` is "Available on … Claude Fable 5.1".
+      effort: { field: 'output_config.effort', default: 'high', max: 'max' },
     },
     recovery: [
       { signal: 'rate_limit', action: 'escalate', reason: '429 from Anthropic — escalate to fallback chain' },
@@ -1021,6 +1071,11 @@ const PROFILES_RAW: ModelProfile[] = [
       // cache read $0.20 = 0.025 × $8 (PR footnote 1: "0.025x the base input price")
       cache: { ...ANTHROPIC_LOWERING_BASE.cache, discount: 0.025 },
       rejects: ['thinking_control', 'forced_tool_choice', 'sampling_params', 'assistant_prefill'],
+      // alpha.134 (R1) — no `thinkingOff`: https://platform.claude.com/docs/en/build-with-claude/thinking.md (read 2026-11-15T06:45:59Z), per-model table row
+      // "Claude Fable 5.2": `"enabled"`, `"between_tools"` and `"disabled"` each → "400 error" ("Thinking can't be
+      // turned off on these models"), so `thinking_control` stays listed and no off-switch is written.
+      // https://platform.claude.com/docs/en/build-with-claude/effort.md (read 2026-11-15T06:46:00Z): "Claude Fable 5.2 supports all five effort levels. The API default is `high`."; `max` is "Available on … Claude Fable 5.2".
+      effort: { field: 'output_config.effort', default: 'high', max: 'max' },
     },
     recovery: [
       { signal: 'rate_limit', action: 'escalate', reason: '429 from Anthropic — escalate to fallback chain' },
@@ -1184,7 +1239,19 @@ const PROFILES_RAW: ModelProfile[] = [
     structuredOutput: 'grammar',
     systemPromptMode: 'inline',
     streaming: true,
-    cliffs: [],
+    cliffs: [
+      {
+        // alpha.134 (R2) — the model's own off-switch, sent when the caller says the answer is short.
+        // Threshold 1: the caller's `expectedShortOutput` hint only — no cap has been measured for this
+        // model (R3; the measurement needs a provider key). Source: https://platform.claude.com/docs/en/build-with-claude/thinking.md, read 2026-11-15T06:45:59Z:
+        // "Thinking tokens count toward `max_tokens`".
+        metric: 'thinking_with_short_output',
+        threshold: 1,
+        action: 'force_thinking_budget_zero',
+        reason:
+          'Claude Opus 5 thinks by default and its thinking tokens count toward max_tokens, so under a small cap the answer can be cut or empty (https://platform.claude.com/docs/en/build-with-claude/thinking, read 2026-11-15). When the caller says the answer is short, the request carries thinking: {"type": "disabled"}, the model\'s own off-switch. Fires on the caller\'s short-output hint; no cap has been measured for this model.',
+      },
+    ],
     costInputPer1m: 5.0,
     costOutputPer1m: 25.0,
     // alpha.128 — prices read 2026-11-06 on https://platform.claude.com/docs/en/about-claude/pricing
@@ -1192,12 +1259,6 @@ const PROFILES_RAW: ModelProfile[] = [
     //   "Batch processing" row "Claude Opus 5": $2.50 / $12.50 / MTok).
     costCacheWritePer1m: { fiveMinute: 6.25, oneHour: 10 },
     costBatchPer1m: { input: 2.5, output: 12.5 },
-    // alpha.125 — read 2026-10-25 on https://platform.claude.com/docs/en/build-with-claude/thinking, per-model table row
-    // "Claude Opus 5": `"enabled"` with `budget_tokens` → "400 error",
-    // `"between_tools"` → "400 error", `"disabled"` → "Thinking off at `high`
-    // effort or below" (accepted). `thinking_control` here means enabled +
-    // between_tools (THINKING_TYPES_REJECTED in request-shapes.ts); disabled
-    // passes. (was: `lowering: ANTHROPIC_LOWERING_BASE`, no rejects, until 2026-10-25.)
     // alpha.125 (amendment 4a) — sampling_params, read 2026-10-25 on
     // https://platform.claude.com/docs/en/build-with-claude/thinking: "On Claude
     // Fable 5.1, …, Claude Opus 5, …, Claude Sonnet 5, and Claude Haiku 5.5,
@@ -1211,7 +1272,19 @@ const PROFILES_RAW: ModelProfile[] = [
     // and later models". The model's own page (read 06:12:04Z) places it in that class:
     // Claude Opus 5 (overview: "Model ID: `claude-opus-5`", "**Legacy.** Released July 24, 2026.").
     // (was: rejects ['thinking_control', 'sampling_params'], until alpha.133.)
-    lowering: { ...ANTHROPIC_LOWERING_BASE, rejects: ['thinking_control', 'sampling_params', 'assistant_prefill'] },
+    lowering: {
+      ...ANTHROPIC_LOWERING_BASE,
+      // alpha.134 (R1) — https://platform.claude.com/docs/en/build-with-claude/thinking.md (read 2026-11-15T06:45:59Z), per-model table row "Claude Opus 5": `"enabled"`
+      // with `budget_tokens` → "400 error", `"between_tools"` → "400 error", `"disabled"` → "Thinking off at `high` effort or below".
+      // `disabled` is accepted, so `thinking_control` (which means BOTH disabled and enabled are 400s)
+      // is not listed; the two rejected types are gated by THINKING_TYPES_REJECTED. (was: rejects
+      // ['thinking_control', 'sampling_params', 'assistant_prefill'] with a comment redefining the shape
+      // for this model, until alpha.134.) The off-switch: "Claude Opus 5 also has thinking on by default and accepts `thinking: {type: \"disabled\"}` at effort `high` or below. At `xhigh` or `max` effort, thinking cannot be turned off".
+      rejects: ['sampling_params', 'assistant_prefill'],
+      thinkingOff: { type: 'disabled', effortAtMost: 'high' },
+      // https://platform.claude.com/docs/en/build-with-claude/effort.md (read 2026-11-15T06:46:00Z): "Claude Opus 5 supports all five effort levels. **Start with `high`, the default**"; `max` "Available on … Claude Opus 5".
+      effort: { field: 'output_config.effort', default: 'high', max: 'max' },
+    },
     recovery: [
       {
         signal: 'rate_limit',
@@ -1307,6 +1380,11 @@ const PROFILES_RAW: ModelProfile[] = [
       // cache read is 5% of input on Opus 5.5 (pricing footnote 2)
       cache: { ...ANTHROPIC_LOWERING_BASE.cache, discount: 0.05 },
       rejects: ['thinking_control', 'forced_tool_choice', 'sampling_params', 'assistant_prefill'],
+      // alpha.134 (R1) — no `thinkingOff`: https://platform.claude.com/docs/en/build-with-claude/thinking.md (read 2026-11-15T06:45:59Z), per-model table row
+      // "Claude Opus 5.5": `"enabled"`, `"between_tools"` and `"disabled"` each → "400 error" ("Thinking can't be
+      // turned off on these models"), so `thinking_control` stays listed and no off-switch is written.
+      // https://platform.claude.com/docs/en/build-with-claude/effort.md (read 2026-11-15T06:46:00Z): "Claude Opus 5.5 supports all five effort levels, and `medium` is the default."; `max` is "Available on … Claude Opus 5.5".
+      effort: { field: 'output_config.effort', default: 'medium', max: 'max' },
     },
     recovery: [
       { signal: 'rate_limit', action: 'escalate', reason: '429 from Anthropic — escalate to fallback chain' },
@@ -1566,7 +1644,7 @@ const PROFILES_RAW: ModelProfile[] = [
         action: 'quality_gate_structured',
         whenIntent: 'summarize',
         reason:
-          'Structured-output parse failures at 100% in-window on long-input summarize (measured on playbacksam, 2026-07-25..27; haiku only led when input size made price dominate, then failed every time).',
+          'On summarize with more than 12,000 input tokens, every structured-output reply in the measurement window failed to parse (measured on production summarize traffic, 2026-07-25 to 2026-07-27); the model led those calls only when input size made its price dominate.',
       },
     ],
     costInputPer1m: 1.0,
@@ -1683,7 +1761,18 @@ const PROFILES_RAW: ModelProfile[] = [
         threshold: 100_001,
         action: 'downgrade_quality_warning',
         reason:
-          'Priced by prompt length: over 100,000 prompt tokens (all input, cache reads and writes included) input $0.10→$0.50/M, output $0.50→$2.50/M — ×5; each request priced on its own',
+          'Priced by prompt length (https://platform.claude.com/docs/en/about-claude/pricing, read 2026-11-15): over 100,000 prompt tokens (all input, cache reads and writes included) input $0.10→$0.50/M, output $0.50→$2.50/M, ×5; each request priced on its own.',
+      },
+      {
+        // alpha.134 (R2) — the model's own off-switch, sent when the caller says the answer is short.
+        // Threshold 1: the caller's `expectedShortOutput` hint only — no cap has been measured for this
+        // model (R3; the measurement needs a provider key). Source: https://platform.claude.com/docs/en/build-with-claude/thinking.md, read 2026-11-15T06:45:59Z:
+        // "Thinking tokens count toward `max_tokens`".
+        metric: 'thinking_with_short_output',
+        threshold: 1,
+        action: 'force_thinking_budget_zero',
+        reason:
+          'Claude Haiku 5.5 thinks by default and its thinking tokens count toward max_tokens, so under a small cap the answer can be cut or empty (https://platform.claude.com/docs/en/build-with-claude/thinking, read 2026-11-15). When the caller says the answer is short, the request carries thinking: {"type": "disabled"}, the model\'s own off-switch. Fires on the caller\'s short-output hint; no cap has been measured for this model.',
       },
     ],
     costInputPer1m: 0.1, // PR: "$0.10 / MTok" (prompts up to 100,000 tokens — the base tier)
@@ -1712,7 +1801,22 @@ const PROFILES_RAW: ModelProfile[] = [
       // Cache read stays the standard 0.1× (OV: "prompt caching reads cost 10%
       // of the base input price"; $0.01 / $0.10).
       cache: { ...ANTHROPIC_LOWERING_BASE.cache, minTokens: 512 },
-      rejects: ['thinking_control', 'sampling_params', 'assistant_prefill'],
+      // alpha.134 (R1) — `thinking_control` is NOT listed: the thinking page (https://platform.claude.com/docs/en/build-with-claude/thinking.md,
+      // read 2026-11-15T06:45:59Z), per-model table row "Claude Haiku 5.5": `"enabled"` with
+      // `budget_tokens` → "400 error", `"between_tools"` → "400 error", `"disabled"` → "Thinking off
+      // at `high` effort or below" — accepted, so the model does not reject both halves of the
+      // shape's definition. The two rejected types are gated by THINKING_TYPES_REJECTED.
+      // (was: rejects ['thinking_control', 'sampling_params', 'assistant_prefill'], until alpha.134 —
+      // a correction from the page: a consumer reading `rejects` concluded `disabled` could not be sent.)
+      rejects: ['sampling_params', 'assistant_prefill'],
+      // The same page: "Claude Haiku 5.5 also has thinking on by default and accepts `thinking:
+      // {type: "disabled"}` at effort `high` or below. At `xhigh` or `max` effort, that combination
+      // returns a 400 error."
+      thinkingOff: { type: 'disabled', effortAtMost: 'high' },
+      // https://platform.claude.com/docs/en/build-with-claude/effort.md (read 2026-11-15T06:46:00Z): "Claude Haiku 5.5 supports all five effort levels, and
+      // `medium` is the default"; `max` "Available on … Claude Haiku 5.5"; "Set `output_config.effort`
+      // on the request".
+      effort: { field: 'output_config.effort', default: 'medium', max: 'max' },
     },
     recovery: [
       { signal: 'rate_limit', action: 'escalate', reason: '429 from Anthropic — escalate to fallback chain' },
@@ -1814,7 +1918,7 @@ const PROFILES_RAW: ModelProfile[] = [
         threshold: 513,
         action: 'force_thinking_budget_zero',
         reason:
-          'Thinking tokens consume maxOutputTokens and the budget scales with the cap: 300 → MAX_TOKENS after ~285 thoughts (5/5), 512 → MAX_TOKENS after ~488 thoughts (3/3); with thinkingBudget 0 the same prompt finishes at 300 (tt-intel, valid JSON). Held point above 512 not yet measured (quota).',
+          'Thinking tokens consume maxOutputTokens and the budget scales with the cap: at 300 the call stopped at MAX_TOKENS after ~285 thoughts (5/5), at 512 after ~488 thoughts (3/3); with thinkingBudget 0 the same prompt finished at 300 with valid JSON (measured 2026-09-04). The smallest cap above 512 that holds has not been measured.',
         evidence: { class: 'probed', lastProbed: '2026-09-04', verdict: 'confirmed' },
       },
     ],
@@ -2029,7 +2133,7 @@ const PROFILES_RAW: ModelProfile[] = [
         metric: 'input_tokens',
         threshold: 200_000,
         action: 'downgrade_quality_warning',
-        reason: 'Pricing doubles above 200K: input $1.25→$2.50/M, output $10→$15/M',
+        reason: 'Pricing doubles above 200K prompt tokens: input $1.25→$2.50/M, output $10→$15/M (https://aistudio.google.com/docs/pricing, read 2026-11-15).',
       },
     ],
     costInputPer1m: 1.25,
@@ -2111,7 +2215,7 @@ const PROFILES_RAW: ModelProfile[] = [
         metric: 'input_tokens',
         threshold: 200_000,
         action: 'downgrade_quality_warning',
-        reason: 'Pricing doubles above 200K: input $2→$4/M, output $12→$18/M',
+        reason: 'Pricing doubles above 200K prompt tokens: input $2→$4/M, output $12→$18/M (https://aistudio.google.com/docs/pricing, read 2026-11-15).',
       },
     ],
     costInputPer1m: 2.0,
@@ -2548,7 +2652,7 @@ const PROFILES_RAW: ModelProfile[] = [
         metric: 'input_tokens',
         threshold: 272_000,
         action: 'downgrade_quality_warning',
-        reason: 'OpenAI pricing tier shift: >272K input tokens billed at 2x input + 1.5x output rates',
+        reason: 'Over 272K input tokens the request is billed at 2x input and 1.5x output rates (https://developers.openai.com/api/docs/models/gpt-5.5, read 2026-11-15).',
       },
     ],
     costInputPer1m: 5.0,
@@ -2629,7 +2733,7 @@ const PROFILES_RAW: ModelProfile[] = [
         metric: 'input_tokens',
         threshold: 272_000,
         action: 'downgrade_quality_warning',
-        reason: 'OpenAI pricing tier shift: >272K input tokens billed at $20/$75 (2x input, 1.5x output) — read on the model page 2026-09-13',
+        reason: 'Over 272K input tokens the request is billed at $20/$75 per 1M, 2x input and 1.5x output (https://developers.openai.com/api/docs/models/gpt-6-astra, read 2026-11-15).',
       },
     ],
     costInputPer1m: 10.0,
@@ -2910,7 +3014,7 @@ const PROFILES_RAW: ModelProfile[] = [
         threshold: 1,
         action: 'force_thinking_budget_zero',
         reason:
-          "gpt-6-luna rejects function tools with reasoning_effort on /v1/chat/completions (HTTP 400, alpha.133 probe 2026-11-12, n=1; reasoning_effort 'none' → 200 with the tool call): the provider's remedy is reasoning_effort 'none' — sent whenever the call offers tools.",
+          "gpt-6-luna rejects function tools with reasoning_effort on /v1/chat/completions (HTTP 400, probed 2026-11-12, n=1; reasoning_effort 'none' → 200 with the tool call): the provider's remedy is reasoning_effort 'none', sent whenever the call offers tools.",
         evidence: { class: 'probed', lastProbed: '2026-11-12', verdict: 'confirmed' },
       },
     ],
@@ -2981,7 +3085,7 @@ const PROFILES_RAW: ModelProfile[] = [
         metric: 'input_tokens',
         threshold: 272_000,
         action: 'downgrade_quality_warning',
-        reason: 'OpenAI pricing tier shift: >272K input tokens billed at 2x input + 1.5x output rates',
+        reason: 'Over 272K input tokens the request is billed at 2x input and 1.5x output rates (https://developers.openai.com/api/docs/models/gpt-5.4, read 2026-11-15).',
       },
     ],
     costInputPer1m: 2.5,
@@ -3220,7 +3324,7 @@ const PROFILES_RAW: ModelProfile[] = [
         metric: 'input_tokens',
         threshold: 272_000,
         action: 'downgrade_quality_warning',
-        reason: 'OpenAI pricing tier shift: >272K input tokens billed at 2x input + 1.5x output rates (family convention, carried from the brain row; not re-read for luna)',
+        reason: 'Over 272K input tokens the request is billed at 2x input and 1.5x output rates (https://developers.openai.com/api/docs/models/gpt-5.6-luna, read 2026-11-15).',
         evidence: { class: 'assumed' },
       },
       {
@@ -3240,7 +3344,7 @@ const PROFILES_RAW: ModelProfile[] = [
         threshold: 1,
         action: 'force_thinking_budget_zero',
         reason:
-          "gpt-5.6-luna rejects function tools with reasoning_effort on /v1/chat/completions (HTTP 400, alpha.120 wire smoke 2026-10-06, n=1): the provider's remedy is reasoning_effort 'none' — sent whenever the call offers tools.",
+          "gpt-5.6-luna rejects function tools with reasoning_effort on /v1/chat/completions (HTTP 400, probed 2026-10-06, n=1): the provider's remedy is reasoning_effort 'none', sent whenever the call offers tools.",
         evidence: { class: 'probed', lastProbed: '2026-10-06', verdict: 'confirmed' },
       },
     ],
@@ -3338,7 +3442,7 @@ const PROFILES_RAW: ModelProfile[] = [
         // --model <id> (Google key; alpha.104 did this for 2.5-flash → 513).
         threshold: 1,
         action: 'force_thinking_budget_zero',
-        reason: 'Thinking tokens consume maxOutputTokens — empty response if drained Threshold 1 = hint-only until measured (alpha.103): fires on the consumer hint expectedShortOutput, never on a cap; the empty-response recovery rule below is what catches a drained cap meanwhile. Measure with scripts/probe-thinking-held-point.mjs --model <id>.',
+        reason: "Thinking tokens count toward the output cap, so a small cap can return an empty answer. Google's thinking page (https://aistudio.google.com/docs/thinking, read 2026-11-15): max_output_tokens counts thought tokens, and a model that hits it while reasoning returns truncated or empty output. Fires on the caller's short-output hint; no cap has been measured for this model. Until one is, the empty-response recovery rule is what catches a drained cap.",
       },
     ],
     costInputPer1m: 0.5,
@@ -3656,7 +3760,7 @@ const PROFILES_RAW: ModelProfile[] = [
         // --model <id> (Google key; alpha.104 did this for 2.5-flash → 513).
         threshold: 1,
         action: 'force_thinking_budget_zero',
-        reason: 'Thinking mode supported per Google docs; same drain risk as 2.5-flash — thinking tokens consume maxOutputTokens Threshold 1 = hint-only until measured (alpha.103): fires on the consumer hint expectedShortOutput, never on a cap; the empty-response recovery rule below is what catches a drained cap meanwhile. Measure with scripts/probe-thinking-held-point.mjs --model <id>.',
+        reason: "Thinking is on, with the same drain as gemini-2.5-flash: thinking tokens count toward the output cap. Google's thinking page (https://aistudio.google.com/docs/thinking, read 2026-11-15): max_output_tokens counts thought tokens, and a model that hits it while reasoning returns truncated or empty output. Fires on the caller's short-output hint; no cap has been measured for this model. Until one is, the empty-response recovery rule is what catches a drained cap.",
       },
     ],
     costInputPer1m: 1.5,
@@ -3760,7 +3864,7 @@ const PROFILES_RAW: ModelProfile[] = [
         // --model <id> (Google key; alpha.104 did this for 2.5-flash → 513).
         threshold: 1,
         action: 'force_thinking_budget_zero',
-        reason: 'Thinking supported per Google docs; same drain risk as 2.5/3.5-flash — thinking tokens consume maxOutputTokens Threshold 1 = hint-only until measured (alpha.103): fires on the consumer hint expectedShortOutput, never on a cap; the empty-response recovery rule below is what catches a drained cap meanwhile. Measure with scripts/probe-thinking-held-point.mjs --model <id>.',
+        reason: "Thinking is on, with the same drain as gemini-2.5-flash and gemini-3.5-flash: thinking tokens count toward the output cap. Google's thinking page (https://aistudio.google.com/docs/thinking, read 2026-11-15): max_output_tokens counts thought tokens, and a model that hits it while reasoning returns truncated or empty output. Fires on the caller's short-output hint; no cap has been measured for this model. Until one is, the empty-response recovery rule is what catches a drained cap.",
       },
     ],
     costInputPer1m: 0.75,   // promo through 2026-12-31; $1.50 from 2027-01-01 (TIME_BOUNDED_PRICING_ROWS carries the transition)
@@ -4117,7 +4221,12 @@ const PROFILES_RAW: ModelProfile[] = [
       // supported" (implicit only). `strategy` stays the Google base ('cachedContent'): nothing in
       // src reads it (git grep, 2026-11-11), and tests/profiles.test.ts pins it for every Google
       // profile — the builder's objection, not overridden (R7).
-      cache: { ...GOOGLE_LOWERING_BASE.cache, discount: 0.05 },
+      // alpha.134 (Amendment C 2) — re-read 2026-11-15T07:47:38Z on https://aistudio.google.com/docs/models/gemini-4-carbon: Context caching "Supported
+      // (Implicit only)", "Explicit caching is not supported." So no `cachedContent` strategy: the type's shape for
+      // implicit, marker-free caching is OpenAI's (`strategy: 'unsupported'` with the discount; lowerGoogle reads
+      // only minTokens and discount, so no wire or cost estimate moves). minTokens stays the Google base (INHERITED,
+      // not on the page). (was: strategy 'cachedContent' from GOOGLE_LOWERING_BASE, until alpha.134.)
+      cache: { ...GOOGLE_LOWERING_BASE.cache, strategy: 'unsupported', discount: 0.05 },
       thinking: { field: 'generationConfig.thinkingConfig.thinkingBudget', default: 'auto' },
     },
     recovery: [
@@ -4203,7 +4312,12 @@ const PROFILES_RAW: ModelProfile[] = [
       // supported" (implicit only). `strategy` stays the Google base ('cachedContent'): nothing in
       // src reads it (git grep, 2026-11-11), and tests/profiles.test.ts pins it for every Google
       // profile — the builder's objection, not overridden (R7).
-      cache: { ...GOOGLE_LOWERING_BASE.cache, discount: 0.05 },
+      // alpha.134 (Amendment C 2) — re-read 2026-11-15T07:47:39Z on https://aistudio.google.com/docs/models/gemini-4-argon: Context caching "Supported
+      // (Implicit only)", "Explicit caching is not supported." So no `cachedContent` strategy: the type's shape for
+      // implicit, marker-free caching is OpenAI's (`strategy: 'unsupported'` with the discount; lowerGoogle reads
+      // only minTokens and discount, so no wire or cost estimate moves). minTokens stays the Google base (INHERITED,
+      // not on the page). (was: strategy 'cachedContent' from GOOGLE_LOWERING_BASE, until alpha.134.)
+      cache: { ...GOOGLE_LOWERING_BASE.cache, strategy: 'unsupported', discount: 0.05 },
       thinking: { field: 'generationConfig.thinkingConfig.thinkingBudget', default: 'auto' },
     },
     recovery: [
@@ -4227,6 +4341,111 @@ const PROFILES_RAW: ModelProfile[] = [
       hunt: 7,
       summarize: 6,
       classify: 5,
+    },
+  },
+  {
+    // ── Gemini 4 Hydrogen — onboarded alpha.134 (2026-11-15) ────────────────
+    // PROVENANCE — read 2026-11-15T06:46:00Z (curl -sL, HTTP 200) from
+    // https://aistudio.google.com/docs/models/gemini-4-hydrogen (MP),
+    // https://aistudio.google.com/docs/pricing (PR, section `gemini-4-hydrogen`, 06:46:01Z) and
+    // https://aistudio.google.com/docs/deprecations (DP, 06:46:01Z):
+    //   MP: "Gemini 4 Hydrogen (`gemini-4-hydrogen`) brings cutting-edge intelligence to
+    //   everyone, with speed and efficiency for everyday coding and agentic workflows,
+    //   featuring a unified 1M-token context window and long decode up to 1M tokens." ·
+    //   "Inputs Text, Image, Video, Audio, and PDF" · "Output Text" · "Context window
+    //   (unified input and output token limit) 1,048,576" · "Max output 65,536 (default
+    //   synchronous) / up to 1,048,576 (with long decode)" · Function calling, Structured
+    //   outputs: supported · Thinking "Supported (low, medium, high, xhigh)" · Context
+    //   caching "Supported (Implicit only)" / "Explicit caching is not supported." ·
+    //   Versions "Stable: `gemini-4-hydrogen`" · Latest update "November 2026" · the page
+    //   links "API changes from Gemini 3.8 Flash" (the incumbent named below).
+    //   PR Standard, paid tier, per 1M: Input "$1.50"; Output (including thinking tokens)
+    //   "$7.50"; Context caching "$0.075 … Implicit caching only". Batch: "$0.75" / "$3.75"
+    //   / "$0.0375". Free tier "Free of charge". No date bound on the price.
+    //   DP: `gemini-4-hydrogen` released "November 12, 2026", "No shutdown date announced".
+    // FAMILY: none written — the page names no tier that maps to an existing family tag
+    //   (flash / flash-lite / pro), and deriveFamilyFromModelId returns null for this id
+    //   (the Carbon / Argon convention); reachable by an explicit `ir.models` entry.
+    // INHERITED from gemini-3.8-flash (not doc-read): maxTools, parallelToolCalls,
+    //   systemPromptMode, streaming, the thinking field, recovery. No cliff: nothing is
+    //   measured on this model, and a capability-reducing rule defaults off without
+    //   evidence (the Carbon / Argon convention).
+    // versionAdded UNSET; registry-only (no chain row).
+    // (No closing brace may sit between `id` and `provider`.)
+    id: 'gemini-4-hydrogen',
+    verifiedAgainstDocs: '2026-11-15',
+    provider: 'google',
+    // 'preview', not 'current' (the alpha.132 R1 reasoning, Carbon's comment): 'current' would
+    // enter every cost-mode chain above the floor; 'preview' keeps it out of every chain, cost
+    // mode, family resolution and the advisor's candidate lists. No tier added, no head moved.
+    status: 'preview',
+    // The provider's word, read 2026-11-15T06:46:00Z on this model's page: Versions row "Stable:
+    // `gemini-4-hydrogen`"; Stable is written `active` (the alpha.127 convention). DP (06:46:01Z):
+    // "No shutdown date announced" — no retirement floor.
+    providerLifecycle: { status: 'active', readOn: '2026-11-15', url: 'https://aistudio.google.com/docs/models/gemini-4-hydrogen' },
+    // alpha.134 — read 2026-11-15 on https://aistudio.google.com/docs/models/gemini-4-hydrogen — the page says 'Inputs Text, Image, Video, Audio, and PDF'.
+    inputModalities: ['text', 'image', 'audio', 'video', 'pdf'],
+    maxContextTokens: 1_048_576, // MP: "Context window (unified input and output token limit) 1,048,576"
+    maxOutputTokens: 65_536, // MP: "Max output 65,536 (default synchronous)"; long decode not modelled
+    maxTools: 128,
+    parallelToolCalls: true,
+    structuredOutput: 'native', // MP: Structured outputs supported
+    systemPromptMode: 'separate',
+    streaming: true,
+    cliffs: [],
+    costInputPer1m: 1.5,   // PR Standard: Input price "$1.50"
+    costOutputPer1m: 7.5,  // PR Standard: Output price (including thinking tokens) "$7.50"
+    // alpha.134 — prices read 2026-11-15 on https://aistudio.google.com/docs/pricing (06:46:01Z), section `gemini-4-hydrogen`:
+    //   Batch tab: Input "$0.75", Output "$3.75". No cache-WRITE price on the page (implicit
+    //   caching only), so none is written.
+    costBatchPer1m: { input: 0.75, output: 3.75 },
+    lowering: {
+      ...GOOGLE_LOWERING_BASE,
+      // PR context caching $0.075 = 0.05 × $1.50 (read 2026-11-15). MP: "Explicit caching is not
+      // supported" (implicit only). `strategy` stays the Google base, as on Carbon.
+      // alpha.134 (Amendment C 2) — re-read 2026-11-15T07:47:39Z on https://aistudio.google.com/docs/models/gemini-4-hydrogen: Context caching "Supported
+      // (Implicit only)", "Explicit caching is not supported." So no `cachedContent` strategy: the type's shape for
+      // implicit, marker-free caching is OpenAI's (`strategy: 'unsupported'` with the discount; lowerGoogle reads
+      // only minTokens and discount, so no wire or cost estimate moves). minTokens stays the Google base (INHERITED,
+      // not on the page). (was: strategy 'cachedContent' from GOOGLE_LOWERING_BASE, until alpha.134.)
+      cache: { ...GOOGLE_LOWERING_BASE.cache, strategy: 'unsupported', discount: 0.05 },
+      thinking: { field: 'generationConfig.thinkingConfig.thinkingBudget', default: 'auto' },
+    },
+    recovery: [
+      {
+        signal: 'empty_response_after_tool',
+        action: 'retry_with_params',
+        retryParams: { 'generationConfig.thinkingConfig.thinkingBudget': 0 },
+        maxRetries: 1,
+        reason: 'Inherited Flash-family pattern: empty after tool result — retry with thinking off',
+      },
+      {
+        signal: 'empty_response',
+        action: 'retry_with_params',
+        retryParams: { 'generationConfig.thinkingConfig.thinkingBudget': 0 },
+        maxRetries: 1,
+        reason: 'Empty response — try with thinking off',
+      },
+      {
+        signal: 'malformed_function_call',
+        action: 'escalate',
+        reason: 'MALFORMED_FUNCTION_CALL maps to stop — escalate to next target',
+      },
+    ],
+    strengths: ['speed', 'cost', '1m_context', 'agentic_coding', 'tool_use', 'structured_output'],
+    weaknesses: ['no_brain_evidence_yet'],
+    notes:
+      'Gemini 4 Hydrogen (doc-read 2026-11-15; released 2026-11-12, Stable). "speed and efficiency for everyday coding and agentic workflows." 1,048,576 ctx (unified), 65,536 max output (long decode up to 1,048,576 not modelled), text/image/video/audio/PDF in, thinking low/medium/high/xhigh. $1.50/$7.50 (implicit cache $0.075, batch $0.75/$3.75), no date bound on the page. Implicit caching only. No family tag (the page maps to no existing tier). Registry-only, status preview (no chain or cost-mode route until promoted). archetypePerf is JUDGMENT, cold start: gemini-3.8-flash minus one on every archetype; 0 brain rows.',
+    archetypePerf: {
+      hunt: 8,        // judgment — gemini-3.8-flash 9 − 1; unmeasured
+      classify: 6,
+      summarize: 6,
+      transform: 6,
+      ask: 7,
+      generate: 7,
+      plan: 6,
+      extract: 6,
+      critique: 4,
     },
   },
 
@@ -4293,7 +4512,19 @@ const PROFILES_RAW: ModelProfile[] = [
     structuredOutput: 'grammar',
     systemPromptMode: 'inline',
     streaming: true,
-    cliffs: [],
+    cliffs: [
+      {
+        // alpha.134 (R2) — the model's own off-switch, sent when the caller says the answer is short.
+        // Threshold 1: the caller's `expectedShortOutput` hint only — no cap has been measured for this
+        // model (R3; the measurement needs a provider key). Source: https://platform.claude.com/docs/en/build-with-claude/thinking.md, read 2026-11-15T06:45:59Z:
+        // "Thinking tokens count toward `max_tokens`".
+        metric: 'thinking_with_short_output',
+        threshold: 1,
+        action: 'force_thinking_budget_zero',
+        reason:
+          'Claude Sonnet 5 thinks by default and its thinking tokens count toward max_tokens, so under a small cap the answer can be cut or empty (https://platform.claude.com/docs/en/build-with-claude/thinking, read 2026-11-15). When the caller says the answer is short, the request carries thinking: {"type": "disabled"}, the model\'s own off-switch. Fires on the caller\'s short-output hint; no cap has been measured for this model.',
+      },
+    ],
     costInputPer1m: 2.0,  // 2026-08-24: intro price made PERMANENT (docs: "the previously scheduled increase to $3/$15 on September 1, 2026 will not occur")
     costOutputPer1m: 10.0,
     // alpha.128 — prices read 2026-11-06 on https://platform.claude.com/docs/en/about-claude/pricing
@@ -4301,12 +4532,6 @@ const PROFILES_RAW: ModelProfile[] = [
     //   "Batch processing" row "Claude Sonnet 5": $1 / $5 / MTok).
     costCacheWritePer1m: { fiveMinute: 2.5, oneHour: 4 },
     costBatchPer1m: { input: 1, output: 5 },
-    // alpha.125 — read 2026-10-25 on https://platform.claude.com/docs/en/build-with-claude/thinking, per-model table row
-    // "Claude Sonnet 5": `"enabled"` with `budget_tokens` → "400 error",
-    // `"between_tools"` → "400 error", `"disabled"` → "Thinking off"
-    // (accepted). `thinking_control` here means enabled + between_tools
-    // (THINKING_TYPES_REJECTED); disabled passes. (was: `lowering:
-    // ANTHROPIC_LOWERING_BASE`, no rejects, until 2026-10-25.)
     // alpha.125 (amendment 4a) — sampling_params, read 2026-10-25 on
     // https://platform.claude.com/docs/en/build-with-claude/thinking: "On Claude
     // Fable 5.1, …, Claude Opus 5, …, Claude Sonnet 5, and Claude Haiku 5.5,
@@ -4320,7 +4545,19 @@ const PROFILES_RAW: ModelProfile[] = [
     // and later models". The model's own page (read 06:12:04Z) places it in that class:
     // Claude Sonnet 5 (overview: "Model ID: `claude-sonnet-5`", "**Legacy.** Released June 30, 2026.").
     // (was: rejects ['thinking_control', 'sampling_params'], until alpha.133.)
-    lowering: { ...ANTHROPIC_LOWERING_BASE, rejects: ['thinking_control', 'sampling_params', 'assistant_prefill'] },
+    lowering: {
+      ...ANTHROPIC_LOWERING_BASE,
+      // alpha.134 (R1) — https://platform.claude.com/docs/en/build-with-claude/thinking.md (read 2026-11-15T06:45:59Z), per-model table row "Claude Sonnet 5": `"enabled"`
+      // with `budget_tokens` → "400 error", `"between_tools"` → "400 error", `"disabled"` → "Thinking off" (no effort condition in the cell).
+      // `disabled` is accepted, so `thinking_control` (which means BOTH disabled and enabled are 400s)
+      // is not listed; the two rejected types are gated by THINKING_TYPES_REJECTED. (was: rejects
+      // ['thinking_control', 'sampling_params', 'assistant_prefill'] with a comment redefining the shape
+      // for this model, until alpha.134.) The off-switch: the table cell is the whole statement; neither page names an effort condition for Sonnet 5.
+      rejects: ['sampling_params', 'assistant_prefill'],
+      thinkingOff: { type: 'disabled' },
+      // https://platform.claude.com/docs/en/build-with-claude/effort.md (read 2026-11-15T06:46:00Z): "Claude Sonnet 5 defaults to `high` effort on the Claude API and Claude Code."; `max` "Available on … Claude Sonnet 5".
+      effort: { field: 'output_config.effort', default: 'high', max: 'max' },
+    },
     recovery: [
       { signal: 'rate_limit', action: 'escalate', reason: '429 — escalate' },
       { signal: 'model_not_found', action: 'escalate', reason: 'Deprecated — escalate (L-061)' },
@@ -4384,7 +4621,19 @@ const PROFILES_RAW: ModelProfile[] = [
     structuredOutput: 'grammar',
     systemPromptMode: 'inline',
     streaming: true,
-    cliffs: [],
+    cliffs: [
+      {
+        // alpha.134 (R2) — the model's own off-switch, sent when the caller says the answer is short.
+        // Threshold 1: the caller's `expectedShortOutput` hint only — no cap has been measured for this
+        // model (R3; the measurement needs a provider key). Source: https://platform.claude.com/docs/en/build-with-claude/thinking.md, read 2026-11-15T06:45:59Z:
+        // "Thinking tokens count toward `max_tokens`".
+        metric: 'thinking_with_short_output',
+        threshold: 1,
+        action: 'force_thinking_budget_zero',
+        reason:
+          'Claude Sonnet 5.5 thinks by default and its thinking tokens count toward max_tokens, so under a small cap the answer can be cut or empty (https://platform.claude.com/docs/en/build-with-claude/thinking, read 2026-11-15). When the caller says the answer is short, the request carries thinking: {"type": "between_tools"}, the model\'s own off-switch. Fires on the caller\'s short-output hint; no cap has been measured for this model.',
+      },
+    ],
     costInputPer1m: 2.0,
     costOutputPer1m: 10.0,
     // alpha.128 — prices read 2026-11-06 on https://platform.claude.com/docs/en/about-claude/pricing
@@ -4401,6 +4650,17 @@ const PROFILES_RAW: ModelProfile[] = [
       // read, until 2026-10-25.)
       cache: { ...ANTHROPIC_LOWERING_BASE.cache, discount: 0.05 },
       rejects: ['thinking_control', 'forced_tool_choice', 'sampling_params', 'assistant_prefill'],
+      // alpha.134 (R1) — https://platform.claude.com/docs/en/build-with-claude/thinking.md (read 2026-11-15T06:45:59Z), per-model table row "Claude Sonnet 5.5":
+      // `"enabled"` → "400 error", `"disabled"` → "400 error" (so `thinking_control` stays listed),
+      // `"between_tools"` → "Up-front thinking off at `high` effort or below"; prose: "it rejects
+      // `thinking: {type: "disabled"}` with a 400 error. To turn off up-front thinking, send `thinking:
+      // {type: "between_tools"}` instead. It's the lowest thinking setting on Claude Sonnet 5.5, and it's
+      // accepted at effort `high` or below." https://platform.claude.com/docs/en/build-with-claude/effort.md (06:46:00Z): "It works at `low`, `medium`, and
+      // `high` effort. At `xhigh` or `max` it returns a 400 error".
+      thinkingOff: { type: 'between_tools', effortAtMost: 'high' },
+      // https://platform.claude.com/docs/en/build-with-claude/effort.md: "Claude Sonnet 5.5 supports all five effort levels, and `high` is the default on the
+      // Claude API"; `max` "Available on … Claude Sonnet 5.5".
+      effort: { field: 'output_config.effort', default: 'high', max: 'max' },
     },
     recovery: [
       { signal: 'rate_limit', action: 'escalate', reason: '429 — escalate' },

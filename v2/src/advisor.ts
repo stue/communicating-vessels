@@ -456,7 +456,7 @@ function detectCachingOff(
       suggestion:
         'Mark stable system sections (role, persona, tool policy) with `cacheable: true`. The lowering pass concatenates cacheable sections into a single cache-controlled block before the dynamic ones.',
       docsUrl:
-        'https://github.com/stue/command-center/blob/main/interfaces/kgauto.md#best-practice-advisories',
+        'https://github.com/stue/communicating-vessels/blob/main/v2/README.md#structured-advisories-api-alpha29',
     },
   ];
 }
@@ -500,7 +500,7 @@ function detectSingleChunkSystem(
         // ask instead of decide.
         'NOTE: the lowering pass HOISTS cacheable sections ahead of dynamic ones on the Anthropic wire (prefix caching requires it) — if your prompt has a protected ordering (e.g. a voice/persona block that must precede boilerplate), splitting will reorder the compiled output; declining this advisory is then correct. Also: a cacheable block under ~1024 tokens gets NO cache_control marker (provider minimum), so marking small sections is inert, not harmful.',
       docsUrl:
-        'https://github.com/stue/command-center/blob/main/interfaces/kgauto.md#best-practice-advisories',
+        'https://github.com/stue/communicating-vessels/blob/main/v2/README.md#structured-advisories-api-alpha29',
     },
   ];
 }
@@ -553,7 +553,7 @@ function detectToolBloat(
       suggestion:
         "Tighten `relevanceByIntent: { [archetype]: 0..1 }` per ToolDefinition. Tools below `toolRelevanceThreshold` (default 0.2) get dropped. Without `relevanceByIntent`, every tool defaults to neutral (0.5) and stays.",
       docsUrl:
-        'https://github.com/stue/kgauto/blob/main/v2/README.md#tools',
+        'https://github.com/stue/communicating-vessels/blob/main/v2/README.md#tools',
     },
   ];
 }
@@ -596,7 +596,7 @@ function detectHistoryUncached(
       suggestion:
         "Set `historyCachePolicy: { strategy: 'all-but-latest' }` on this IR. The lowering pass marks the message immediately preceding currentTurn with cache_control; subsequent turns whose history prefix matches byte-for-byte hit the cache.",
       docsUrl:
-        'https://github.com/stue/command-center/blob/main/interfaces/kgauto.md#best-practice-advisories',
+        'https://github.com/stue/communicating-vessels/blob/main/v2/README.md#structured-advisories-api-alpha29',
     },
   ];
 }
@@ -669,7 +669,7 @@ function detectCurrentTurnDuplicatedInHistory(ir: PromptIR, fold: FoldNumbers = 
         'Pass the conversation WITHOUT its last message as `history` when that message is the `currentTurn` (e.g. `history: messages.slice(0, -1)`). kgauto does not drop it for you: the IR is sent as written. ' +
         foldSentence(history.length, fold),
       docsUrl:
-        'https://github.com/stue/command-center/blob/main/interfaces/kgauto.md#best-practice-advisories',
+        'https://github.com/stue/communicating-vessels/blob/main/v2/README.md#structured-advisories-api-alpha29',
     },
   ];
 }
@@ -784,7 +784,7 @@ function detectSingleModelArray(
         : `\`ir.models\` has length 1 (only "${only}") for archetype "${ir.intent.archetype}" and posture is not 'locked'. A single-model chain has no safety net — the first 429 / 5xx / cliff hits the user as a failure. No compatible non-blocked alternative is visible in the roster for this archetype, so this stays a warning.`,
       suggestion: remedy,
       docsUrl:
-        'https://github.com/stue/command-center/blob/main/interfaces/kgauto.md#single-model-array',
+        'https://github.com/stue/communicating-vessels/blob/main/v2/README.md#structured-advisories-api-alpha29',
     },
   ];
 }
@@ -1094,7 +1094,7 @@ function detectCostMismatchedArchetype(
         profile.provider === bestAlt.profile.provider ? 'tier-down' : 'model-swap',
       recommendedModels: [bestAlt.id],
       docsUrl:
-        'https://github.com/stue/command-center/blob/main/interfaces/kgauto.md#best-practice-advisories',
+        'https://github.com/stue/communicating-vessels/blob/main/v2/README.md#structured-advisories-api-alpha29',
     },
   ];
 }
@@ -1145,7 +1145,7 @@ function detectModelStaleEvidence(
         'Verify that `record()` is being called on every call() outcome. Counts are cross-app (migration 050 view): once ANY consumers accumulate n>=10 rows on this tuple, the score promotes from judgment to measured automatically within the 5-min SWR window. (Before alpha.78 this promotion was advertised but had no implementing mechanism — n was never populated; if this advisory has been firing for weeks at n=0 despite real traffic, bump to >=alpha.78 and it will clear on its own.)',
       recommendationType: 'prompt-fix',
       docsUrl:
-        'https://github.com/stue/command-center/blob/main/interfaces/kgauto.md#best-practice-advisories',
+        'https://github.com/stue/communicating-vessels/blob/main/v2/README.md#structured-advisories-api-alpha29',
     },
   ];
 }
@@ -1242,7 +1242,7 @@ function detectTierDown(
       recommendationType: 'tier-down',
       recommendedModels: [bestAlt.id],
       docsUrl:
-        'https://github.com/stue/command-center/blob/main/interfaces/kgauto.md#best-practice-advisories',
+        'https://github.com/stue/communicating-vessels/blob/main/v2/README.md#structured-advisories-api-alpha29',
     },
   ];
 }
@@ -1310,7 +1310,7 @@ function detectArchetypePerfFloorBreach(
         recommendationType: 'prompt-fix',
         suggestedAdaptation: compat.adapter,
         docsUrl:
-          'https://github.com/stue/command-center/blob/main/interfaces/kgauto.md#best-practice-advisories',
+          'https://github.com/stue/communicating-vessels/blob/main/v2/README.md#structured-advisories-api-alpha29',
       },
     ];
   }
@@ -1340,7 +1340,7 @@ function detectArchetypePerfFloorBreach(
       suggestion: `This fired for \`${profile.id}\`, the model selected for THIS call — selection is input-size dependent, so other calls on \`${ir.intent.archetype}\` may pick a different model that clears the floor. Swap to a model whose archetypePerf for ${ir.intent.archetype} clears the floor. Use \`getModelCompatibility(candidateId, { archetype: '${ir.intent.archetype}' })\` to vet candidates, or \`getDefaultFallbackChain({ archetype: '${ir.intent.archetype}', posture: 'open' })\` for a library-picked chain that respects the floor by construction — note that chain is ordered by archetype performance, NOT cost, so it may select a pricier primary than you run today. Add \`optimizeFor: 'cost'\` for a chain that clears the same floor cheapest-first. To stop this model being selected at all, pass \`policy.blockedModels: ['${profile.id}']\`.`,
       recommendationType: 'model-swap',
       docsUrl:
-        'https://github.com/stue/command-center/blob/main/interfaces/kgauto.md#best-practice-advisories',
+        'https://github.com/stue/communicating-vessels/blob/main/v2/README.md#structured-advisories-api-alpha29',
     },
   ];
 }
@@ -1413,7 +1413,7 @@ function detectStaleExclusionCandidate(
       suggestion: top.suggestion,
       recommendationType: 'tier-down',
       docsUrl:
-        'https://github.com/stue/command-center/blob/main/interfaces/kgauto.md#best-practice-advisories',
+        'https://github.com/stue/communicating-vessels/blob/main/v2/README.md#structured-advisories-api-alpha29',
     },
   ];
 }

@@ -111,7 +111,47 @@ export interface LoweringResult {
      * `request-shape-rejected-by-model` advisory. Absent when nothing dropped.
      */
     rejectedShapesDropped?: RejectedShapeDrop[];
+    /**
+     * alpha.134 (R2) — what became of the model's own thinking off-switch
+     * (`lowering.thinkingOff`) when a `thinking_with_short_output` cliff asked
+     * for it on an Anthropic target. `sent`: the request carries `thinking:
+     * { type }`. `withheld`: it does not, and why — `effort` (the effort in
+     * force is above the page's ceiling for the switch: a 400) or
+     * `thinking-blocks` (the conversation carries thinking blocks bound for the
+     * prefix check, whose `block_binding` takes only `adaptive`; the switch
+     * without it would let a changed prefix answer 400). compile() turns each
+     * into a mutation. Absent when the cliff did not fire or the model has no
+     * off-switch.
+     */
+    thinkingOff?: ThinkingOffOutcome;
   };
+}
+
+export type ThinkingOffOutcome =
+  | { sent: 'disabled' | 'between_tools' }
+  | { withheld: 'effort'; type: 'disabled' | 'between_tools'; effort: string; effortAtMost: string }
+  | { withheld: 'thinking-blocks'; type: 'disabled' | 'between_tools' };
+
+const EFFORT_ORDER = ['low', 'medium', 'high', 'xhigh', 'max'];
+
+/**
+ * alpha.134 (R2) — decide the Anthropic thinking field when the short-output
+ * cliff fired. kgauto sends no effort on this wire, so the effort in force is
+ * the model's documented default (`lowering.effort.default`). Pure.
+ */
+export function anthropicThinkingOff(
+  profile: Pick<ModelProfile, 'lowering'>,
+  forceThinkingZero: boolean | undefined,
+  binding: unknown,
+): { thinking?: { type: 'disabled' | 'between_tools' }; outcome?: ThinkingOffOutcome } {
+  const off = profile.lowering.thinkingOff;
+  if (!forceThinkingZero || !off) return {};
+  const effort = profile.lowering.effort?.default;
+  if (off.effortAtMost && effort && EFFORT_ORDER.indexOf(effort) > EFFORT_ORDER.indexOf(off.effortAtMost)) {
+    return { outcome: { withheld: 'effort', type: off.type, effort, effortAtMost: off.effortAtMost } };
+  }
+  if (binding !== undefined) return { outcome: { withheld: 'thinking-blocks', type: off.type } };
+  return { thinking: { type: off.type }, outcome: { sent: off.type } };
 }
 
 /** alpha.128 — the input price at the compile's estimated input (the tier it falls in), else the base. */
@@ -230,7 +270,11 @@ function lowerAnthropic(
   // instead of answering 400: kgauto's passes change system, tools and history
   // by design, and it cannot reproduce the last request. Absent otherwise, so a
   // request without thinking blocks is byte-identical to alpha.131's.
-  const thinking = prefixBindingFor(profile.id, messages);
+  const binding = prefixBindingFor(profile.id, messages);
+  // alpha.134 (R2) — the model's own off-switch, on the short-output cliff.
+  // The binding wins when both apply (see ThinkingOffOutcome); said either way.
+  const off = anthropicThinkingOff(profile, hints.forceThinkingZero, binding);
+  const thinking = off.thinking ?? binding;
 
   return {
     request: {
@@ -252,6 +296,7 @@ function lowerAnthropic(
       historyCacheableTokens,
       estimatedCacheSavingsUsd: cacheSavings,
       ...(prefillGate.dropped.length > 0 ? { rejectedShapesDropped: prefillGate.dropped } : {}),
+      ...(off.outcome ? { thinkingOff: off.outcome } : {}),
     },
   };
 }

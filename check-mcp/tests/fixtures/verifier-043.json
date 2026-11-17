@@ -1,0 +1,14 @@
+{
+  "project": { "name": "verifier-043" },
+  "callSites": [],
+  "models": [
+    { "model": "gpt-4o-realtime-preview", "where": "src/realtime.py:49", "platform": "provider-api", "context": "runs" },
+    { "model": "claude-3-5-sonnet-20241022", "where": "tests/test_llm.py:21", "platform": "provider-api", "context": "test" },
+    { "model": "gpt-4-turbo-2024-04-09", "where": "docs/models.md:45", "platform": "provider-api", "context": "docs" },
+    { "model": "claude-sonnet-4-20250514", "where": "examples/router.py:1", "platform": "provider-api", "context": "example" },
+    { "model": "gpt-4o", "where": "src/defaults.py:1", "platform": "provider-api", "context": "runs" },
+    { "model": "gemini-2.5-flash", "where": "src/config.py:1", "platform": "provider-api" },
+    { "model": "claude-opus-4-1", "where": "src/config.py:2", "platform": "provider-api" },
+    { "model": "gemini-pro", "where": "src/legacy.py:1", "platform": "provider-api", "context": "runs" }
+  ]
+}

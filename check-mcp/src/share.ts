@@ -1,13 +1,14 @@
 /**
- * --share: the check's one opt-in write (s89, 2026-08-25). 0.4.1 (R7): what the CLI
- * offers and confirms names the stored row's fields, and nothing else — the row the
- * endpoint writes (project_name, extract, card, check_version, catalog_version,
- * created_at, and its id).
+ * --share and, since 0.4.3 (R5), the server's share_card: the check's one opt-in write (s89,
+ * 2026-08-25). 0.4.1 (R7): what the check offers and confirms names the stored row's fields, and
+ * nothing else — the row the endpoint writes (project_name, extract, card, check_version,
+ * catalog_version, created_at, and its id).
  */
 export const SHARE_ENDPOINT_DEFAULT = 'https://kgauto-dashboard.vercel.app/api/check-submission';
 
+/** The one description of the stored row (0.4.3, R5: the CLI, the contract, the server and the README all say it in these words). */
 export const SHARE_STORED_SENTENCE =
-  'With --share, one row is stored: a row number, the time it arrived, the project name, the extract, the card, the check’s version and the catalog’s version.';
+  'Sharing stores one row: a row number, the time it arrived, the project name, the extract, the card, the check’s version and the catalog’s version.';
 
 export interface ShareBody {
   extract: unknown;
@@ -20,7 +21,7 @@ export type ShareOutcome = { ok: true; id: string } | { ok: false; reason: strin
 
 /**
  * POST the body; success is the endpoint's own `{ ok: true, id }` and nothing less — a
- * write that cannot name what it wrote is not a success (s79).
+ * write that cannot name what it wrote is not a success (s79). Never throws.
  */
 export async function postShare(
   endpoint: string,
@@ -42,13 +43,13 @@ export async function postShare(
 }
 
 /**
- * Amendment B3: a share the endpoint did not confirm. The CLI cannot know whether a row exists (a 200
+ * Amendment B3: a share the endpoint did not confirm. The check cannot know whether a row exists (a 200
  * without `ok`, a 502 after the insert, a dropped connection), so it says only what it saw.
  */
-export function shareFailure(reason: string): string {
-  return `[--share] FAILED (${reason}) — the endpoint did not confirm a row, so a row may or may not exist. The check itself is unaffected.`;
+export function shareFailure(reason: string, via: '--share' | 'share_card' = '--share'): string {
+  return `[${via}] FAILED (${reason}) — the endpoint did not confirm a row, so a row may or may not exist. The check itself is unaffected.`;
 }
 
-export function shareConfirmation(endpoint: string, id: string): string {
-  return `[--share] Sent to ${endpoint} (submission ${id}). ${SHARE_STORED_SENTENCE}`;
+export function shareConfirmation(endpoint: string, id: string, via: '--share' | 'share_card' = '--share'): string {
+  return `[${via}] Sent to ${endpoint} (submission ${id}). ${SHARE_STORED_SENTENCE}`;
 }

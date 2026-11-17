@@ -56,7 +56,8 @@ describe('R1 — a cliff line is worded from the cliff', () => {
     expect(f.title).toBe('`gpt-6-luna` has a known tool count cliff at 1 — this site crosses it');
     expect(f.confidence).toBe('likely');
     expect(f.detail).not.toContain(QUALITY);
-    expect(f.detail).toContain("rejects function tools with reasoning_effort on /v1/chat/completions (HTTP 400, alpha.133 probe 2026-11-12, n=1");
+    // 0.4.3 (R8): alpha.134's reason (v2/src/profiles.ts, the gpt-6-luna profile)
+    expect(f.detail).toContain("rejects function tools with reasoning_effort on /v1/chat/completions (HTTP 400, probed 2026-11-12, n=1; reasoning_effort 'none' → 200 with the tool call): ");
     expect(f.detail).toContain('It is about one endpoint, `/v1/chat/completions`: it says nothing about the model reached another way.');
     expect(f.detail).toContain("What the compiler does about it: it turns the model's thinking off for the request.");
     expect(f.detail).toContain('Evidence: a probe reproduced it, last run 2026-11-12, on 1 call (the count its reason gives).');
@@ -70,7 +71,8 @@ describe('R1 — a cliff line is worded from the cliff', () => {
     const f = r.findings.find((x) => x.title.includes('cliff'))!;
     expect(f.confidence).toBe('likely');
     expect(f.detail).not.toContain(QUALITY);
-    expect(f.detail).toContain('“OpenAI pricing tier shift: >272K input tokens billed at $20/$75');
+    // 0.4.3 (R8): alpha.134 rewrote this reason from the model's own page
+    expect(f.detail).toContain('“Over 272K input tokens the request is billed at $20/$75 per 1M');
     expect(f.detail).toContain('What the compiler does about it: it attaches a warning to the compiled request and leaves the request as it is.');
     expect(f.detail).toContain('Evidence: the rule carries no evidence record.');
     expect(f.detail).toContain('Your estimate of 400,000 sits over the line.');
@@ -134,8 +136,8 @@ describe('R1 — a cliff line is worded from the cliff', () => {
     const f = cliffOf({ ...site, expectsStructuredOutput: true })!;
     // Amendment B2: no evidence record, so no quality sentence.
     expect(f.detail).not.toContain('quality degrades');
-    // Amendment A1: this reason names one of our applications, so it is not quoted.
-    expect(f.detail).toContain("The catalog's note for this rule is written for our own records and is not quoted.");
+    // 0.4.3 (R8): alpha.134's reason no longer names one of our applications, so it is quoted (Amendment A1's guard stays).
+    expect(f.detail).toContain("The catalog's reason (for summarize work): “On summarize with more than 12,000 input tokens");
     expect(f.detail).toContain("Evidence: no evidence record; the catalog's note describes a measured incident.");
   });
 
@@ -165,7 +167,7 @@ describe('R1 — a cliff line is worded from the cliff', () => {
         }
       }
     }
-    // 18 bundled cliffs in 2.0.0-alpha.133, 10 on a metric the check reads; a sweep that fires none is not a test.
+    // 22 bundled cliffs in 2.0.0-alpha.134 (18 in alpha.133), 10 on a metric the check reads; a sweep that fires none is not a test.
     expect(fired).toBe(10);
   });
 });
@@ -197,9 +199,19 @@ describe('Amendment A1 — no internal application’s name on a stranger’s ca
         }
       }
     }
-    // 18 bundled cliffs in 2.0.0-alpha.133; 2 of their reasons name one of our applications (claude-haiku-4-5, gemini-2.5-flash).
-    expect(rendered).toBe(18);
-    expect(guarded).toBe(2);
+    // 22 bundled cliffs in 2.0.0-alpha.134; none of their reasons names one of our applications (alpha.133: 2 of 18 did —
+    // claude-haiku-4-5 and gemini-2.5-flash — and the compiler fixed them at the source).
+    expect(rendered).toBe(22);
+    expect(guarded).toBe(0);
+  });
+
+  it('the guard still holds on a reason that names one (a made-up cliff; the pinned catalog has none since alpha.134)', async () => {
+    const { cliffLine } = await import('../src/engine.js');
+    for (const app of RULED) {
+      const l = cliffLine('m', { metric: 'input_tokens', threshold: 10, action: 'downgrade_quality_warning', reason: `seen on ${app} traffic` }, 11);
+      expect(named(`${l.title} ${l.detail} ${l.basis}`), app).toEqual([]);
+      expect(l.detail).toContain("The catalog's note for this rule is written for our own records and is not quoted.");
+    }
   });
 
   it('sweep through the card: every cliff the check can fire, forced over its line, prints none of them', async () => {
@@ -225,13 +237,13 @@ describe('Amendment A1 — no internal application’s name on a stranger’s ca
     expect(fired).toBe(10);
   });
 
-  it('the haiku-4-5 line keeps its action and its evidence, and quotes nothing', async () => {
+  it('the haiku-4-5 line keeps its action and its evidence, and (alpha.134) quotes its reason, which names no application', async () => {
     const { runCheck } = await import('../src/engine.js');
     const r = runCheck({ project: { name: 't' }, callSites: [{ id: 'a.ts:1', model: 'claude-haiku-4-5', platform: 'provider-api', archetype: 'summarize', estInputTokens: 12_000, expectsStructuredOutput: true }] });
     const f = r.findings.find((x) => x.title.includes('cliff'))!;
     // Amendment B: no quality sentence without an evidence record (B2); 12,000 on a rule at 12,000 is at the line (B1).
     expect(f.detail).toBe(
-      "The catalog's note for this rule is written for our own records and is not quoted. " +
+      "The catalog's reason (for summarize work): “On summarize with more than 12,000 input tokens, every structured-output reply in the measurement window failed to parse (measured on production summarize traffic, 2026-07-25 to 2026-07-27); the model led those calls only when input size made its price dominate”. " +
         "What the compiler does about it: it stops trusting this model's structured output at or above this size on summarize work, and ranks the model lower for such a request. " +
         "Evidence: no evidence record; the catalog's note describes a measured incident. " +
         'Your estimate of 12,000 sits at the line.',
@@ -278,9 +290,10 @@ describe('R3 — a gateway is not the provider’s own API', () => {
     expect(ls[0]!.detail).not.toContain('disagree');
   });
 
-  it('a bare provider/ prefix keeps 0.4.0’s behaviour: certain on a stated provider API', async () => {
+  it('a bare provider/ prefix keeps 0.4.0’s behaviour: certain on a stated provider API (on a page read in this run)', async () => {
     const { runCheck } = await import('../src/engine.js');
-    const r = runCheck({ project: { name: 't' }, callSites: [{ id: 'a.ts:1', model: 'anthropic/claude-3-opus-20240229', platform: 'provider-api' }] });
+    const { READ } = await import('./helpers/read.js');
+    const r = runCheck({ project: { name: 't' }, callSites: [{ id: 'a.ts:1', model: 'anthropic/claude-3-opus-20240229', platform: 'provider-api' }] }, { pages: READ });
     const ls = r.findings.filter((f) => f.title.includes('own API'));
     expect(ls).toHaveLength(1);
     expect(ls[0]!.confidence).toBe('certain');
@@ -330,8 +343,10 @@ describe('R5 — two sentences', () => {
     const { runCheck } = await import('../src/engine.js');
     const r = runCheck({ project: { name: 't' }, callSites: [{ id: 'a.ts:1', model: 'gemini-2.5-flash', retry: 'none' }] });
     const heading = r.card.split('\n').find((l) => l.startsWith('## Likely'))!;
+    // 0.4.3 (R1): the heading names the page read on an earlier day first
     expect(heading).toBe(
-      '## Likely — priced from your estimates or a catalog value no provider page is cited for; a provider’s word where the call may not use its own API; no retry or fallback found in the code',
+      // Amendment B4 (0.4.3): and why a changelog line is there
+      '## Likely — a provider’s page as read on an earlier day (the day is on the line); a provider’s changelog about a model it names in words; priced from your estimates; a provider’s word where the call may not use its own API; no retry or fallback found in the code',
     );
     // the card under it carries one of each of the two new kinds
     const likely = r.findings.filter((f) => f.confidence === 'likely').map((f) => f.title);
@@ -341,8 +356,9 @@ describe('R5 — two sentences', () => {
 });
 
 describe('R7 — the share path says what it stores', () => {
+  // 0.4.3 (R5): one description of the row for the CLI and the server
   const SENTENCE =
-    'With --share, one row is stored: a row number, the time it arrived, the project name, the extract, the card, the check’s version and the catalog’s version.';
+    'Sharing stores one row: a row number, the time it arrived, the project name, the extract, the card, the check’s version and the catalog’s version.';
 
   it('the usage text, the extract contract and the README each carry the one stored-fields sentence', async () => {
     const ins = (await import('../src/instructions.js')) as Record<string, unknown>;
@@ -387,10 +403,10 @@ describe('R7 — the share path says what it stores', () => {
 });
 
 describe('R9 — version, changelog, readme', () => {
-  it('the package is 0.4.2 and the changelog says so first', () => {
-    expect(pkg.version).toBe('0.4.2');
+  it('the package is 0.4.3 and the changelog says so first', () => {
+    expect(pkg.version).toBe('0.4.3');
     const log = readFileSync(join(PKG_DIR, 'CHANGELOG.md'), 'utf8');
-    expect(log.split('\n').find((l) => l.startsWith('## '))).toBe('## 0.4.2 — 2026-11-14');
+    expect(log.split('\n').find((l) => l.startsWith('## '))).toBe('## 0.4.3 — 2026-11-16');
   });
 
   it("the README's example card is this build's output on the stored example extract, byte for byte", async () => {
@@ -401,7 +417,9 @@ describe('R9 — version, changelog, readme', () => {
     const shown = /````markdown\n([\s\S]*?)\n````/.exec(readme)?.[1];
     // 0.4.2 (R3): the README card is printed on the ledger read date, so the age sentence never enters it
     const { LEDGER_READ_ON } = await import('../src/lifecycle.js');
-    expect(shown).toBe(runCheck(ex, { today: LEDGER_READ_ON }).card);
+    // 0.4.3 (R1): on the pages as read for this release (the committed record), never a fetch
+    const { READ } = await import('./helpers/read.js');
+    expect(shown).toBe(runCheck(ex, { today: LEDGER_READ_ON, pages: READ }).card);
     expect(readme).toContain(`This is the output of \`kgauto-check ${pkg.version}\``);
   });
 });

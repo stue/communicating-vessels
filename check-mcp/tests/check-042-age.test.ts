@@ -31,7 +31,7 @@ describe('0.4.2 R3 — the card says its age when that matters', () => {
     const lines = card.split('\n');
     const i = lines.findIndex((l) => AGE.test(l));
     expect(lines[i - 1]).toContain('This check ran on your machine');
-    expect(lines[i + 1]).toMatch(/^<sub>@warmdrift\/kgauto-check .* deprecation pages read /);
+    expect(lines[i + 1]).toMatch(/^<sub>@warmdrift\/kgauto-check .* deprecation pages bundled /);
     expect(lines.filter((l) => AGE.test(l)).length).toBe(1);
   });
 

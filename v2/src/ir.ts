@@ -667,10 +667,17 @@ export type CompiledRequest =
        * `execute()` sends the `thinking-binding-controls-2026-08-01` beta header
        * whenever the final body carries `thinking.block_binding`.
        */
-      thinking?: {
-        type: 'adaptive';
-        block_binding?: { prefix_mismatch_behavior: 'drop_block' | 'error' };
-      };
+      thinking?:
+        | {
+            type: 'adaptive';
+            block_binding?: { prefix_mismatch_behavior: 'drop_block' | 'error' };
+          }
+        /**
+         * alpha.134 (R2) — the model's own off-switch (`lowering.thinkingOff`),
+         * emitted only when a `thinking_with_short_output` cliff fired:
+         * `disabled` (Haiku 5.5, Opus 5, Sonnet 5) or `between_tools` (Sonnet 5.5).
+         */
+        | { type: 'disabled' | 'between_tools' };
     }
   | {
       provider: 'google';

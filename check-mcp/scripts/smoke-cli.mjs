@@ -47,14 +47,24 @@ writeFileSync(
 // G1 — the card, from the real bundled roster
 const card = run(['--extract', extractPath]);
 gate('G1 --extract prints the card', card.code === 0 && card.out.startsWith('# Communicating Vessels — the check: smoke-app'));
-gate('G1b card carries the destination sentence', card.out.includes('Nothing was uploaded'));
+const readLine = /It read (\d+) of (\d+) provider pages in this run — the same \2 public pages whatever your project holds\. Nothing about your project was sent anywhere/.exec(card.out);
+gate('G1b card says what this run read and that nothing about the project was sent (0.4.3, R2)', !!readLine, readLine ? `${readLine[1]} of ${readLine[2]} pages read` : 'no read sentence');
 gate('G1c real-roster finding fired (deepseek-chat: the page\'s word, not a compat alias)', /legacy name DeepSeek said it would discontinue/.test(card.out) && !/compat alias/.test(card.out));
 gate('G1d confidence tiers present', card.out.includes('## Certain') && card.out.includes('## Only measurable'));
 gate('G1e version stamp in the footer', /@warmdrift\/kgauto-check \d+\.\d+\.\d+ · catalog @warmdrift\/kgauto-compiler \d/.test(card.out));
 
+// G1f/G1g — 0.4.3 (R1): --offline makes no request and says so; --pages without read-times.json is refused
+const off = run(['--extract', extractPath, '--offline']);
+gate('G1f --offline: the card says no network request was made, and no provider line is Certain', off.code === 0 && /made no network request \(--offline\)/.test(off.out) && !/## Certain[\s\S]*own API[\s\S]*## Likely/.test(off.out));
+const noTimes = mkdtempSync(join(tmpdir(), 'kgauto-check-pages-'));
+const refused = run(['--extract', extractPath, '--pages', noTimes]);
+gate('G1g --pages <dir> without read-times.json is refused, exit 1', refused.code === 1 && /no read-times\.json/.test(refused.err));
+const both = run(['--extract', extractPath, '--pages', noTimes, '--offline']);
+gate('G1h --pages and --offline together are refused, exit 1', both.code === 1 && /pass one of them/.test(both.err));
+
 // G2 — contract + plans
 gate('G2 --extract-contract teaches extraction + privacy', /identifiers and counts ONLY/i.test(run(['--extract-contract']).out));
-gate('G2b contract offers --share as explicit opt-in only', /never add --share without/i.test(run(['--extract-contract']).out.toLowerCase()) || /Never add --share without their explicit yes/.test(run(['--extract-contract']).out));
+gate('G2b contract offers --share (and share_card) as explicit opt-in only', /Never add --share or call share_card without their explicit yes/.test(run(['--extract-contract']).out));
 const plan = run(['--observe-plan']).out;
 gate('G3 --observe-plan carries both honesty requirements', /Destination, named before/.test(plan) && /never intervenes/.test(plan));
 
@@ -82,6 +92,6 @@ const share = run(['--extract', extractPath, '--share'], {
 });
 gate('G6 --share failure still prints the full card first', share.out.startsWith('# Communicating Vessels — the check: smoke-app'));
 gate('G6b --share failure is loud (FAILED + no row confirmed) and exits 1', share.code === 1 && /\[--share\] FAILED/.test(share.err) && /did not confirm a row, so a row may or may not exist/.test(share.err));
-gate('G6c a --share card does not say nothing was uploaded', !/Nothing was uploaded/.test(share.out) && /Because you ran it with --share, this card and the extract are sent after it is printed\./.test(share.out));
+gate('G6c a --share card does not say nothing was sent, and ends on the share sentence', !/Nothing was uploaded|Nothing about your project was sent/.test(share.out) && /Because you ran it with --share, this card and the extract are sent after it is printed\.\*/.test(share.out));
 
 console.log(`\n${gates.length}/${gates.length} gates green`);

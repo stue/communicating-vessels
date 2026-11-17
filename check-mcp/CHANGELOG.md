@@ -1,5 +1,19 @@
 # @warmdrift/kgauto-check — changelog
 
+## 0.4.3 — 2026-11-16
+
+**The check now makes network requests by default: each run reads the same ten public provider pages (Anthropic, OpenAI, Google, DeepSeek), whatever your project holds; `--offline` (or `KGAUTO_CHECK_OFFLINE=1`, or `offline: true` on the server's tools) stops it.** Nothing about your project is sent; a provider line is *Certain* only when its page was read in this run and still carries it.
+
+Requires `@warmdrift/kgauto-compiler@2.0.0-alpha.134`, exactly.
+
+- **Certain only on a page read in this run.** The check reads the ledger's ten source pages at run time (plain GET, redirects followed, no cookie, no query string, a User-Agent of `kgauto-check/<version>`, all at once, 8 s a page, no retry, nothing cached or written). A ledger line is *Certain* only when every quote its row rests on is on its page in this run and the site is on the provider's own API. A page that did not answer, timed out, or answered with a page of another shape (a consent page, a login page, a rewrite) leaves its lines *Likely*, saying the day this version read the page and why it was not read now; a page that no longer carries a line marks it *as read on <day> (the page has changed since)* and says to read the page before acting on the date. A catalog line (the model page's word, a limit, a capability) is *Likely* in every run: its page is not read at run time, and the line carries the day it was. The footer says how many of the pages were read; the stamp says when.
+- **Where an id is written.** The extract may say, per call site and per listed id, where it is written: `runs`, `test`, `docs` or `example`. The header counts the flagged ids by it; each site prints it in brackets; findings in code that runs come first; and a finding only in tests, docs or examples prints the ℹ️ mark. An extract that says nothing about it gets one sentence saying the count is of every place an id appears.
+- **`share_card`**, a fifth tool on the server: what `--share` does on the CLI, for an MCP run — offered after the card, called only on your human's yes (`humanSaidYes: true`). No tool was removed or renamed.
+- **A changelog row.** `gemini-pro`, `gemini-1.0-pro`, `gemini-pro-vision` and `gemini-1.0-pro-vision`, which 0.4.2 called *not recognised*, now print Google's changelog's sentence (*"Gemini 1.0 Pro is no longer supported."*, February 18, 2025; *"Support for Gemini 1.0 Pro Vision removed from Google AI services and tools."*, July 12, 2024), always *Likely*: the changelog names the model in words, and the link from the id to the name is ours. The line says Google's model page for the id answered 404 when this version was built.
+- **The ledger is re-read** (2026-11-16, 22:54 UTC): no row moved; 303 rows, and the four changelog rows above (307).
+- **The page's shape is asserted** by the ledger generator and by the run-time read, with one function: the table columns, the headings and the status words each page's rows are read from.
+- **The words.** The package no longer calls itself offline. What it says of itself: *it reads your repository on your machine; nothing about your project leaves it unless you choose to share the result.* The stored-row sentence reads *"Sharing stores one row: …"*, the same on the CLI and the server.
+
 ## 0.4.2 — 2026-11-14
 
 **Between 2026-11-12 and 2026-11-14 Google moved the shutdown dates of five preview models. 0.4.0 and 0.4.1 print the earlier dates for them; 0.4.2 carries a ledger read on 2026-11-14.**

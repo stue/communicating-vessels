@@ -10,6 +10,7 @@ import type { ModelProfile } from '@warmdrift/kgauto-compiler';
 import { allProfiles } from '@warmdrift/kgauto-compiler';
 import { runCheck, cliffLine, DESTINATION_SENTENCE } from '../src/engine.js';
 import type { Extract } from '../src/extract.js';
+import { READ } from './helpers/read.js';
 
 const PKG_DIR = join(dirname(fileURLToPath(import.meta.url)), '..');
 const pkg = JSON.parse(readFileSync(join(PKG_DIR, 'package.json'), 'utf8')) as { version: string };
@@ -50,14 +51,15 @@ describe('B2 — the quality sentence needs an evidence RECORD', () => {
     expect(cliffLine('m', { ...base, evidence: { class: 'probed', verdict: 'confirmed' } }, 11).detail).toContain(QUALITY);
     expect(cliffLine('m', { ...base, reason: 'measured on real traffic' }, 11).detail).not.toContain(QUALITY);
   });
-  it('the full-catalog sweep: 0 of the 18 bundled cliffs print the generic quality sentence on alpha.133', () => {
+  // 0.4.3 (R8): the pin moved to alpha.134, which bundles 22 cliffs; the sweep still finds 0 quality sentences.
+  it('the full-catalog sweep: 0 of the 22 bundled cliffs print the generic quality sentence on alpha.134', () => {
     let lines = 0;
     let quality = 0;
     for (const p of allProfiles()) for (const c of p.cliffs) {
       lines++;
       if (cliffLine(p.id, c, c.threshold + 1).detail.includes(QUALITY)) quality++;
     }
-    expect(lines).toBe(18);
+    expect(lines).toBe(22);
     expect(quality).toBe(0);
   });
 });
@@ -65,16 +67,22 @@ describe('B2 — the quality sentence needs an evidence RECORD', () => {
 describe('B3 — nothing false about uploads', () => {
   const sites: Site[] = [{ id: 'a.ts:1', model: 'gpt-4o-mini', platform: 'provider-api' }];
   it('with --share the card says it is sent after it is printed, by the user’s flag, and not that nothing was uploaded', async () => {
-    const { SHARE_DESTINATION_SENTENCE } = await import('../src/engine.js');
-    const card = run(sites, { share: true }).card;
+    const { SHARE_SENTENCE, destinationSentence } = await import('../src/engine.js');
+    const card = run(sites, { share: true, pages: READ }).card;
     expect(card).not.toContain('Nothing was uploaded');
-    expect(card).toContain(`*${SHARE_DESTINATION_SENTENCE}*`);
-    expect(SHARE_DESTINATION_SENTENCE).toBe(
-      'This check ran on your machine, against the catalog bundled with it and the providers’ deprecation pages it was built with. Because you ran it with --share, this card and the extract are sent after it is printed.',
-    );
+    expect(card).not.toContain('Nothing about your project was sent');
+    // 0.4.3 (R2): the share forms keep their last sentence
+    expect(destinationSentence(READ, true).endsWith(SHARE_SENTENCE)).toBe(true);
+    expect(card).toContain(`*${destinationSentence(READ, true)}*`);
+    expect(SHARE_SENTENCE).toBe('Because you ran it with --share, this card and the extract are sent after it is printed.');
   });
-  it('without --share the footer is unchanged', () => {
-    expect(run(sites).card).toContain(`*${DESTINATION_SENTENCE}*`);
+  it('without --share the footer says nothing about the project was sent', () => {
+    expect(run(sites, { pages: READ }).card).toContain(
+      '*This check ran on your machine. It read 10 of 10 provider pages in this run — the same 10 public pages whatever your project holds. Nothing about your project was sent anywhere, and no rows were written anywhere.*',
+    );
+    expect(DESTINATION_SENTENCE).toBe(
+      'The check reads your repository on your machine; nothing about your project leaves it unless you choose to share the result.',
+    );
   });
   it('a failure says the endpoint did not confirm a row and that a row may or may not exist', async () => {
     const share = (await import('../src/share.js')) as Record<string, unknown>;
@@ -118,9 +126,11 @@ describe('B6 — a gateway or partner platform takes every provider-page line ou
     expect(cost.confidence).toBe('likely');
     expect(cost.detail).toContain("This site runs on Azure: the figure is from OpenAI's own API, and Azure may set its own.");
   });
-  it('the same id on the provider’s own API keeps its certain line', () => {
-    const f = lineOf(run([{ id: 'a.ts:1', model: 'claude-haiku-5-5', platform: 'provider-api', ...big }]), 'context window')!;
-    expect(f.confidence).toBe('certain');
+  // 0.4.3 (R1): a catalog limit is Likely in every run (its page is not read at run time); on the provider's own API it carries no partner sentence.
+  it('the same id on the provider’s own API: likely, with no partner sentence (until 0.4.2: certain)', () => {
+    const f = lineOf(run([{ id: 'a.ts:1', model: 'claude-haiku-5-5', platform: 'provider-api', ...big }], { pages: READ }), 'context window')!;
+    expect(f.confidence).toBe('likely');
+    expect(f.basis).toMatch(/catalog, verified against the provider's page \d{4}-\d{2}-\d{2}/);
     expect(f.detail).not.toContain('may set its own');
   });
 });

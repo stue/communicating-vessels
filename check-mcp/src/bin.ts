@@ -8,16 +8,23 @@
  *                               never add it without your human's yes) also
  *                               posts the extract + card; the row stored is
  *                               named in share.ts (SHARE_STORED_SENTENCE).
- *                               Without it, nothing leaves the machine — the
- *                               check itself is always offline.
+ *                               Without it, nothing about the project leaves
+ *                               the machine.
  *   --extract-contract          print the extraction instructions.
- *   --model-facts <model-id>    one model → status, verified prices, limits,
- *                               known cliffs. Offline, bundled catalog.
+ *   --model-facts <model-id>    one model → the provider's word, verified
+ *                               prices, limits, known cliffs.
  *   --observe-plan              rung 2: what a one-day observe run measures.
+ *
+ *   0.4.3 (R1): --extract and --model-facts read the providers' pages in this
+ *   run — the same public pages whatever the extract holds (src/pages.ts).
+ *   --offline (or KGAUTO_CHECK_OFFLINE=1) makes no request; --pages <dir>
+ *   reads them from a directory saved by `scripts/ledger-drift.mjs --fetch`
+ *   (tests, the Verifier, the regression set).
  *
  * MCP server (no args — the relationship route: agent-OFFERED after a card
  * with real findings, never page-pushed; also the no-shell/Desktop host).
- * Tool surface unchanged since 0.1.0 — it is a compatibility contract.
+ * The tool surface is additive since 0.1.0: no tool removed or renamed
+ * (0.4.3 added share_card) — it is a compatibility contract.
  */
 import { readFileSync } from 'node:fs';
 import { startStdio } from './server.js';
@@ -27,6 +34,7 @@ import { START_CHECK_INSTRUCTIONS, USAGE } from './instructions.js';
 import { OBSERVE_DAY_PLAN } from './observe-plan.js';
 import { renderModelFacts } from './model-facts.js';
 import { CHECK_VERSION } from './version.js';
+import { readForRun, type PageRead } from './pages.js';
 import { SHARE_ENDPOINT_DEFAULT, postShare, shareConfirmation, shareFailure } from './share.js';
 
 const SHARE_ENDPOINT = process.env.KGAUTO_SHARE_ENDPOINT_OVERRIDE || SHARE_ENDPOINT_DEFAULT;
@@ -36,6 +44,30 @@ const flagValue = (name: string): string | undefined => {
   const i = args.indexOf(name);
   return i === -1 ? undefined : args[i + 1];
 };
+
+/** --offline / --pages <dir>, read once before the engine runs; undefined after printing a usage error. */
+async function readPages(): Promise<PageRead | undefined> {
+  const noRead = args.includes('--offline');
+  const hasPages = args.includes('--pages');
+  const dir = flagValue('--pages');
+  if (hasPages && (!dir || dir.startsWith('--'))) {
+    console.error('usage: --pages <dir> (a directory saved by scripts/ledger-drift.mjs --fetch, with its read-times.json)');
+    process.exitCode = 1;
+    return undefined;
+  }
+  if (noRead && hasPages) {
+    console.error('--offline and --pages both say where the pages come from; pass one of them.');
+    process.exitCode = 1;
+    return undefined;
+  }
+  try {
+    return await readForRun({ switchedOff: noRead, pagesDir: dir });
+  } catch (err) {
+    console.error(`could not read the pages: ${err instanceof Error ? err.message : String(err)}`);
+    process.exitCode = 1;
+    return undefined;
+  }
+}
 
 async function main(): Promise<void> {
   if (args.includes('--extract-contract')) {
@@ -49,17 +81,19 @@ async function main(): Promise<void> {
   if (args.includes('--model-facts')) {
     const id = flagValue('--model-facts');
     if (!id || id.startsWith('--')) {
-      console.error('usage: kgauto-check --model-facts <model-id>');
+      console.error('usage: kgauto-check --model-facts <model-id> [--offline]');
       process.exitCode = 1;
       return;
     }
-    console.log(renderModelFacts(id));
+    const pages = await readPages();
+    if (!pages) return;
+    console.log(renderModelFacts(id, { pages }));
     return;
   }
   if (args.includes('--extract')) {
     const file = flagValue('--extract');
     if (!file || file.startsWith('--')) {
-      console.error('usage: kgauto-check --extract <extract.json> [--share]');
+      console.error('usage: kgauto-check --extract <extract.json> [--share] [--offline]');
       process.exitCode = 1;
       return;
     }
@@ -80,8 +114,10 @@ async function main(): Promise<void> {
       process.exitCode = 1;
       return;
     }
+    const pages = await readPages();
+    if (!pages) return;
     // Amendment B3: a card that will be sent says so in its footer (and is the card that is stored).
-    const result = runCheck(parsed.data, { share: args.includes('--share') });
+    const result = runCheck(parsed.data, { share: args.includes('--share'), pages });
     console.log(result.card);
 
     if (args.includes('--share')) {

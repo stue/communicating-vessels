@@ -1,15 +1,41 @@
 import { LIBRARY_VERSION } from '@warmdrift/kgauto-compiler';
 import { retirementFloorClause } from '@warmdrift/kgauto-compiler/profiles';
-import { analyseModel } from './engine.js';
+import { analyseModel, rowStateIn, daysSinceRead } from './engine.js';
 import { PROVIDER_NAME, LEDGER_READ_ON, PARTNER_NAME, GATEWAYS, partnerPage } from './lifecycle.js';
+import { unreadAll, NOT_READ_BY_CALLER, readInThisRun, pagesCount, lastReadAt, minuteOf, type PageRead } from './pages.js';
+
+/** Amendment B4: "n days before this lookup", said as the card says it — "the day of this lookup" at 0, "1 day" at 1. */
+function daysBeforeLookup(today: string, readOn: string): string {
+  const n = daysSinceRead(today, readOn);
+  return n <= 0 ? 'the day of this lookup' : `${n} day${n === 1 ? '' : 's'} before this lookup`;
+}
+
+/** 0.4.3 (R1/R2): the lookup's last line — the catalog, and the pages as this run read them (or did not). */
+function factsFooter(read: PageRead, surface: 'cli' | 'mcp'): string {
+  const cat = `_Catalog: @warmdrift/kgauto-compiler ${LIBRARY_VERSION}, bundled; deprecation pages bundled ${LEDGER_READ_ON}`;
+  if (readInThisRun(read)) {
+    const { read: n, requested: m } = pagesCount(read);
+    const last = lastReadAt(read);
+    return `${cat}; ${n} of ${m} provider pages read in this run${last ? ` (${minuteOf(last)} UTC)` : ''} — the same ${m} public pages whatever the id. Nothing about the id was sent anywhere._`;
+  }
+  if (read.how === 'switched-off')
+    return `${cat}; this lookup made no network request (${surface === 'mcp' ? 'the offline input' : '--offline'})._`;
+  return `${cat}; no provider page was read for this lookup._`;
+}
 
 /**
  * One model id → what the provider's page says first (the lifecycle ledger,
  * then the catalog profile's providerLifecycle), then the catalog card.
  * Honest miss on an id in neither (s51).
+ *
+ * 0.4.3 (R1/R2): the provider's line says when its page was read — in this run, or on the day this
+ * version read it and why it was not read now, or that the page has changed since.
  */
-export function renderModelFacts(model: string): string {
-  const a = analyseModel(model);
+export function renderModelFacts(model: string, opts: { pages?: PageRead; surface?: 'cli' | 'mcp'; today?: string } = {}): string {
+  const read = opts.pages ?? unreadAll('none', NOT_READ_BY_CALLER);
+  const surface = opts.surface ?? 'cli';
+  const today = opts.today ?? new Date().toISOString().slice(0, 10);
+  const a = analyseModel(model, { pages: read, today });
   const out: string[] = [];
   const looked = a.res.base !== model || (a.profile && a.canonical !== model) ? a.profile ? a.canonical : a.res.base : undefined;
   out.push(`# ${model}${looked ? ` (looked up as \`${looked}\`${a.res.steps.length ? `: ${a.res.steps.join(', ')}` : ''})` : ''}`);
@@ -35,13 +61,25 @@ export function renderModelFacts(model: string): string {
         : ` · replacement the page names: \`${r.replacement}\``
       : '';
     out.push(
-      r.word === 'listed'
-        ? // 0.4.2 Amendment A1: listed on the page with no date and no deprecation word, in the page's own words.
-          `- ${P}'s page lists it: **${r.pageWord.charAt(0).toLowerCase()}${r.pageWord.slice(1)}**${repl}`
-        : `- ${P}'s word: **${r.word}**${dates.length ? ` (${dates.join('; ')})` : ''}${repl}${r.routesTo ? ` · requests routed to: ${r.routesTo}` : ''}`,
+      r.namedAs
+        ? // 0.4.3 (R6): the changelog names the model in words; the link from the id to the name is this check's (Amendment B4).
+          `- ${P}'s changelog, by this check's reading of the id as ${r.namedAs}: **${r.pageWord}** (${r.entryHeading}) — the changelog names the model in words, not by this id, so the link is this check's`
+        : r.word === 'listed'
+          ? // 0.4.2 Amendment A1: listed on the page with no date and no deprecation word, in the page's own words.
+            `- ${P}'s page lists it: **${r.pageWord.charAt(0).toLowerCase()}${r.pageWord.slice(1)}**${repl}`
+          : `- ${P}'s word: **${r.word}**${dates.length ? ` (${dates.join('; ')})` : ''}${repl}${r.routesTo ? ` · requests routed to: ${r.routesTo}` : ''}`,
     );
-    out.push(`- source: ${r.url} (read ${r.readOn}) — “${r.quote.replace(/\s+/g, ' ').slice(0, 300)}”`);
-    if (r.alsoUrl) out.push(`- also: ${r.alsoUrl} (read ${r.alsoReadOn}) — “${r.alsoQuote}”`);
+    // 0.4.3 (R2): when the page was read, in the line.
+    const st = rowStateIn(read, r.id);
+    const when =
+      st.state === 'confirmed'
+        ? `read in this run, ${minuteOf(st.at)} UTC`
+        : st.state === 'changed'
+          ? `read ${r.readOn}; the page has changed since — it no longer carries this line as it was read, so read the page before acting on the date`
+          : `read ${r.readOn}, ${daysBeforeLookup(today, r.readOn)}; not read in this run (${st.reason})`;
+    out.push(`- source: ${r.url} (${when}) — “${r.quote.replace(/\s+/g, ' ').slice(0, 300)}”`);
+    if (r.alsoUrl) out.push(`- also: ${r.alsoUrl}${r.alsoHeading ? ` (${r.alsoHeading})` : ` (read ${r.alsoReadOn})`} — “${r.alsoQuote}”`);
+    if (r.modelPage?.status === 404) out.push(`- ${P}'s model page for this id answered 404 on ${r.modelPage.at.slice(0, 10)} (${r.modelPage.url})`);
     if (a.via) out.push(`- matched the dated snapshot \`${a.via}\` the page lists`);
     if (a.partner) {
       const page = partnerPage(a.partner, r.provider);
@@ -66,7 +104,7 @@ export function renderModelFacts(model: string): string {
       out.push('- the catalog has no entry for this id, so its limits and price are not shown.');
     }
     out.push('');
-    out.push(`_Catalog: @warmdrift/kgauto-compiler ${LIBRARY_VERSION}; deprecation pages read ${LEDGER_READ_ON}; bundled locally — this lookup made no network call._`);
+    out.push(factsFooter(read, surface));
     return out.join('\n');
   }
 
@@ -118,6 +156,6 @@ export function renderModelFacts(model: string): string {
   }
   if (p.notes) out.push(`- notes: ${p.notes}`);
   out.push('');
-  out.push(`_Catalog: @warmdrift/kgauto-compiler ${LIBRARY_VERSION}; deprecation pages read ${LEDGER_READ_ON}; bundled locally — this lookup made no network call._`);
+  out.push(factsFooter(read, surface));
   return out.join('\n');
 }

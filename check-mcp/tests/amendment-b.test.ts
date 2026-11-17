@@ -7,6 +7,7 @@ import { runCheck } from '../src/engine.js';
 import { ExtractSchema, type Extract } from '../src/extract.js';
 import { renderModelFacts } from '../src/model-facts.js';
 import { resolveId } from '../src/lifecycle.js';
+import { READ } from './helpers/read.js';
 
 const ex = (sites: Extract['callSites'], models?: Extract['models']): Extract => ({
   project: { name: 't' },
@@ -36,9 +37,11 @@ describe('B1 — a partner platform site never gets a certain provider-page line
   it('the contract carries a platform field, and it decides the tier', () => {
     const e = ex([{ id: 'a.ts:1', model: 'gemini-2.5-flash', platform: 'vertex' }]);
     expect(ExtractSchema.safeParse(e).success).toBe(true);
-    expect(find(runCheck(e), 'gemini-2.5-flash')?.confidence).toBe('likely');
+    // 0.4.3 (R1): both on the pages as read for this release; the platform still decides
+    expect(find(runCheck(e, { pages: READ }), 'gemini-2.5-flash')?.confidence).toBe('likely');
     const p = ex([{ id: 'b.ts:1', model: 'gemini-2.5-flash', platform: 'provider-api' }]);
-    expect(find(runCheck(p), 'gemini-2.5-flash')?.confidence).toBe('certain');
+    expect(find(runCheck(p, { pages: READ }), 'gemini-2.5-flash')?.confidence).toBe('certain');
+    expect(find(runCheck(p), 'gemini-2.5-flash')?.confidence).toBe('likely'); // no read: never Certain
   });
 
   it('the same id on the provider API and on a partner gives one certain and one likely line', () => {
@@ -47,6 +50,7 @@ describe('B1 — a partner platform site never gets a certain provider-page line
         { id: 'direct.ts:1', model: 'gemini-2.5-flash', platform: 'provider-api' },
         { id: 'vertex/client.ts:1', model: 'gemini-2.5-flash' },
       ]),
+      { pages: READ },
     );
     const lines = r.findings.filter((f) => f.title.includes('gemini-2.5-flash'));
     expect(lines.map((f) => f.confidence).sort()).toEqual(['certain', 'likely']);

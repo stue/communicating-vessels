@@ -7,10 +7,12 @@ import { describe, it, expect } from 'vitest';
 import { runCheck, type Finding } from '../src/engine.js';
 import type { Extract } from '../src/extract.js';
 import { renderModelFacts } from '../src/model-facts.js';
-import { oneRowIn } from '../scripts/ledger-check.mjs';
+import { oneRowIn } from '../src/ledger-check.mjs';
+import { READ } from './helpers/read.js';
 
 type Site = Extract['callSites'][number];
-const run = (sites: Site[]) => runCheck({ project: { name: 't' }, callSites: sites });
+// 0.4.3 (R1): every case here is on the pages as read for this release, so the tier is the platform's to decide
+const run = (sites: Site[]) => runCheck({ project: { name: 't' }, callSites: sites }, { pages: READ });
 const LIFE = /own API|retired|shut down|deprecated|legacy|Legacy|scheduled for shutdown|routes requests/;
 const lifecycle = (r: ReturnType<typeof run>): Finding[] => r.findings.filter((f) => LIFE.test(f.title));
 

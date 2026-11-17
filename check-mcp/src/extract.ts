@@ -6,6 +6,16 @@
  */
 import { z } from 'zod';
 
+/**
+ * 0.4.3 (R4): where an id is written —
+ *   runs    — code or configuration the project executes or loads in normal use (a default, a constant, a config file the app reads);
+ *   test    — tests and their fixtures;
+ *   docs    — documentation, a README, a docstring or a comment, an issue template;
+ *   example — an example, sample or template a person copies and edits.
+ */
+export const SiteContextSchema = z.enum(['runs', 'test', 'docs', 'example']);
+export type SiteContext = z.infer<typeof SiteContextSchema>;
+
 export const CallSiteSchema = z.object({
   /** Agent-chosen stable label, e.g. "api/summarize.ts:42" or "hunt loop". */
   id: z.string().min(1),
@@ -46,6 +56,8 @@ export const CallSiteSchema = z.object({
   estCallsPerMonth: z.number().positive().optional(),
   /** Anything structural the agent thinks matters. Never prompt text. */
   notes: z.string().max(500).optional(),
+  /** 0.4.3 (R4): where this call site is written — runs, test, docs or example. */
+  context: SiteContextSchema.optional(),
 });
 
 /**
@@ -67,6 +79,8 @@ export const ModelMentionSchema = z.object({
    */
   platform: z.enum(['provider-api', 'vertex', 'bedrock', 'azure', 'other']).optional(),
   notes: z.string().max(500).optional(),
+  /** 0.4.3 (R4): where this id is written — runs, test, docs or example. An id in a docstring is listed with `docs`, never left out. */
+  context: SiteContextSchema.optional(),
 });
 
 export const ExtractSchema = z.object({

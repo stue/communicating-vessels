@@ -20,6 +20,11 @@
  * into another provider's wire (the Google / OpenAI-family lowerings pass
  * `parts` verbatim). `call()` strips them on that leg and says so.
  *
+ * alpha.134 — `thinking_control` keeps its definition (BOTH `disabled` and
+ * `enabled` are 400s) and is listed only where the page says so; the per-model
+ * rejected types are THINKING_TYPES_REJECTED and the accepted off-switch is
+ * `lowering.thinkingOff` (profiles.ts). The gate reads the first, never the flag.
+ *
  * alpha.125 — Claude Haiku 5.5 (pages read 2026-10-25) joins on both halves:
  * it rejects `thinking_control` with a DIFFERENT set of types (enabled +
  * between_tools; `disabled` is accepted — THINKING_TYPES_REJECTED), it ACCEPTS
@@ -28,7 +33,7 @@
  * and as reader.
  */
 
-import type { BestPracticeAdvisory, InputTransformation, Message, ProviderOverrides } from './ir.js';
+import type { BestPracticeAdvisory, InputTransformation, Message, MutationApplied, ProviderOverrides } from './ir.js';
 import type { ModelProfile, RejectedRequestShape } from './profiles.js';
 import { deriveOwnership } from './advisor.js';
 
@@ -112,17 +117,65 @@ export const THINKING_TYPES_REJECTED: Readonly<Record<string, { types: readonly 
     vendor:
       'Claude Fable 5.1: `"disabled"`, `"enabled"` with `budget_tokens` and `"between_tools"` each → 400 error (thinking page, per-model table, row "Claude Fable 5.1"); "Thinking can\'t be turned off on these models."',
   }),
+  // alpha.134 (R1) — row "Claude Sonnet 5.5" of the same table (read 2026-11-15T06:45:59Z):
+  // `"enabled"` → 400 error, `"disabled"` → 400 error; `"between_tools"` → "Up-front thinking off at
+  // `high` effort or below" — accepted, and it is this model's `lowering.thinkingOff`. Written as its
+  // own row so the agreement with `thinkingOff` is data, not the default's accident.
+  'claude-sonnet-5-5': Object.freeze({
+    types: Object.freeze(['disabled', 'enabled']),
+    vendor:
+      // The alpha.121 migration-guide error strings, then the thinking page's remedy.
+      '"thinking.type.disabled" is not supported for this model. / "thinking.type.enabled" is not supported for this model. / To turn off up-front thinking on Claude Sonnet 5.5, send `thinking: {type: "between_tools"}` instead (thinking page).',
+  }),
+  // alpha.134 (Amendment A 12) — three more rows of the same table, read 2026-11-15T06:45:59Z
+  // (https://platform.claude.com/docs/en/build-with-claude/thinking.md, "Configuring thinking"):
+  //   "Claude Fable 5": `"enabled"` → 400 error, `"between_tools"` → 400 error, `"disabled"` → 400 error.
+  //   "Claude Opus 4.8" and "Claude Opus 4.7": no `thinking` field → "Thinking off", `"adaptive"` →
+  //   adaptive, `"enabled"` with `budget_tokens` → 400 error, `"between_tools"` → 400 error,
+  //   `"disabled"` → "Thinking off" (accepted). (was: no row — Fable 5 and the two Opus 4.x let every
+  //   thinking type through to the wire, until alpha.134.)
+  'claude-fable-5': Object.freeze({
+    types: Object.freeze(['disabled', 'enabled', 'between_tools']),
+    vendor:
+      'Claude Fable 5: `"disabled"`, `"enabled"` with `budget_tokens` and `"between_tools"` each → 400 error (thinking page, per-model table, row "Claude Fable 5"); "Thinking can\'t be turned off on these models."',
+  }),
+  'claude-opus-4-8': Object.freeze({
+    types: Object.freeze(['enabled', 'between_tools']),
+    vendor:
+      'Claude Opus 4.8: `"enabled"` with `budget_tokens` → 400 error; `"between_tools"` → 400 error (thinking page, per-model table, row "Claude Opus 4.8"). `"disabled"` and `"adaptive"` are accepted.',
+  }),
+  'claude-opus-4-7': Object.freeze({
+    types: Object.freeze(['enabled', 'between_tools']),
+    vendor:
+      'Claude Opus 4.7: `"enabled"` with `budget_tokens` → 400 error; `"between_tools"` → 400 error (thinking page, per-model table, row "Claude Opus 4.7"). `"disabled"` and `"adaptive"` are accepted.',
+  }),
   'claude-haiku-5-5': Object.freeze({
     types: Object.freeze(['enabled', 'between_tools']),
     vendor:
-      'A `thinking` value of `{"type": "enabled", "budget_tokens": N}` returns a 400 error (Haiku 5.5 migration guide); `"between_tools"` → 400 error (thinking page, per-model table). Leave `thinking` unset or set it to `{"type": "adaptive"}`.',
+      'A `thinking` value of `{"type": "enabled", "budget_tokens": N}` returns a 400 error (Haiku 5.5 migration guide); `"between_tools"` → 400 error (thinking page, per-model table). `"disabled"` turns thinking off at `high` effort or below; otherwise leave `thinking` unset or set it to `{"type": "adaptive"}`.',
   }),
 });
 const THINKING_TYPES_REJECTED_DEFAULT: readonly string[] = Object.freeze(['disabled', 'enabled']);
 
-/** The `thinking.type` values `thinking_control` rejects for this model. */
-export function rejectedThinkingTypes(modelId: string | undefined): readonly string[] {
-  return (modelId !== undefined && THINKING_TYPES_REJECTED[modelId]?.types) || THINKING_TYPES_REJECTED_DEFAULT;
+/**
+ * The `thinking.type` values this model rejects with a 400.
+ *
+ * alpha.134 (R1) — with a profile, the answer no longer hangs on
+ * `rejects: 'thinking_control'`: that shape is listed only where the page
+ * rejects BOTH `disabled` and `enabled` (profiles.ts), so a model that accepts
+ * `disabled` (Haiku 5.5, Opus 5, Sonnet 5) carries its rejected types here
+ * alone. Order: the model's own row; else the shape's default when the profile
+ * lists `thinking_control`; else none. Without a profile (the alpha.125
+ * signature) the default stands in for "no row", as before.
+ */
+export function rejectedThinkingTypes(
+  modelId: string | undefined,
+  profile?: Pick<ModelProfile, 'lowering'>,
+): readonly string[] {
+  const row = modelId !== undefined ? THINKING_TYPES_REJECTED[modelId]?.types : undefined;
+  if (row) return row;
+  if (profile === undefined) return THINKING_TYPES_REJECTED_DEFAULT;
+  return profileRejects(profile, 'thinking_control') ? THINKING_TYPES_REJECTED_DEFAULT : [];
 }
 
 /** Does this profile document `shape` as a 400? */
@@ -170,11 +223,12 @@ export function gateOverrideLayer(
   let out: Record<string, unknown> | undefined;
   const edit = (): Record<string, unknown> => (out ??= { ...layer });
 
-  if (profileRejects(profile, 'thinking_control') && layer.thinking && typeof layer.thinking === 'object') {
+  const thinkingRejected = rejectedThinkingTypes(profile.id, profile);
+  if (thinkingRejected.length > 0 && layer.thinking && typeof layer.thinking === 'object') {
     const type = (layer.thinking as { type?: unknown }).type;
     // Per model (THINKING_TYPES_REJECTED): by default `disabled` and `enabled`;
-    // on Haiku 5.5 `enabled` and `between_tools`. `adaptive` is accepted by all.
-    if (typeof type === 'string' && rejectedThinkingTypes(profile.id).includes(type)) {
+    // on Haiku 5.5, Opus 5 and Sonnet 5 `enabled` and `between_tools`. `adaptive` is accepted by all.
+    if (typeof type === 'string' && thinkingRejected.includes(type)) {
       delete edit().thinking;
       const vendor = profile.id !== undefined ? THINKING_TYPES_REJECTED[profile.id]?.vendor : undefined;
       dropped.push({
@@ -233,7 +287,8 @@ export function gateProviderOverrides(
   if (!overrides || !profile || profile.provider !== 'anthropic' || !overrides.anthropic) {
     return { overrides, dropped: [] };
   }
-  if (!profile.lowering?.rejects?.length) return { overrides, dropped: [] };
+  const hasThinkingRow = profile.id !== undefined && THINKING_TYPES_REJECTED[profile.id] !== undefined;
+  if (!profile.lowering?.rejects?.length && !hasThinkingRow) return { overrides, dropped: [] };
   const g = gateOverrideLayer(overrides.anthropic, profile);
   if (g.dropped.length === 0) return { overrides, dropped: [] };
   return { overrides: { ...overrides, anthropic: g.layer }, dropped: g.dropped };
@@ -657,4 +712,33 @@ export function thinkingPrefixRecoveredAdvisory(
     ...(handle ? { kgautoRequestId: handle } : {}),
     ownership: deriveOwnership(THINKING_PREFIX_RECOVERED_CODE),
   };
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// alpha.133 (R3) / alpha.134 (R8) — a dropped setting is a mutation, on call() and on bare compile()
+// ─────────────────────────────────────────────────────────────────────────
+
+/** The id slug of a dropped shape: the setting's own name, or `assistant-prefill`. */
+function shapeDropSlug(d: RejectedShapeDrop): string {
+  return d.shape === 'assistant_prefill' ? 'assistant-prefill' : d.field;
+}
+
+/**
+ * One mutation per dropped setting: `request-shape-dropped-<setting>`
+ * (`temperature`, `top_p`, `top_k`, `thinking`, `tool_choice`,
+ * `assistant-prefill`), deduplicated by id.
+ */
+export function shapeDropMutations(model: string, drops: RejectedShapeDrop[]): MutationApplied[] {
+  const out: MutationApplied[] = [];
+  for (const d of drops) {
+    const id = `request-shape-dropped-${shapeDropSlug(d)}`;
+    if (out.some((m) => m.id === id)) continue;
+    out.push({
+      id,
+      source: 'request_shape',
+      passName: d.source === 'lowering' ? 'lower' : 'gate_provider_overrides',
+      description: `Dropped ${d.field} (${d.detail}; from ${d.source}) before the wire: ${model} rejects it with HTTP 400.`,
+    });
+  }
+  return out;
 }

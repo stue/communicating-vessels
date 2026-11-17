@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import type { ModelProfile } from '@warmdrift/kgauto-compiler';
 import { runCheck, DESTINATION_SENTENCE, type EngineOptions } from '../src/engine.js';
 import type { Extract } from '../src/extract.js';
+import { READ } from './helpers/read.js';
 
 /** Minimal fixture profile — lowering/recovery are irrelevant to the engine. */
 function mkProfile(over: Partial<ModelProfile> & { id: string }): ModelProfile {
@@ -102,13 +103,15 @@ describe('runCheck — certain-tier catalog facts', () => {
     expect(titles(r)).toContain('no structured-output support');
   });
 
-  it('worst-case input over the context window is red + certain; typical-only estimate degrades to likely', () => {
+  // 0.4.3 (R1): a catalog limit is Likely in every run — its page is not read at run time (until 0.4.2: certain when dated).
+  it('worst-case input over the context window is red + likely, with the day the catalog was dated; typical-only and undated are likely too', () => {
     const certain = runCheck(
       extract([{ id: 's1', model: 'good-model', maxInputTokens: 300_000 }]),
-      opts,
+      { ...opts, pages: READ },
     ).findings.find((f) => f.title.includes('context window'));
     expect(certain?.severity).toBe('red');
-    expect(certain?.confidence).toBe('certain');
+    expect(certain?.confidence).toBe('likely');
+    expect(certain?.basis).toMatch(/verified against the provider's page \d{4}-\d{2}-\d{2}/);
 
     const likely = runCheck(
       extract([{ id: 's1', model: 'good-model', estInputTokens: 300_000 }]),
@@ -214,7 +217,7 @@ describe('renderCard', () => {
         { id: 's0', model: 'claude-sonnet-4-20250514', platform: 'provider-api' },
         { id: 's1', model: 'good-model', archetype: 'summarize', estInputTokens: 10_000, estOutputTokens: 1_000 },
       ]),
-      opts,
+      { ...opts, pages: READ },
     );
     const iCertain = r.card.indexOf('## Certain');
     const iLikely = r.card.indexOf('## Likely');
@@ -222,7 +225,8 @@ describe('renderCard', () => {
     expect(iCertain).toBeGreaterThan(-1);
     expect(iLikely).toBeGreaterThan(iCertain);
     expect(iMeasurable).toBeGreaterThan(iLikely);
-    expect(r.card).toContain(DESTINATION_SENTENCE);
+    // 0.4.3 (R2): the footer says what this run read
+    expect(r.card).toContain('It read 10 of 10 provider pages in this run');
   });
 });
 
@@ -279,7 +283,11 @@ describe('real bundled roster (integration)', () => {
   it('runs without options against the real catalog and stays honest on a fake id', () => {
     const r = runCheck(extract([{ id: 's1', model: 'not-a-real-model-xyz' }]));
     expect(titles(r)).toContain('was not recognised');
-    expect(r.card).toContain(DESTINATION_SENTENCE);
+    // 0.4.3 (R1/R2): with no read passed, the footer says no provider page was read
+    expect(r.card).toContain('This check ran on your machine and read no provider page in this run');
+    expect(DESTINATION_SENTENCE).toMatch(/nothing about your project leaves it unless you choose to share the result/);
+    // the not-recognised line is about the lookup itself: Certain with or without a read
+    expect(r.findings.find((f) => f.title.includes('was not recognised'))?.confidence).toBe('certain');
     expect(r.catalogVersion).toMatch(/^\d+\.\d+\.\d+/);
   });
 });

@@ -7,6 +7,7 @@ import { describe, it, expect } from 'vitest';
 import type { ModelProfile } from '@warmdrift/kgauto-compiler';
 import { runCheck } from '../src/engine.js';
 import type { Extract } from '../src/extract.js';
+import { READ } from './helpers/read.js';
 
 type Site = Extract['callSites'][number];
 const run = (sites: Site[], opts?: Parameters<typeof runCheck>[1]) => runCheck({ project: { name: 'made-up' }, callSites: sites }, opts);
@@ -14,14 +15,15 @@ const find = (r: ReturnType<typeof run>, s: string) => r.findings.find((f) => f.
 
 describe('C3 — line kinds with no test of their own until now', () => {
   it('lifecycle, shut down on a date the page gives (certain on a stated provider API)', () => {
-    const f = find(run([{ id: 'made-up.ts:1', model: 'gemini-1.5-flash', platform: 'provider-api' }]), 'gemini-1.5-flash')!;
+    // 0.4.3 (R1): Certain on the pages as read for this release
+    const f = find(run([{ id: 'made-up.ts:1', model: 'gemini-1.5-flash', platform: 'provider-api' }], { pages: READ }), 'gemini-1.5-flash')!;
     expect(f.confidence).toBe('certain');
     expect(f.severity).toBe('red');
     expect(f.title).toBe("On Google's own API, `gemini-1.5-flash` was shut down on 2025-09-29");
   });
 
   it('lifecycle, deprecated with its requests routed to another model from a date', () => {
-    const f = find(run([{ id: 'made-up.ts:1', model: 'gemini-2.5-flash', platform: 'provider-api' }]), 'gemini-2.5-flash')!;
+    const f = find(run([{ id: 'made-up.ts:1', model: 'gemini-2.5-flash', platform: 'provider-api' }], { pages: READ }), 'gemini-2.5-flash')!;
     expect(f.confidence).toBe('certain');
     expect(f.title).toBe("On Google's own API, `gemini-2.5-flash` is deprecated; from 2026-12-01 its requests route to `gemini-3.5-flash-lite`");
   });
@@ -35,7 +37,8 @@ describe('C3 — line kinds with no test of their own until now', () => {
     expect(direct.detail).not.toContain('may set its own');
   });
 
-  it('B6 — the structured-output line is certain on the provider API and likely, with the sentence, on a partner', () => {
+  // 0.4.3 (R1): a catalog capability is Likely in every run; only the partner sentence tells the two sites apart.
+  it('B6 — the structured-output line is likely on the provider API (until 0.4.2: certain) and likely, with the sentence, on a partner', () => {
     // No bundled profile declares structuredOutput 'none' in alpha.133, so this kind is tested on a made-up profile.
     const p = {
       id: 'made-up-model',
@@ -57,9 +60,10 @@ describe('C3 — line kinds with no test of their own until now', () => {
       strengths: [],
       weaknesses: [],
     } as unknown as ModelProfile;
-    const opts = { resolve: () => ({ canonical: 'made-up-model', profile: p }), roster: () => [p] };
+    const opts = { resolve: () => ({ canonical: 'made-up-model', profile: p }), roster: () => [p], pages: READ };
     const onApi = find(run([{ id: 'made-up.ts:1', model: 'made-up-model', platform: 'provider-api', expectsStructuredOutput: true }], opts), 'structured-output')!;
-    expect(onApi.confidence).toBe('certain');
+    expect(onApi.confidence).toBe('likely');
+    expect(onApi.detail).not.toContain('may set its own');
     const onVertex = find(run([{ id: 'made-up.ts:1', model: 'made-up-model', platform: 'vertex', expectsStructuredOutput: true }], opts), 'structured-output')!;
     expect(onVertex.confidence).toBe('likely');
     expect(onVertex.detail).toContain("This site runs on Vertex AI: the figure is from Google's own API, and Vertex AI may set its own.");

@@ -1,7 +1,7 @@
 {
   "name": "@warmdrift/kgauto-check",
-  "version": "0.4.2",
-  "description": "Point your AI at your project — kgauto's local check, as a pure CLI for coding agents. Your agent extracts the project's AI surface (identifiers and counts, never code) and this tool checks it against kgauto's verified model catalog: statuses, prices, cliffs, capability mismatches, resilience. Fully offline; --share is the one explicit opt-in exception.",
+  "version": "0.4.3",
+  "description": "Point your AI at your project — kgauto's local check, as a pure CLI for coding agents. Your agent extracts the project's AI surface (identifiers and counts, never code) and this tool checks it against kgauto's verified model catalog and the providers' own deprecation pages, read in each run: statuses, prices, cliffs, capability mismatches, resilience. It reads your repository on your machine; nothing about your project leaves it unless you choose to share the result (--share).",
   "type": "module",
   "bin": {
     "kgauto-check": "dist/bin.js"
@@ -40,7 +40,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
-    "@warmdrift/kgauto-compiler": "2.0.0-alpha.133",
+    "@warmdrift/kgauto-compiler": "2.0.0-alpha.134",
     "zod": "^3.23.0"
   },
   "devDependencies": {

@@ -41,6 +41,7 @@ import type {
   CompileResult,
   SystemModelMessage,
   BestPracticeAdvisory,
+  MutationApplied,
 } from './ir.js';
 
 export interface CompileForAISDKv6Result {
@@ -88,10 +89,31 @@ export interface CompileForAISDKv6Result {
    *   with `'none'` among its values for both the Responses and Chat APIs
    *   (ai-sdk.dev/providers/ai-sdk-providers/openai, read 2026-10-06).
    *
+   * - `anthropic.thinking` / `anthropic.effort: 'low'` — alpha.134 (R2).
+   *   Present iff the lowered Anthropic request carries the model's own
+   *   off-switch (`lowering.thinkingOff`, sent on a `thinking_with_short_output`
+   *   cliff). Read with `@ai-sdk/anthropic` 3.0.79's own source (dist/index.js,
+   *   read 2026-11-15): its `thinking` schema is `adaptive` | `enabled` |
+   *   `disabled` (lines 910–929), and only `enabled` / `adaptive` are put on the
+   *   wire (`isThinking`, lines 3405–3426), so `thinking: { type: 'disabled' }`
+   *   validates and is NOT sent; `effort` becomes `output_config.effort`
+   *   (lines 3427–3431) and IS sent. Both are set for `disabled` (the switch
+   *   says what kgauto means; the effort is what reaches the wire on that
+   *   version). For `between_tools` (Sonnet 5.5) only `effort` is set: that
+   *   version's schema has no `between_tools`, and `parseProviderOptions`
+   *   throws `InvalidArgumentError: invalid anthropic provider options` on it
+   *   (measured 2026-11-15 with a fake fetch through `generateText`, ai 6.0.191).
+   *   The adapter's mutation ids say what it SETS (`thinking-off-set-disabled`,
+   *   `effort-low-set`, `thinking-off-withheld-sdk`), never "sent" (Amendment B 15).
+   *
    * Undefined when nothing applies.
    */
   providerOptions?: {
-    anthropic?: { cacheControl?: { type: 'ephemeral' } };
+    anthropic?: {
+      cacheControl?: { type: 'ephemeral' };
+      thinking?: { type: 'disabled' | 'between_tools' };
+      effort?: 'low' | 'medium' | 'high' | 'xhigh' | 'max';
+    };
     google?: { thinkingConfig?: { thinkingBudget?: number } };
     deepseek?: { thinking?: { type: 'enabled' | 'disabled' } };
     openai?: { reasoningEffort?: 'none' };
@@ -148,7 +170,7 @@ export function compileForAISDKv6(
 ): CompileForAISDKv6Result {
   // Mirror the public `compile()` exit path: compile, then register so
   // record() can enrich the outcome. Then arm consume-tracking on the handle.
-  const result = compileImpl(ir, opts);
+  const result = adaptOffSwitchMutations(compileImpl(ir, opts));
   // alpha.68 / Release A — forward the fan-out parent handle (usually undefined
   // for AI-SDK compile paths) so registerCompile derives the linkage.
   registerCompile(ir.appId, ir.intent.archetype, ir, result, opts?.parentHandle);
@@ -255,6 +277,18 @@ function deriveProviderOptions(
   if (result.provider === 'anthropic' && result.diagnostics.cacheableTokens > 0) {
     out.anthropic = { cacheControl: { type: 'ephemeral' } };
   }
+  if (result.provider === 'anthropic') {
+    // alpha.134 (R2) — read from the lowered request (declares ⇒ emits): the
+    // off-switch is there only when the short-output rule fired and was not withheld.
+    const type = (req.thinking as { type?: string } | undefined)?.type;
+    if (type === 'disabled' || type === 'between_tools') {
+      out.anthropic = {
+        ...(out.anthropic ?? {}),
+        ...(type === 'disabled' ? { thinking: { type } } : {}),
+        effort: 'low',
+      };
+    }
+  }
   if (result.provider === 'google') {
     const budget = (req.generationConfig as { thinkingConfig?: { thinkingBudget?: unknown } } | undefined)
       ?.thinkingConfig?.thinkingBudget;
@@ -268,4 +302,65 @@ function deriveProviderOptions(
     out.openai = { reasoningEffort: 'none' };
   }
   return Object.keys(out).length ? out : undefined;
+}
+
+/**
+ * alpha.134 (Amendment A 2, Amendment B 15) — on the adapter path kgauto SETS
+ * `providerOptions`; the consumer's installed SDK decides what reaches the
+ * wire, so no adapter id says "sent". The compile lowers for the plain-fetch
+ * wire and its `-sent-` ids say what THAT wire carries; this adapter rewrites
+ * them to what it hands over (deriveProviderOptions):
+ *   - `disabled` (Haiku 5.5, Opus 5, Sonnet 5): `thinking-off-sent-disabled` →
+ *     `thinking-off-set-disabled` + `effort-low-set`. `@ai-sdk/anthropic`
+ *     3.0.79 sends `effort` and drops the `thinking` field (its `isThinking`,
+ *     dist/index.js 3405–3426, covers enabled / adaptive only), so with that
+ *     version effort low is the setting that reaches Anthropic.
+ *   - `between_tools` (Sonnet 5.5): not in 3.0.79's schema (it throws), so it
+ *     cannot even be set → `thinking-off-withheld-sdk` (a decision) +
+ *     `effort-low-set`.
+ * No earlier id names an effort: the two mutation ids in v2/src with "effort"
+ * in them, 2026-11-15, are `best_effort_profile_<id>` and
+ * `thinking-off-withheld-effort`. Both new ids are ordinary mutations (a change
+ * to the request kgauto hands over). The returned compile is what
+ * registerCompile records, so the brain row says what the adapter handed over.
+ * `raw.request` stays the plain-fetch lowering.
+ * (was: `thinking-off-sent-disabled` kept and `effort-low-sent`, until Amendment B.)
+ */
+function adaptOffSwitchMutations(result: CompileResult): CompileResult {
+  if (result.provider !== 'anthropic') return result;
+  const type = (result.request as { thinking?: { type?: string } }).thinking?.type;
+  if (type !== 'disabled' && type !== 'between_tools') return result;
+  const effortLow: MutationApplied = {
+    id: 'effort-low-set',
+    source: 'cliff_guard',
+    passName: 'compile_for_aisdk',
+    description: `${result.target}: set providerOptions.anthropic.effort 'low' (the SDK sends it as output_config.effort), because the short-output rule fired.`,
+  };
+  const out: MutationApplied[] = [];
+  for (const m of result.mutationsApplied) {
+    if (m.id === 'thinking-off-sent-between_tools') {
+      out.push({
+        id: 'thinking-off-withheld-sdk',
+        source: 'cliff_guard',
+        passName: 'compile_for_aisdk',
+        description:
+          `${result.target}: thinking { type: 'between_tools' } NOT set — @ai-sdk/anthropic 3.0.79's providerOptions schema has no between_tools ` +
+          `and throws on it, so the adapter sets effort 'low' alone. Thinking stays on (adaptive).`,
+      });
+      out.push(effortLow);
+    } else if (m.id === 'thinking-off-sent-disabled') {
+      out.push({
+        id: 'thinking-off-set-disabled',
+        source: 'cliff_guard',
+        passName: 'compile_for_aisdk',
+        description:
+          `${result.target}: set providerOptions.anthropic.thinking { type: 'disabled' }, the model's own off-switch. ` +
+          `Whether it reaches the wire is the installed SDK's: @ai-sdk/anthropic 3.0.79 drops it (isThinking covers enabled / adaptive only).`,
+      });
+      out.push(effortLow);
+    } else {
+      out.push(m);
+    }
+  }
+  return { ...result, mutationsApplied: out };
 }

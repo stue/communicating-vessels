@@ -11,4 +11,4 @@
  * guard in `tests/version.test.ts` fails the suite (and therefore
  * `prepublishOnly`) when they diverge — a stale constant cannot reach npm.
  */
-export const LIBRARY_VERSION = '2.0.0-alpha.133';
+export const LIBRARY_VERSION = '2.0.0-alpha.134';

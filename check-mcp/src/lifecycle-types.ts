@@ -6,13 +6,33 @@
 export type LedgerProvider = 'anthropic' | 'openai' | 'google' | 'deepseek';
 
 /** The provider's word, mapped onto one small set. `pageWord` keeps the page's own text. */
-export type LedgerWord = 'deprecated' | 'retired' | 'shut down' | 'legacy' | 'rerouted' | 'scheduled for shutdown' | 'listed';
+export type LedgerWord =
+  | 'deprecated'
+  | 'retired'
+  | 'shut down'
+  | 'legacy'
+  | 'rerouted'
+  | 'scheduled for shutdown'
+  | 'listed'
+  | 'no longer supported';
 
 /**
  * 0.4.2 Amendment A1: `listed` is not a provider word about the model's end. It is a table row on the provider's
  * deprecation page with no shutdown date and no deprecation word; `pageWord` keeps the page's own words for it.
+ *
+ * 0.4.3 (R6): `no longer supported` is Google's changelog's own phrase ("Gemini 1.0 Pro is no longer supported."),
+ * added rather than mapped onto `shut down` or `retired`, which the changelog does not say of these models.
  */
-export const LEDGER_WORDS: readonly LedgerWord[] = ['deprecated', 'retired', 'shut down', 'legacy', 'rerouted', 'scheduled for shutdown', 'listed'];
+export const LEDGER_WORDS: readonly LedgerWord[] = [
+  'deprecated',
+  'retired',
+  'shut down',
+  'legacy',
+  'rerouted',
+  'scheduled for shutdown',
+  'listed',
+  'no longer supported',
+];
 
 export interface LedgerRow {
   /** The model id exactly as the page writes it. */
@@ -52,6 +72,17 @@ export interface LedgerRow {
   alsoUrl?: string;
   alsoQuote?: string;
   alsoReadOn?: string;
+  /**
+   * 0.4.3 (R6): set on a row from Google's changelog that names the model in words, not by its id — the words it
+   * names it by ("Gemini 1.0 Pro"). The link from the id to that name is ours, so such a row's line is never Certain.
+   */
+  namedAs?: string;
+  /** 0.4.3 (R6): the changelog entry's date heading the quote sits under, as the page writes it. */
+  entryHeading?: string;
+  /** 0.4.3 (R6): the date heading of the `alsoQuote` entry (the changelog's own introduction of the id). */
+  alsoHeading?: string;
+  /** 0.4.3 (R6): Google's model page for this id, requested by the generator at build time (never at run time). */
+  modelPage?: { url: string; status: number; at: string };
 }
 
 /** 0.4.2: a provider's own definition of a word the card quotes, verbatim from the page it cites. */

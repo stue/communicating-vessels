@@ -1,7 +1,18 @@
-export { runCheck, renderCard, analyseModel, DESTINATION_SENTENCE, ageSentence, STALE_AFTER_DAYS } from './engine.js';
+export { runCheck, renderCard, analyseModel, DESTINATION_SENTENCE, destinationSentence, ageSentence, STALE_AFTER_DAYS } from './engine.js';
 export type { Finding, CheckResult, Confidence, Severity, EngineOptions, ModelAnalysis } from './engine.js';
-export { ExtractSchema, CallSiteSchema, ModelMentionSchema } from './extract.js';
-export type { Extract, CallSite, ModelMention } from './extract.js';
+export { ExtractSchema, CallSiteSchema, ModelMentionSchema, SiteContextSchema } from './extract.js';
+export type { Extract, CallSite, ModelMention, SiteContext } from './extract.js';
+export {
+  REQUEST_URLS,
+  readPagesFromNetwork,
+  readPagesFromDir,
+  readForRun,
+  noRequestRead,
+  resolveRead,
+  toRecord,
+  fromRecord,
+} from './pages.js';
+export type { PageRead, PageOutcome, ReadRecord, RowState } from './pages.js';
 export { LEDGER, LEDGER_SOURCES } from './lifecycle-ledger.js';
 export type { LedgerRow, LedgerSource, LedgerWord, LedgerProvider } from './lifecycle-types.js';
 export { resolveId, lookupLedger, LEDGER_READ_ON } from './lifecycle.js';

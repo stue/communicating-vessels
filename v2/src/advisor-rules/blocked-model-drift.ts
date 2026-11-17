@@ -92,7 +92,7 @@ export const BLOCKED_MODEL_FAMILY_SIBLING_SERVED_CODE =
   'blocked-model-family-sibling-served';
 
 const DOCS_URL =
-  'https://github.com/stue/command-center/blob/main/interfaces/kgauto.md#best-practice-advisories';
+  'https://github.com/stue/communicating-vessels/blob/main/v2/README.md#structured-advisories-api-alpha29';
 
 export interface BlockedModelDriftContext {
   /** Consumer policy for this compile. Rule is silent when absent/empty. */

@@ -59,6 +59,7 @@ import {
   gateProviderOverrides,
   inputTransformationAdvisories,
   rejectedShapeAdvisory,
+  shapeDropMutations,
   stripThinkingBlocks,
   thinkingDroppedAdvisory,
   thinkingPrefixRecoveredAdvisory,
@@ -861,8 +862,13 @@ export async function call(ir: PromptIR, opts: CallOptions = {}): Promise<CallRe
         ...loweringShapeDrops(activeCompile),
         ...overrideGate.dropped,
       ];
+      // alpha.134 (R8) — compile() now lists its own lowering drop under the same id, so
+      // an id already on the served compile is not added twice.
       const mutationsApplied: MutationApplied[] = shapeDrops.length > 0
-        ? [...servedMutations, ...shapeDropMutations(targetModel, shapeDrops)]
+        ? [
+            ...servedMutations,
+            ...shapeDropMutations(targetModel, shapeDrops).filter((m) => !servedMutations.some((s) => s.id === m.id)),
+          ]
         : servedMutations;
 
       // alpha.133 (R4) — no advisory on this result recommends moving to a
@@ -1941,30 +1947,9 @@ export function loweringShapeDrops(compile: Pick<CompileResult, 'advisories'>): 
   return [{ shape: 'assistant_prefill', field: 'messages', source: 'lowering', detail }];
 }
 
-/** The id slug of a dropped shape: the setting's own name, or `assistant-prefill`. */
-function shapeDropSlug(d: RejectedShapeDrop): string {
-  return d.shape === 'assistant_prefill' ? 'assistant-prefill' : d.field;
-}
-
-/**
- * One mutation per dropped setting: `request-shape-dropped-<setting>`
- * (`temperature`, `top_p`, `top_k`, `thinking`, `tool_choice`,
- * `assistant-prefill`), deduplicated by id.
- */
-export function shapeDropMutations(model: string, drops: RejectedShapeDrop[]): MutationApplied[] {
-  const out: MutationApplied[] = [];
-  for (const d of drops) {
-    const id = `request-shape-dropped-${shapeDropSlug(d)}`;
-    if (out.some((m) => m.id === id)) continue;
-    out.push({
-      id,
-      source: 'request_shape',
-      passName: d.source === 'lowering' ? 'lower' : 'gate_provider_overrides',
-      description: `Dropped ${d.field} (${d.detail}; from ${d.source}) before the wire: ${model} rejects it with HTTP 400.`,
-    });
-  }
-  return out;
-}
+// alpha.134 (R8) — `shapeDropMutations` moved to request-shapes.ts so bare compile() emits the
+// same id; re-exported here for callers that import it from call.
+export { shapeDropMutations } from './request-shapes.js';
 
 /** The plain name of a dropped setting, for the summary. */
 function shapeDropWords(d: RejectedShapeDrop): string {
@@ -2020,6 +2005,9 @@ export function isDecisionOnlyMutation(m: Pick<MutationApplied, 'id' | 'passName
   return [
     'stable-prefix-passes-withheld',
     'cliff-withheld-unevidenced',
+    'thinking-off-withheld-effort',
+    'thinking-off-withheld-thinking-blocks',
+    'thinking-off-withheld-sdk',
     'cliff-quality-warning',
     'cliff-escalate',
     'sequential-mode-chain-selected',
@@ -2121,6 +2109,8 @@ export function buildCallSummary(x: CallSummaryInput): string {
 
   // ── Sentence 2: each change made to the request.
   const changes: string[] = [];
+  /** alpha.134 — what kgauto decided NOT to change, said after the changes. */
+  const notesExtra: string[] = [];
   const d = x.compile.diagnostics;
   const sumOf = (hit: MutationApplied[], prefix: string): number =>
     hit.reduce((n, m) => n + (Number(m.id.slice(prefix.length)) || 0), 0);
@@ -2154,11 +2144,46 @@ export function buildCallSummary(x: CallSummaryInput): string {
     // A convention that touched only a warning or hint left the wire as it was: it is a note.
     if (edits.suffix || edits.prefix) for (const m of conv) named.add(m.id);
   }
-  if (nameAll((m) => m.id === 'cliff-thinking-zero').length > 0) {
-    changes.push(
-      x.compile.advisories.some((a) => a.code === 'reasoning-off-for-tools')
-        ? 'turned reasoning off so the tools could be sent (the model takes tools only without reasoning)'
-        : "turned the model's thinking off for this call",
+  // alpha.134 (R2) — on an Anthropic target the cliff's effect is the off-switch
+  // the lowering sent (`thinking-off-sent-<type>`) or withheld; the clause says which.
+  const offSent = nameAll((m) => m.id.startsWith('thinking-off-sent-'));
+  // Amendment A 2 — the adapter's own pair (compile-aisdk.ts): the switch the SDK cannot carry.
+  const offSdk = nameAll((m) => m.id === 'thinking-off-withheld-sdk');
+  const offSet = nameAll((m) => m.id === 'thinking-off-set-disabled');
+  const effortLow = nameAll((m) => m.id === 'effort-low-set');
+  const offWithheld = nameAll((m) => m.id.startsWith('thinking-off-withheld-') && m.id !== 'thinking-off-withheld-sdk');
+  if (offSdk.length > 0) {
+    nameAll((m) => m.id === 'cliff-thinking-zero');
+    // Ruling 19 — ruling 15's verb: the adapter sets, the installed SDK sends. (was: "kept the thinking on;
+    // sent effort low (the installed SDK cannot send between_tools)", until ruling 19.)
+    changes.push('kept the thinking on; set effort low for the AI SDK (the installed SDK decides what reaches the wire; it cannot send between_tools)');
+  } else if (offSet.length > 0) {
+    nameAll((m) => m.id === 'cliff-thinking-zero');
+    changes.push('set thinking: disabled and effort low for the AI SDK (the installed SDK decides what reaches the wire)');
+  } else if (effortLow.length > 0) {
+    changes.push('set effort low for the AI SDK');
+  }
+  if (offSdk.length === 0 && offSet.length === 0 && nameAll((m) => m.id === 'cliff-thinking-zero').length > 0) {
+    if (offSent.length > 0) {
+      const type = offSent[0]!.id.slice('thinking-off-sent-'.length);
+      changes.push(
+        type === 'between_tools'
+          ? "turned the model's up-front thinking off for this call (thinking: between_tools)"
+          : `turned the model's thinking off for this call (thinking: ${type})`,
+      );
+    } else if (offWithheld.length === 0) {
+      changes.push(
+        x.compile.advisories.some((a) => a.code === 'reasoning-off-for-tools')
+          ? 'turned reasoning off so the tools could be sent (the model takes tools only without reasoning)'
+          : "turned the model's thinking off for this call",
+      );
+    }
+  }
+  if (offWithheld.length > 0) {
+    notesExtra.push(
+      offWithheld[0]!.id === 'thinking-off-withheld-effort'
+        ? `kept the thinking on: ${x.servedBy} rejects its off-switch at the effort in force`
+        : 'kept the thinking on: the conversation carries thinking blocks that must stay bound',
     );
   }
   if (nameAll((m) => m.id === 'cliff-terse').length > 0) changes.push('asked for a short answer');
@@ -2184,6 +2209,7 @@ export function buildCallSummary(x: CallSummaryInput): string {
     changes.push(`made ${plural(otherChanges, 'other change')}, listed under mutations`);
   }
   let second = changes.length > 0 ? `kgauto ${listWords(changes)}` : 'kgauto made no change to the request';
+  if (notesExtra.length > 0) second += `, and ${listWords(notesExtra)}`;
   if (notes.length > 0) {
     second += `; ${plural(notes.length, 'entry', 'entries')} under mutations ${notes.length === 1 ? 'records a decision' : 'record decisions'} that did not change the request`;
   }
@@ -2295,7 +2321,7 @@ function servedModelDiffersAdvisory(a: {
       'A difference here on a pinned model means the route substituted — it is not a transport.',
     suggestion:
       'The provider answered a different model than asked — on a pinned route this is a substitution, not a transport; check `kgauto_aliases` for a known alias, read the provider\'s page today, and if it is a retarget, the profile is stale (L-073).',
-    docsUrl: 'https://github.com/stue/command-center/blob/main/interfaces/kgauto.md#public-api',
+    docsUrl: 'https://github.com/stue/communicating-vessels/blob/main/v2/README.md#quickstart',
     kgautoRequestId: a.handle,
     ownership: deriveOwnership(code),
   };

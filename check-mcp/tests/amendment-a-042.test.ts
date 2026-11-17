@@ -10,7 +10,8 @@ import { runCheck } from '../src/engine.js';
 import type { Extract } from '../src/extract.js';
 import { renderModelFacts } from '../src/model-facts.js';
 import { LEDGER } from '../src/lifecycle-ledger.js';
-import { replacementForm } from '../scripts/ledger-check.mjs';
+import { replacementForm } from '../src/ledger-check.mjs';
+import { READ } from './helpers/read.js';
 
 const row = (id: string) => LEDGER.find((r) => r.id === id);
 const ex = (models: string[]): Extract => ({
@@ -31,7 +32,8 @@ describe('A1 — an id the provider’s page lists is never "not recognised"', (
   });
 
   it('its card line: one informational line on Google’s own API, the replacement, the page and the read date', () => {
-    const res = runCheck(ex(['gemini-3.1-flash-live-preview']));
+    // 0.4.3 (R1): Certain on the pages as read for this release
+    const res = runCheck(ex(['gemini-3.1-flash-live-preview']), { pages: READ });
     const ls = lineFor(res, 'gemini-3.1-flash-live-preview');
     expect(ls).toHaveLength(1);
     expect(ls[0]!.severity).toBe('info');
@@ -40,7 +42,7 @@ describe('A1 — an id the provider’s page lists is never "not recognised"', (
       // Amendment B1 rewords the A1 line by the row's heading (tests/amendment-b-042.test.ts)
       "On Google's own API, `gemini-3.1-flash-live-preview` has no shutdown date announced: Google's deprecations page lists it among its preview models; its page names `gemini-3.8-live`",
     );
-    expect(ls[0]!.basis).toMatch(/^Google's page, read \d{4}-\d{2}-\d{2}: https:\/\/aistudio\.google\.com\/docs\/deprecations$/);
+    expect(ls[0]!.basis).toMatch(/^Google's page, read in this run \(\d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC\): https:\/\/aistudio\.google\.com\/docs\/deprecations$/);
     expect(res.card).not.toContain('not recognised');
   });
 

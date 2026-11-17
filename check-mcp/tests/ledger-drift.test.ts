@@ -5,14 +5,17 @@
  * ledgers written here in the generator's own shape. Every case that must print `0 rows moved` is
  * beside a case on the same pages that must not.
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterAll } from 'vitest';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, writeFileSync, cpSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, cpSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const PKG = join(dirname(fileURLToPath(import.meta.url)), '..');
+// 0.4.3 Amendment B3: the folders these tests make are inside ROOT, removed when the file is done.
+const ROOT = mkdtempSync(join(tmpdir(), 'ledger-drift-test-'));
+afterAll(() => rmSync(ROOT, { recursive: true, force: true }));
 const SCRIPT = join(PKG, 'scripts/ledger-drift.mjs');
 const PAGES = join(PKG, 'tests/fixtures/drift');
 const G = 'https://aistudio.google.com/docs/deprecations';
@@ -50,7 +53,7 @@ const DEFS = [
 
 /** A ledger file in the shape scripts/build-ledger.mjs writes. */
 function ledgerFile(rows: Row[], defs: object[] | null = DEFS): string {
-  const dir = mkdtempSync(join(tmpdir(), 'drift-test-'));
+  const dir = mkdtempSync(join(ROOT, 'drift-test-'));
   const f = join(dir, 'lifecycle-ledger.ts');
   const sources = [
     { provider: 'anthropic', url: A, readAt: '2026-11-12T06:20:55Z', sha256: '0'.repeat(64) },
@@ -131,7 +134,7 @@ describe('R2 — ledger-drift.mjs', () => {
   });
 
   it('it fetches nothing without --fetch: pages are read only from --pages', () => {
-    const dir = mkdtempSync(join(tmpdir(), 'drift-pages-'));
+    const dir = mkdtempSync(join(ROOT, 'drift-pages-'));
     cpSync(join(PAGES, 'google-deprecations.html'), join(dir, 'google-deprecations.html'));
     const r = drift(ledgerFile([STEADY, CLAUDE]), dir);
     expect(r.code).toBe(2); // the Anthropic page is not in dir, so its row is not checked

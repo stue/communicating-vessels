@@ -35,7 +35,7 @@ import {
   type TargetScore,
 } from './passes.js';
 import { lower } from './lower.js';
-import { rejectedShapeAdvisory } from './request-shapes.js';
+import { rejectedShapeAdvisory, shapeDropMutations } from './request-shapes.js';
 import {
   getProfile,
   tryGetProfile,
@@ -586,6 +586,43 @@ export function compile(ir: PromptIR, opts: CompileOptions = {}): CompileResult 
     estimatedInputTokens: inputTokens,
   });
 
+  // alpha.134 (R2) — the model's own thinking off-switch, said either way: the
+  // switch on the wire (`thinking-off-sent-<type>`), or why it is not there
+  // (`thinking-off-withheld-<reason>`, a decision that leaves the wire as it was).
+  const offOutcome = lowered.diagnostics.thinkingOff;
+  if (offOutcome) {
+    if ('sent' in offOutcome) {
+      accumulatedMutations.push({
+        id: `thinking-off-sent-${offOutcome.sent}`,
+        source: 'cliff_guard',
+        passName: 'lower',
+        description:
+          `${profile.id}: sent thinking { type: '${offOutcome.sent}' } — the model's own off-switch` +
+          (offOutcome.sent === 'between_tools' ? ' for up-front thinking' : '') +
+          ` (lowering.thinkingOff), because the short-output rule fired.`,
+      });
+    } else if (offOutcome.withheld === 'effort') {
+      accumulatedMutations.push({
+        id: 'thinking-off-withheld-effort',
+        source: 'cliff_guard',
+        passName: 'lower',
+        description:
+          `${profile.id}: thinking { type: '${offOutcome.type}' } NOT sent — the effort in force is ${offOutcome.effort}, ` +
+          `and the provider's thinking page accepts the switch only at effort ${offOutcome.effortAtMost} or below (a 400 above it). Thinking stays on.`,
+      });
+    } else {
+      accumulatedMutations.push({
+        id: 'thinking-off-withheld-thinking-blocks',
+        source: 'cliff_guard',
+        passName: 'lower',
+        description:
+          `${profile.id}: thinking { type: '${offOutcome.type}' } NOT sent — the conversation carries thinking blocks, and ` +
+          `the request keeps thinking { type: 'adaptive', block_binding } so a block whose prefix changed is dropped, not a 400 ` +
+          `(block_binding is accepted only with adaptive). Thinking stays on.`,
+      });
+    }
+  }
+
   // ── Pass 8: validate fits ──
   // (Already done in scoring; re-check after cliffs may have trimmed tools.)
   validateFinalFit(workingIR, profile, inputTokens);
@@ -814,7 +851,7 @@ export function compile(ir: PromptIR, opts: CompileOptions = {}): CompileResult 
       suggestion:
         'Move it: `compile(ir, { policy: { ... } })`. If you also configure policy correctly elsewhere on this path, remove the IR copy so the next reader is not misled.',
       docsUrl:
-        'https://github.com/stue/command-center/blob/main/interfaces/kgauto.md#public-api',
+        'https://github.com/stue/communicating-vessels/blob/main/v2/README.md#quickstart',
     });
   }
 
@@ -850,6 +887,11 @@ export function compile(ir: PromptIR, opts: CompileOptions = {}): CompileResult 
   // Said, never silent: the consumer's prefill did not reach the model.
   if (lowered.diagnostics.rejectedShapesDropped?.length) {
     rawAdvisories.push(rejectedShapeAdvisory(profile.id, lowered.diagnostics.rejectedShapesDropped));
+    // alpha.134 (R8) — the dropped setting is a mutation on bare compile() too, under the id
+    // call() gives it (`request-shape-dropped-<setting>`): a change to the request is listed in
+    // `mutationsApplied` beside the advisory that quotes the provider. (was: call() only, until
+    // alpha.134 — the alpha.133 report's objection 1.)
+    accumulatedMutations.push(...shapeDropMutations(profile.id, lowered.diagnostics.rejectedShapesDropped));
   }
 
   // alpha.121 (item G) — reasoning turned off because the call offers tools on

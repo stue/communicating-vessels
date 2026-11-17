@@ -9,6 +9,7 @@ import { renderModelFacts } from '../src/model-facts.js';
 import { LEDGER, LEDGER_SOURCES } from '../src/lifecycle-ledger.js';
 import { LEDGER_WORDS } from '../src/lifecycle-types.js';
 import { resolveId, lookupLedger, catalogProfile } from '../src/lifecycle.js';
+import { READ } from './helpers/read.js';
 
 const ex = (sites: Extract['callSites'], models?: Extract['models']): Extract => ({
   project: { name: 't' },
@@ -50,7 +51,8 @@ describe('R1 — the ledger', () => {
 
 describe('R2 — the provider word first', () => {
   it('a retired id says retired, by whom, when, and the replacement the page names — certain, with the URL', () => {
-    const r = runCheck(ex([{ id: 's1', model: 'claude-sonnet-4-20250514', platform: 'provider-api' }]));
+    // 0.4.3 (R1): Certain on the pages as read for this release
+    const r = runCheck(ex([{ id: 's1', model: 'claude-sonnet-4-20250514', platform: 'provider-api' }]), { pages: READ });
     const f = find(r, 'retired');
     expect(f?.title).toContain("On Anthropic's own API, `claude-sonnet-4-20250514` was retired on 2026-06-15");
     expect(f?.title).toContain('claude-sonnet-5-5');

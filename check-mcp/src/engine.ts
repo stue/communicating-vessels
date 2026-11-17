@@ -2,12 +2,14 @@
  * The deterministic check engine. Every finding carries a confidence tier —
  * the mechanical answer to "how much confidence?":
  *
- *   certain          — the provider's own page, or a fact read from the
- *                      developer's code; stated flatly.
- *   likely           — priced/inferred from the agent's own estimates, or a
- *                      kgauto catalog value no provider page is cited for; a
- *                      provider's word where the call may not use the
- *                      provider's own API; no retry or fallback in the code.
+ *   certain          — the provider's own page as read in this run (0.4.3,
+ *                      R1), or a fact read from the developer's code or about
+ *                      the lookup itself; stated flatly.
+ *   likely           — a provider's page as read on an earlier day (the day
+ *                      is on the line); priced/inferred from the agent's own
+ *                      estimates; a catalog value; a provider's word where the
+ *                      call may not use the provider's own API; no retry or
+ *                      fallback in the code.
  *   measurable-only  — honestly unknowable from a code read; each one is
  *                      exactly what the observe day exists to measure.
  *
@@ -18,8 +20,11 @@
  * routing `status` is never printed as a fact about the model, and a limit
  * that is only a kgauto default is never printed as certain (R4).
  *
- * No network, no writes: the card's destination sentence is true because
- * there is no code path that could make it false.
+ * The engine makes no request and writes nothing: `runCheck` is synchronous.
+ * The pages read in this run come in as an option (`pages`, src/pages.ts); with
+ * none passed, every provider line is the page as this version read it, unread
+ * in this run. The card's destination sentence is true because there is no
+ * code path here that could make it false.
  */
 import {
   allProfiles,
@@ -54,6 +59,19 @@ import {
   type Resolution,
 } from './lifecycle.js';
 import type { LedgerRow } from './lifecycle-types.js';
+import {
+  unreadAll,
+  NOT_READ_BY_CALLER,
+  definitionKey,
+  minuteOf,
+  pagesCount,
+  lastReadAt,
+  readInThisRun,
+  NOT_THE_PAGE,
+  type PageRead,
+  type RowState,
+} from './pages.js';
+import type { SiteContext } from './extract.js';
 
 export type Confidence = 'certain' | 'likely' | 'measurable-only';
 export type Severity = 'red' | 'yellow' | 'info';
@@ -67,6 +85,8 @@ export interface Finding {
   /** Where the claim comes from — a provider page with its URL, a catalog field, an extract field, arithmetic. */
   basis: string;
   callSites: string[];
+  /** 0.4.3 (R4): where each call site's id is written, as the extract says (aligned with callSites; undefined = not stated). */
+  contexts?: (SiteContext | undefined)[];
 }
 
 export interface CheckResult {
@@ -84,6 +104,13 @@ export interface EngineOptions {
   share?: boolean;
   /** 0.4.2 (R3), test seam: the day the card is printed, `YYYY-MM-DD`. Defaults to the machine's clock (UTC date); no network. */
   today?: string;
+  /**
+   * 0.4.3 (R1): the providers' pages as read in this run (src/pages.ts). The engine never reads them itself;
+   * with none passed every row is unread ("not read by this caller") and no provider line is Certain.
+   */
+  pages?: PageRead;
+  /** 0.4.3 (R5): where the check runs — the CLI or the MCP server — so the footer names the right switch. Defaults to the CLI. */
+  surface?: 'cli' | 'mcp';
 }
 
 /** 0.4.2 (R3): the card says its age only when the pages are more than this many days old. */
@@ -105,14 +132,47 @@ export function ageSentence(today: string, readOn: string = LEDGER_READ_ON): str
 
 const machineToday = () => new Date().toISOString().slice(0, 10);
 
+/** 0.4.3 (R7): what the check says of itself, wherever it says it. */
 export const DESTINATION_SENTENCE =
-  'This check ran on your machine, against the catalog bundled with it and the providers’ deprecation pages it was built with. ' +
-  'Nothing was uploaded; no rows were written anywhere.';
+  'The check reads your repository on your machine; nothing about your project leaves it unless you choose to share the result.';
 
-/** Amendment B3: the footer of a card the CLI will send (--share), printed and stored. */
-export const SHARE_DESTINATION_SENTENCE =
-  'This check ran on your machine, against the catalog bundled with it and the providers’ deprecation pages it was built with. ' +
-  'Because you ran it with --share, this card and the extract are sent after it is printed.';
+/** Amendment B3: the last sentence of a card the CLI will send (--share), printed and stored. */
+export const SHARE_SENTENCE = 'Because you ran it with --share, this card and the extract are sent after it is printed.';
+/** 0.4.3 (R5): the same, for a card the server sends on share_card. */
+export const SHARE_SENTENCE_MCP = 'Because you said yes to sharing it, this card and the extract are sent after it is printed.';
+
+/** The switch that stops the read, as each surface names it. */
+export const switchName = (surface: 'cli' | 'mcp') => (surface === 'mcp' ? 'the offline input' : '--offline');
+
+/**
+ * 0.4.3 (R2): the card's footer — what this run read and what it sent. A run that read pages says how many
+ * of the same public pages it read; `--offline` says it made no request; a caller that passed no read says
+ * it read none. A card that will be shared ends on the share sentence.
+ */
+export function destinationSentence(read: PageRead, share = false, surface: 'cli' | 'mcp' = 'cli'): string {
+  const last = share ? (surface === 'mcp' ? SHARE_SENTENCE_MCP : SHARE_SENTENCE) : undefined;
+  if (readInThisRun(read)) {
+    const { read: n, requested: m } = pagesCount(read);
+    const missed = read.pages.filter((p) => !p.ok) as { reason: string }[];
+    const other = missed.filter((p) => p.reason === NOT_THE_PAGE).length;
+    const missedSentence =
+      n < m
+        ? `${m - n} ${other === 0 ? 'did not answer' : other === missed.length ? 'answered with a page this version does not read' : 'did not answer or answered with a page this version does not read'}; their lines say so.`
+        : '';
+    const head = `This check ran on your machine. It read ${n} of ${m} provider pages in this run — the same ${m} public pages whatever your project holds.`;
+    return last
+      ? [head, missedSentence, last].filter(Boolean).join(' ')
+      : [head, 'Nothing about your project was sent anywhere, and no rows were written anywhere.', missedSentence].filter(Boolean).join(' ');
+  }
+  const bundled = `every provider line is the page as this version read it on ${LEDGER_READ_ON}.`;
+  const head =
+    read.how === 'switched-off'
+      ? share
+        ? `This check ran on your machine and read no provider page (${switchName(surface)}): ${bundled}`
+        : `This check ran on your machine and made no network request (${switchName(surface)}): ${bundled}`
+      : `This check ran on your machine and read no provider page in this run: ${bundled}`;
+  return `${head} ${last ?? 'Nothing was uploaded; no rows were written anywhere.'}`;
+}
 
 const defaultResolve = (id: string) => ({ canonical: resolveModelAlias(id), profile: tryGetProfile(id) });
 
@@ -180,9 +240,85 @@ function placeLine(line: Line, provider: string, st: SiteState): Line {
   return { ...line, confidence: 'likely', detail: `${line.detail} ${parts.join(' ')}`, basis };
 }
 
-/** R2: one ledger row → the provider's word about its own API, when, and the replacement the page names. */
-function ledgerLine(a: { shown: string; row: LedgerRow; via?: string; res: Resolution; checksSkip: boolean }): Line {
+/** 0.4.3 (R1): a row's state in a read; a caller that passed no read read nothing. */
+export function rowStateIn(read: PageRead | undefined, id: string): RowState {
+  return read?.rows.get(id) ?? { state: 'unread', reason: NOT_READ_BY_CALLER };
+}
+/** 0.4.3 (R2): a definition's state in a read. */
+export function definitionStateIn(read: PageRead | undefined, d: { provider: string; word: string }): RowState {
+  return read?.definitions.get(definitionKey(d)) ?? { state: 'unread', reason: NOT_READ_BY_CALLER };
+}
+
+/** 0.4.3 (R2): "n days before this run", in words. */
+function daysBefore(today: string, readOn: string): string {
+  const n = daysSinceRead(today, readOn);
+  return n <= 0 ? 'the day of this run' : `${n} day${n === 1 ? '' : 's'} before this run`;
+}
+
+/**
+ * 0.4.3 (R2): the state sentence and basis every provider line carries — when its page was read, in the line.
+ * Confirmed: read in this run, with its time. Unread: the page as this version read it, n days before, and why
+ * it was not read. Changed: the line no longer on the page, and the page to read before acting.
+ */
+function stateWords(
+  P: string,
+  row: { readOn: string; url: string; alsoUrl?: string },
+  st: RowState,
+  today: string,
+): { titlePrefix: string; tail: string; basis: string } {
+  const also = row.alsoUrl && row.alsoUrl !== row.url ? ` (and ${row.alsoUrl})` : '';
+  if (st.state === 'confirmed')
+    return { titlePrefix: '', tail: '', basis: `${P}'s page, read in this run (${minuteOf(st.at)} UTC): ${row.url}${also}` };
+  if (st.state === 'changed')
+    return {
+      titlePrefix: `As read on ${row.readOn} (the page has changed since): `,
+      tail: `${P}'s page no longer carries this line as it was read. Read the page before acting on the date: ${row.url}. A newer version of the check carries a newer read.`,
+      basis: `${P}'s page as read ${row.readOn}, changed when read in this run (${minuteOf(st.at)} UTC): ${row.url}${also}`,
+    };
+  return {
+    titlePrefix: '',
+    tail: `This is ${P}'s page as this version of the check read it on ${row.readOn}, ${daysBefore(today, row.readOn)}; it was not read in this run (${st.reason}).`,
+    basis: `${P}'s page as read ${row.readOn}: ${row.url}${also}`,
+  };
+}
+
+/** 0.4.3 (R6): a changelog row that names the model in words — never Certain, said in one sentence. */
+function changelogLine(a: { shown: string; row: LedgerRow; checksSkip: boolean; state: RowState; today: string }): Line {
   const { row, shown } = a;
+  const P = PROVIDER_NAME[row.provider];
+  const w = stateWords(P, row, a.state, a.today);
+  const parts: string[] = [
+    `${P}'s changelog names the model in words, not by this id; the link from \`${a.row.id}\` to “${row.namedAs}” is this check's, so this line is Likely whatever the page says.`,
+  ];
+  if (row.alsoQuote && row.alsoHeading)
+    parts.push(`Its entry of ${row.alsoHeading} introduced the id: “${row.alsoQuote}” — the only place a ${P} page this version read carries it.`);
+  if (a.checksSkip) parts.push('The catalog has no entry for it, so its limits and price were not checked.');
+  // R6: the line ends on the build-time fact (before R2's sentence when the page was not read in this run)
+  if (row.modelPage && row.modelPage.status === 404)
+    parts.push(`${P}'s model page for this id answered 404 on ${row.modelPage.at.slice(0, 10)}.`);
+  if (w.tail) parts.push(w.tail);
+  return {
+    severity: 'red',
+    confidence: 'likely',
+    title: `${w.titlePrefix}${shown} is, by this check's reading, ${row.namedAs}: ${P}'s changelog says “${row.quote}” (${row.entryHeading})`,
+    detail: parts.join(' '),
+    basis: w.basis.replace(`${P}'s page`, `${P}'s changelog`),
+  };
+}
+
+/** R2: one ledger row → the provider's word about its own API, when, and the replacement the page names. */
+function ledgerLine(a: {
+  shown: string;
+  row: LedgerRow;
+  via?: string;
+  res: Resolution;
+  checksSkip: boolean;
+  state: RowState;
+  today: string;
+  pages?: PageRead;
+}): Line {
+  const { row, shown } = a;
+  if (row.namedAs) return changelogLine(a);
   const P = PROVIDER_NAME[row.provider];
   const readOn = row.readOn;
   const date = row.shutdown;
@@ -244,7 +380,9 @@ function ledgerLine(a: { shown: string; row: LedgerRow; via?: string; res: Resol
 
   const parts: string[] = [];
   if (a.via) parts.push(`The page lists the dated snapshot \`${a.via}\`.`);
-  const def = WORD_DEFINITION[row.provider]?.[row.word];
+  // 0.4.3 (R2): a definition is quoted only when it is on its page in this run or its page is unread; a changed one is not.
+  const defText = WORD_DEFINITION[row.provider]?.[row.word];
+  const def = defText && definitionStateIn(a.pages, { provider: row.provider, word: row.word }).state !== 'changed' ? defText : undefined;
   if (def) parts.push(`${P}'s deprecations page (${DEFINITION_PAGE[row.provider]}): “${def}”`);
   if (row.word === 'legacy' && row.pointedTo) {
     parts.push(`When ${P} announced it (${row.announced}), the name pointed to \`${row.pointedTo}\`.`);
@@ -257,18 +395,24 @@ function ledgerLine(a: { shown: string; row: LedgerRow; via?: string; res: Resol
     // Amendment A1: a Google table row's quote is its cells joined by " | "; an empty last cell is not quoted.
     parts.unshift(`The page's line: “${(row.section !== undefined ? row.quote.replace(/ \| $/, '') : row.quote).replace(/\s+/g, ' ').replace(/\[([^\]]+)\]\([^)]*\)/g, '$1').replace(/\*\*/g, '').slice(0, 240)}”.`);
   if (a.checksSkip) parts.push('The catalog has no entry for it, so its limits and price were not checked.');
+  const w = stateWords(P, row, a.state, a.today);
+  if (w.tail) parts.push(w.tail);
   const severity: Severity =
     row.word === 'listed' ? 'info' : row.word === 'retired' || row.word === 'shut down' || (row.word === 'legacy' && past) ? 'red' : 'yellow';
   return {
     severity,
-    confidence: 'certain',
-    title,
+    // 0.4.3 (R1): Certain only when the row is confirmed in this run (placeLine still lowers it off the provider's API).
+    confidence: a.state.state === 'confirmed' ? 'certain' : 'likely',
+    title: `${w.titlePrefix}${title}`,
     detail: parts.join(' '),
-    basis: `${P}'s page, read ${readOn}: ${row.url}${row.alsoUrl ? ` (and ${row.alsoUrl})` : ''}`,
+    basis: w.basis,
   };
 }
 
-/** R2: the catalog profile's providerLifecycle word, with its read date and page. Never the catalog's routing `status`. */
+/**
+ * R2: the catalog profile's providerLifecycle word, with its read date and page. Never the catalog's routing `status`.
+ * 0.4.3 (R1): Likely in every run — the model page is not read at run time, and the line carries the day it was.
+ */
 function providerLifecycleLine(shown: string, p: ModelProfile): Line | undefined {
   const pl = p.providerLifecycle;
   if (!pl || pl.status === 'active') return undefined;
@@ -276,7 +420,7 @@ function providerLifecycleLine(shown: string, p: ModelProfile): Line | undefined
   const floor = retirementFloorClause({ retirementFloor: pl.retirementFloor, readOn: pl.readOn });
   return {
     severity: pl.status === 'retired' ? 'red' : 'yellow',
-    confidence: 'certain',
+    confidence: 'likely',
     title: `On ${P}'s own API, ${shown} is ${capital(pl.status)}: its model page says so (read ${pl.readOn})${floor}${pl.replacement ? `; it names \`${pl.replacement}\`` : ''}`,
     detail:
       pl.status === 'legacy'
@@ -443,14 +587,29 @@ export function analyseModel(
   if (row && profile && !listed) {
     // A ledger word that means requests now fail: no request-shape check is meaningful.
     if (row.word === 'retired' && !row.routesTo) profile = undefined;
-    else if (row.word === 'shut down') profile = undefined;
+    else if (row.word === 'shut down' || row.word === 'no longer supported') profile = undefined;
     // A kgauto alias the provider's page does not support: do not check the id as another model.
     else if (canonical !== cat.id && row.replacement !== canonical && row.routesTo !== canonical) profile = undefined;
   }
 
   const lines: Line[] = [];
   if (row) {
-    lines.push(placeLine(ledgerLine({ shown: shownId, row, via: hit.via, res, checksSkip: !profile }), row.provider, st));
+    lines.push(
+      placeLine(
+        ledgerLine({
+          shown: shownId,
+          row,
+          via: hit.via,
+          res,
+          checksSkip: !profile,
+          state: rowStateIn(opts.pages, row.id),
+          today: opts.today ?? machineToday(),
+          pages: opts.pages,
+        }),
+        row.provider,
+        st,
+      ),
+    );
     const pl = listed && profile ? providerLifecycleLine(shownId, profile) : undefined;
     if (pl && profile) lines.push(placeLine(pl, profile.provider, st));
   } else if (profile) {
@@ -507,7 +666,9 @@ export function runCheck(extract: Extract, opts: EngineOptions = {}): CheckResul
     // page is a fact about that API. On a partner platform or a gateway (the same SiteState the
     // lifecycle line reads) every such line is likely and carries one sentence saying whose figure it is.
     const offApi = a.partner;
-    const docTier: Confidence = profile.verifiedAgainstDocs && !offApi ? 'certain' : 'likely';
+    // 0.4.3 (R1): a catalog value is Likely in every run — its page is not read at run time; the line carries
+    // the day the catalog was dated against it (until 0.4.2: certain when dated and on the provider's own API).
+    const docTier: Confidence = 'likely';
     const docBasis = profile.verifiedAgainstDocs
       ? `catalog, verified against the provider's page ${profile.verifiedAgainstDocs}`
       : 'catalog value, not dated against a provider page';
@@ -716,20 +877,52 @@ export function runCheck(extract: Extract, opts: EngineOptions = {}): CheckResul
     }
   }
 
+  // 0.4.3 (R4): where each site's id is written, as the extract says; then, within a tier, findings with a site
+  // in code that runs first, then those with a site whose context is not stated, then the rest (a stable sort).
+  const ctxOf = new Map<string, SiteContext | undefined>();
+  for (const s of extract.callSites) if (!ctxOf.has(s.id)) ctxOf.set(s.id, s.context);
+  for (const m of extract.models ?? []) if (!ctxOf.has(m.where)) ctxOf.set(m.where, m.context);
+  for (const f of merged) f.contexts = f.callSites.map((s) => ctxOf.get(s));
+  const ordered = merged
+    .map((f, i) => ({ f, i, r: contextRank(f) }))
+    .sort((a, b) => a.r - b.r || a.i - b.i)
+    .map((x) => x.f);
+
   return {
-    findings: merged,
-    card: renderCard(extract, merged, analyses, opts.share === true, opts.today ?? machineToday()),
+    findings: ordered,
+    card: renderCard(extract, ordered, analyses, opts.share === true, opts.today ?? machineToday(), { pages: opts.pages, surface: opts.surface }),
     catalogVersion: LIBRARY_VERSION,
   };
 }
 
+/** 0.4.3 (R4): 0 — a site in code that runs; 1 — a site whose context is not stated; 2 — tests, examples or docs only. */
+export function contextRank(f: Pick<Finding, 'contexts' | 'callSites'>): number {
+  const cs = f.contexts ?? f.callSites.map(() => undefined);
+  if (cs.includes('runs')) return 0;
+  if (cs.some((c) => c === undefined)) return 1;
+  return 2;
+}
+
+/** 0.4.3 (R4): the order a model's sites are counted under — the first of these any of its sites carries. */
+const CONTEXT_ORDER: (SiteContext | undefined)[] = ['runs', undefined, 'test', 'example', 'docs'];
+const CONTEXT_WORDS: Record<string, (n: number) => string> = {
+  runs: (n) => `${n} in code that runs`,
+  unstated: (n) => `${n} where the extract does not say`,
+  test: (n) => `${n} in tests`,
+  docs: (n) => `${n} in docs`,
+  example: (n) => `${n} in examples`,
+};
+/** The header's order (R4's sentence): runs, tests, docs, examples, not stated. */
+const HEADER_ORDER = ['runs', 'test', 'docs', 'example', 'unstated'];
+
 const TIER_ORDER: Confidence[] = ['certain', 'likely', 'measurable-only'];
 const TIER_HEADING: Record<Confidence, string> = {
-  certain: 'Certain — read from the providers’ pages and your code',
+  // 0.4.3 (R1): Certain is the provider's page as read in this run, or your code.
+  certain: 'Certain — on the provider’s page as read in this run, or read from your code',
   // 0.4.1 (R5): since 0.4.0 this tier also holds a provider's word on a call that may not use the provider's own
-  // API (a partner, a gateway, an unstated platform) and the no-fallback line; the heading names all three.
+  // API (a partner, a gateway, an unstated platform) and the no-fallback line; 0.4.3 (R1): and a page as read on an earlier day.
   likely:
-    'Likely — priced from your estimates or a catalog value no provider page is cited for; a provider’s word where the call may not use its own API; no retry or fallback found in the code',
+    'Likely — a provider’s page as read on an earlier day (the day is on the line); a provider’s changelog about a model it names in words; priced from your estimates; a provider’s word where the call may not use its own API; no retry or fallback found in the code',
   'measurable-only': 'Only measurable — what the observe day answers',
 };
 const SEV_MARK: Record<Severity, string> = { red: '\u{1F534}', yellow: '\u{1F7E1}', info: 'ℹ️' };
@@ -740,7 +933,9 @@ export function renderCard(
   analyses: ReadonlyMap<string, ModelAnalysis> = new Map(),
   share = false,
   today: string = machineToday(),
+  extra: { pages?: PageRead; surface?: 'cli' | 'mcp' } = {},
 ): string {
+  const read = extra.pages ?? unreadAll('none', NOT_READ_BY_CALLER);
   const lines: string[] = [];
   lines.push(`# Communicating Vessels — the check: ${extract.project.name}`);
   lines.push('');
@@ -752,11 +947,12 @@ export function renderCard(
     return a ? a.shown : `\`${m}\``;
   };
   // 0.4.2 Amendment A1: a `listed` row is not a flag; the catalog's own lifecycle word still counts.
-  const flagged = models.filter((m) => {
+  const flaggedIds = models.filter((m) => {
     const a = analyses.get(m);
     const pl = a?.profile?.providerLifecycle?.status;
     return (a?.row && a.row.word !== 'listed') || (pl !== undefined && pl !== 'active');
-  }).length;
+  });
+  const flagged = flaggedIds.length;
   const unknown = models.filter((m) => {
     const a = analyses.get(m);
     return a && !a.row && !a.profile;
@@ -766,14 +962,39 @@ export function renderCard(
       'No AI call site and no model id were found in this extract, so there is nothing to check against the catalog or the providers’ pages.',
     );
   } else {
-    const counts = [
-      flagged > 0 ? `${flagged} flagged by its provider` : '',
-      unknown > 0 ? `${unknown} not recognised` : '',
+    // 0.4.3 (R4): the flagged count, by where each id is written; a model counts once, under the first of
+    // runs · not stated · test · example · docs that any of its sites carries.
+    const stated = [...extract.callSites, ...(extract.models ?? [])].some((s) => s.context !== undefined);
+    const ctxClass = (m: string): string => {
+      const cs = [
+        ...extract.callSites.filter((s) => s.model === m).map((s) => s.context),
+        ...(extract.models ?? []).filter((s) => s.model === m).map((s) => s.context),
+      ];
+      const c = CONTEXT_ORDER.find((o) => cs.includes(o));
+      return c ?? 'unstated';
+    };
+    const byCtx = new Map<string, number>();
+    for (const m of flaggedIds) byCtx.set(ctxClass(m), (byCtx.get(ctxClass(m)) ?? 0) + 1);
+    const ctxParts = HEADER_ORDER.filter((k) => (byCtx.get(k) ?? 0) > 0).map((k) => CONTEXT_WORDS[k]!(byCtx.get(k)!));
+    // Amendment B4: an id flagged only by this check's reading of a provider's changelog (R6) is counted apart from
+    // the provider's own flags; the context counts stay over both together.
+    const byChangelog = flaggedIds.filter((m) => analyses.get(m)?.row?.namedAs !== undefined).length;
+    const byProvider = flagged - byChangelog;
+    const flagParts = [
+      byProvider > 0 ? `${byProvider} flagged by its provider` : '',
+      byChangelog > 0 ? `${byChangelog} by this check's reading of a provider's changelog` : '',
     ].filter(Boolean);
+    const flaggedText = flagParts.length ? `${flagParts.join(', ')}${stated && ctxParts.length ? ` — ${ctxParts.join(', ')}` : ''}` : '';
+    const unknownText = unknown > 0 ? `${unknown} not recognised` : '';
+    const counts = [flaggedText, unknownText].filter(Boolean);
     lines.push(
       `${extract.callSites.length} AI call site(s), ${models.length} model id(s): ${models.map(label).join(', ')}` +
-        (counts.length ? ` (${counts.join(', ')})` : ''),
+        (counts.length ? ` (${counts.join(stated && ctxParts.length ? '; ' : ', ')})` : ''),
     );
+    if (!stated) {
+      lines.push('');
+      lines.push('The extract does not say where each id is written, so this count is of every place an id appears.');
+    }
     if (extract.callSites.length === 0) {
       lines.push('');
       lines.push(
@@ -788,19 +1009,27 @@ export function renderCard(
     lines.push(`## ${TIER_HEADING[tier]}`);
     lines.push('');
     for (const f of group) {
-      lines.push(`- ${SEV_MARK[f.severity]} **${f.title}** — ${f.detail}`);
-      lines.push(`  <sub>${f.callSites.join(', ')} · basis: ${f.basis}</sub>`);
+      // 0.4.3 (R4): a finding none of whose sites runs or is unstated prints the ℹ️ mark whatever its word.
+      const mark = contextRank(f) === 2 ? SEV_MARK.info : SEV_MARK[f.severity];
+      const sites = f.callSites.map((s, i) => {
+        const c = f.contexts?.[i];
+        return c ? `${s} (${c})` : s;
+      });
+      lines.push(`- ${mark} **${f.title}** — ${f.detail}`);
+      lines.push(`  <sub>${sites.join(', ')} · basis: ${f.basis}</sub>`);
     }
   }
   lines.push('');
   lines.push('---');
-  lines.push(`*${share ? SHARE_DESTINATION_SENTENCE : DESTINATION_SENTENCE}*`);
-  const age = ageSentence(today);
+  lines.push(`*${destinationSentence(read, share, extra.surface ?? 'cli')}*`);
+  // 0.4.3 (R2): the age sentence only when a provider line on the card is not from a page read in this run.
+  const notConfirmed = [...analyses.values()].some((a) => a.row && rowStateIn(read, a.row.id).state !== 'confirmed');
+  const age = notConfirmed ? ageSentence(today) : undefined;
   if (age) lines.push(`*${age}*`);
-  // Version stamp: with no install telemetry (offline by design), the card
-  // itself is the only place a bug report can self-identify its versions.
+  // Version stamp: the card itself is the only place a bug report can self-identify its versions.
+  const last = readInThisRun(read) ? lastReadAt(read) : undefined;
   lines.push(
-    `<sub>@warmdrift/kgauto-check ${CHECK_VERSION} · catalog @warmdrift/kgauto-compiler ${LIBRARY_VERSION} · deprecation pages read ${LEDGER_READ_ON}</sub>`,
+    `<sub>@warmdrift/kgauto-check ${CHECK_VERSION} · catalog @warmdrift/kgauto-compiler ${LIBRARY_VERSION} · deprecation pages bundled ${LEDGER_READ_ON}${last ? `, read in this run ${minuteOf(last)} UTC` : ''}</sub>`,
   );
   return lines.join('\n');
 }

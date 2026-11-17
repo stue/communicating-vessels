@@ -37,7 +37,7 @@ import { canonicalPolicySet, policySetHas } from '../policy-match.js';
 export const PREFERRED_MODEL_BLOCKED_CODE = 'preferred-model-blocked';
 
 const DOCS_URL =
-  'https://github.com/stue/command-center/blob/main/interfaces/kgauto.md#best-practice-advisories';
+  'https://github.com/stue/communicating-vessels/blob/main/v2/README.md#structured-advisories-api-alpha29';
 
 export interface PreferredBlockedOverlapContext {
   /** Consumer policy for this compile. Rule is silent when absent/empty. */
