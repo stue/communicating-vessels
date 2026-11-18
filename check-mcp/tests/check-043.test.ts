@@ -166,7 +166,8 @@ describe('R1 — a provider line is Certain only when its page was read in this 
     expect(ls.length).toBe(2);
     for (const f of ls) {
       expect(f.confidence).toBe('likely');
-      expect(f.detail).toContain('it was not read in this run (not read by this caller).');
+      // 0.4.4 (R4): gpt-4o rests on two pages, neither read — "they were"
+      expect(f.detail).toMatch(/(it was|they were) not read in this run \(not read by this caller\)\.$/);
     }
   });
 
@@ -223,17 +224,19 @@ describe('R1 — a provider line is Certain only when its page was read in this 
 
 // ── R2 ────────────────────────────────────────────────────────────────────
 describe('R2 — every provider line says when its page was read, in the line', () => {
-  it('confirmed: basis "<Provider>\'s page, read in this run (<YYYY-MM-DD HH:MM> UTC): <url>"', () => {
+  // 0.4.4 (R6): the page is named by its own title ("Model deprecations"); until 0.4.3 "Anthropic's page"
+  it('confirmed: basis "<Provider>\'s <page, by its title>, read in this run (<YYYY-MM-DD HH:MM> UTC): <url>"', () => {
     const f = lineOf(runCheck(ex([{ model: 'claude-opus-4-1' }]), { pages: READ }), 'claude-opus-4-1')!;
-    expect(f.basis).toBe("Anthropic's page, read in this run (2026-11-16 22:54 UTC): https://platform.claude.com/docs/en/about-claude/model-deprecations.md");
+    expect(f.basis).toBe("Anthropic's model deprecations page, read in this run (2026-11-18 18:23 UTC): https://platform.claude.com/docs/en/about-claude/model-deprecations.md");
   });
 
   it('unread: the detail ends with the day this version read it, n days before, and why not now; the basis says "as read"', async () => {
     const read = await readPagesFromNetwork({ fetchImpl: status(503) });
-    const f = lineOf(runCheck(ex([{ model: 'claude-opus-4-1' }]), { pages: read, today: '2026-11-20' }), 'claude-opus-4-1')!;
+    const f = lineOf(runCheck(ex([{ model: 'claude-opus-4-1' }]), { pages: read, today: '2026-11-21' }), 'claude-opus-4-1')!;
     const row = LEDGER.find((r) => r.id === 'claude-opus-4-1-20250805')!;
-    expect(f.detail.endsWith(`This is Anthropic's page as this version of the check read it on ${row.readOn}, 4 days before this run; it was not read in this run (HTTP 503).`)).toBe(true);
-    expect(f.basis).toBe(`Anthropic's page as read ${row.readOn}: ${row.url}`);
+    expect(row.readOn).toBe('2026-11-18'); // fix pass 1: the ledger re-read on 2026-11-18 (A4)
+    expect(f.detail.endsWith(`This is Anthropic's model deprecations page as this version of the check read it on ${row.readOn}, 3 days before this run; it was not read in this run (HTTP 503).`)).toBe(true);
+    expect(f.basis).toBe(`Anthropic's model deprecations page as read ${row.readOn}: ${row.url}`);
   });
 
   it('changed: the title begins "As read on <readOn> (the page has changed since):", the detail says to read the page, and a changed definition is not quoted', () => {
@@ -248,9 +251,9 @@ describe('R2 — every provider line says when its page was read, in the line', 
     (rec.rows as Map<string, unknown>).set('claude-opus-4-1-20250805', { state: 'changed', at: '2026-11-16T22:54:38Z', gone: [] });
     (rec.definitions as Map<string, unknown>).set('anthropic|retired', { state: 'changed', at: '2026-11-16T22:54:38Z', gone: [] });
     const f = lineOf(runCheck(ex([{ model: 'claude-opus-4-1' }]), { pages: rec }), 'claude-opus-4-1')!;
-    expect(f.title.startsWith('As read on 2026-11-16 (the page has changed since): On Anthropic\'s own API')).toBe(true);
+    expect(f.title.startsWith('As read on 2026-11-18 (the page has changed since): On Anthropic\'s own API')).toBe(true);
     expect(f.confidence).toBe('likely');
-    expect(f.detail).toContain("Anthropic's page no longer carries this line as it was read. Read the page before acting on the date: https://platform.claude.com/docs/en/about-claude/model-deprecations.md. A newer version of the check carries a newer read.");
+    expect(f.detail).toContain("This line is no longer on Anthropic's model deprecations page as it was read. Read the page before acting on the date: https://platform.claude.com/docs/en/about-claude/model-deprecations.md. A newer version of the check carries a newer read.");
     expect(f.detail).not.toContain('Requests to retired models fail.');
   });
 
@@ -277,7 +280,7 @@ describe('R2 — every provider line says when its page was read, in the line', 
 
   it('the stamp: "deprecation pages bundled <date>", and after a read ", read in this run <YYYY-MM-DD HH:MM> UTC"', async () => {
     const last = (c: string) => c.split('\n').at(-1)!;
-    expect(last(runCheck(ex([{ model: 'gpt-4o' }]), { pages: READ }).card)).toMatch(/· deprecation pages bundled \d{4}-\d{2}-\d{2}, read in this run 2026-11-16 22:54 UTC<\/sub>$/);
+    expect(last(runCheck(ex([{ model: 'gpt-4o' }]), { pages: READ }).card)).toMatch(/· deprecation pages bundled \d{4}-\d{2}-\d{2}, read in this run 2026-11-18 18:23 UTC<\/sub>$/);
     expect(last(runCheck(ex([{ model: 'gpt-4o' }]), { pages: await readForRun({ switchedOff: true }) }).card)).toMatch(/· deprecation pages bundled \d{4}-\d{2}-\d{2}<\/sub>$/);
   });
 
@@ -288,7 +291,7 @@ describe('R2 — every provider line says when its page was read, in the line', 
   });
 
   it('--model-facts and get_model_facts follow it: in this run, or the day it was read and why not now', async () => {
-    expect(renderModelFacts('claude-opus-4-1', { pages: READ })).toContain('(read in this run, 2026-11-16 22:54 UTC)');
+    expect(renderModelFacts('claude-opus-4-1', { pages: READ })).toContain('(read in this run, 2026-11-18 18:23 UTC)');
     const off = renderModelFacts('claude-opus-4-1', { pages: await readForRun({ switchedOff: true }), today: '2026-11-20' });
     expect(off).toMatch(/\(read \d{4}-\d{2}-\d{2}, \d+ days before this lookup; not read in this run \(--offline\)\)/);
     expect(off).toContain('this lookup made no network request (--offline)');
@@ -319,7 +322,8 @@ describe('R3 — a page that answers is not yet the page we know; one shape chec
       // its rows are unread, never changed
       const rows = MIN_LEDGER.set.rows.filter((r) => pageFileOf(r.url) === m.file);
       expect(rows.length).toBeGreaterThan(0);
-      for (const r of rows) expect(read.rows.get(r.id)).toEqual({ state: 'unread', reason: NOT_THE_PAGE });
+      // 0.4.4 (R4): the state also names the page that was not read
+      for (const r of rows) expect(read.rows.get(r.id)).toMatchObject({ state: 'unread', reason: NOT_THE_PAGE, notRead: [{ url: r.url, reason: NOT_THE_PAGE }] });
     });
   }
 
@@ -330,16 +334,17 @@ describe('R3 — a page that answers is not yet the page we know; one shape chec
     expect([...read.rows.values()].filter((s) => s.state === 'changed')).toHaveLength(0);
     const g = LEDGER.filter((r) => r.url === 'https://aistudio.google.com/docs/deprecations');
     expect(g.length).toBeGreaterThan(30);
-    for (const r of g) expect(read.rows.get(r.id)).toEqual({ state: 'unread', reason: NOT_THE_PAGE });
+    for (const r of g)
+      expect(read.rows.get(r.id)).toMatchObject({ state: 'unread', reason: NOT_THE_PAGE, notRead: expect.arrayContaining([{ url: r.url, reason: NOT_THE_PAGE }]) });
     const card = runCheck(ex([{ model: 'gemini-2.5-flash' }]), { pages: read }).card;
     expect(card).toContain('it was not read in this run (not the page this version reads).');
   });
 
   it('the expectations are written once, per page, and each made-up page meets them', () => {
     expect(Object.keys(PAGE_SHAPES).sort()).toEqual(
-      ['anthropic-deprecations.md', 'deepseek-news.html', 'deepseek-updates.html', 'google-changelog.html', 'google-deprecations.html', 'openai-deprecations.md', 'openai-model-*.md'].sort(),
+      ['anthropic-deprecations.md', 'deepseek-first-api-call.html', 'deepseek-updates.html', 'google-changelog.html', 'google-deprecations.html', 'openai-deprecations.md', 'openai-model-*.md'].sort(),
     );
-    for (const f of ['anthropic-deprecations.md', 'openai-deprecations.md', 'google-deprecations.html', 'google-changelog.html', 'deepseek-updates.html', 'deepseek-news.html'])
+    for (const f of ['anthropic-deprecations.md', 'openai-deprecations.md', 'google-deprecations.html', 'google-changelog.html', 'deepseek-updates.html', 'deepseek-first-api-call.html'])
       expect(pageShapeMisses(f, pageTextOf(f, readFileSync(join(MIN, f), 'utf8'))), f).toEqual([]);
     expect(pageShapeMisses('openai-model-gpt-4o.md', '# GPT-4o\n\nModel ID: `gpt-4o`\n\nStatus: Deprecated\n')).toEqual([]);
     expect(pageShapeMisses('openai-model-gpt-4o.md', '# GPT-4o\n\nModel ID: `gpt-4o`\n\nStatus:\n')).toEqual(['a "Status: <word>" line']);
@@ -361,20 +366,21 @@ describe('R4 — where an id is written, said by the extract and counted by the 
 
   it('the header counts the flagged ids by context, a model once under the first of runs · not stated · test · example · docs', () => {
     const card = runCheck(F, { pages: READ }).card;
-    // Amendment B4: the changelog id is counted apart from the provider's own flags; the context counts are over both
+    // Amendment B4: the changelog id is counted apart from the provider's own flags; the context counts are over both.
+    // 0.4.4 (R3): in two sentences, not one with a dash — who flagged how many, then where the flagged ids are written.
     expect(card).toContain(
-      "(7 flagged by its provider, 1 by this check's reading of a provider's changelog — 3 in code that runs, 1 in tests, 1 in docs, 1 in examples, 2 where the extract does not say)",
+      "7 are flagged by their providers, and 1 by this check's reading of Google's release notes page. Of the 8 flagged ids, 3 are in code that runs, 1 in tests, 1 in docs, 1 in examples and 2 where the extract does not say.",
     );
     expect(card.split('\n').filter((l) => l.includes('in code that runs'))).toHaveLength(1);
     // one model on a test site and a runs site counts once, under runs
     const two = runCheck(ex([{ model: 'gpt-4o', context: 'test' }, { model: 'gpt-4o', context: 'runs', where: 'src/x.py:1' }]), { pages: READ }).card;
-    expect(two).toContain('(1 flagged by its provider — 1 in code that runs)');
+    expect(two).toContain('1 is flagged by OpenAI. The flagged id is in code that runs.');
   });
 
   it('with no context stated anywhere: the 0.4.2 header, then one sentence', () => {
     const card = runCheck(ex([{ model: 'gpt-4o' }]), { pages: READ }).card;
     const lines = card.split('\n');
-    expect(lines[2]).toMatch(/\(1 flagged by its provider\)$/);
+    expect(lines[2]).toMatch(/ 1 is flagged by OpenAI\.$/);
     expect(lines[4]).toBe('The extract does not say where each id is written, so this count is of every place an id appears.');
   });
 
@@ -483,12 +489,14 @@ describe('R6 — a changelog row: news about a model named in words, never Certa
     const f = lineOf(r, 'gemini-pro')!;
     expect(f.confidence).toBe('likely');
     // Amendment B4: "this check's", not "our"
-    expect(f.title).toBe("`gemini-pro` is, by this check's reading, Gemini 1.0 Pro: Google's changelog says “Gemini 1.0 Pro is no longer supported.” (February 18, 2025)");
+    // 0.4.4 (R6): Google's page is titled "Release notes" (until 0.4.3: "Google's changelog says")
+    expect(f.title).toBe("`gemini-pro` is, by this check's reading, Gemini 1.0 Pro: Google's release notes page says “Gemini 1.0 Pro is no longer supported.” (February 18, 2025)");
     expect(f.detail).toContain('the link from `gemini-pro` to “Gemini 1.0 Pro” is this check\'s');
     expect(r.card).not.toMatch(/\bour reading\b|\bis ours\b/);
-    expect(r.card).toContain('## Likely — a provider’s page as read on an earlier day (the day is on the line); a provider’s changelog about a model it names in words;');
+    expect(r.card).toContain('## Likely — a provider’s page as read on an earlier day (the day is on the line); a provider’s release notes that name a model in words, not by its id;');
     expect(f.detail).toContain('Its entry of December 13 2023 introduced the id: “gemini-pro: New text model for a wide variety of tasks.”');
-    expect(f.detail.endsWith("Google's model page for this id answered 404 on 2026-11-16.")).toBe(true);
+    // the generator's own request, 2026-11-18T18:24:09Z (until 0.4.3: 2026-11-16; until fix pass 1: 2026-11-17)
+    expect(f.detail.endsWith("Google's model page for this id answered 404 on 2026-11-18.")).toBe(true);
     expect(r.card).not.toContain('was not recognised');
     expect(r.card.split('\n').filter((l) => l.includes('no longer supported'))).toHaveLength(1);
   });
@@ -548,7 +556,7 @@ describe('Amendment A1 — ledger-drift.mjs --fetch --discard-pages', () => {
 
   it('Amendment B2(a): a run that ends on exit 2 (a page not saved) keeps the folder', () => {
     const d = pagesWith();
-    rmSync(join(d, 'deepseek-news.html'));
+    rmSync(join(d, 'deepseek-first-api-call.html'));
     const r = run(['--fetch', '--discard-pages'], MIN_LEDGER.file, d);
     expect(r.status).toBe(2);
     expect(r.stdout).not.toContain('pages removed');
@@ -574,7 +582,7 @@ describe('Amendment A1 — ledger-drift.mjs --fetch --discard-pages', () => {
 describe('a resolveRead sanity check: a URL not in the request set is unread, never confirmed', () => {
   it('a row whose page is not requested', () => {
     const read = resolveRead('network', [], MIN_LEDGER.set);
-    for (const s of read.rows.values()) expect(s).toEqual({ state: 'unread', reason: 'not a page this version requests' });
+    for (const s of read.rows.values()) expect(s).toMatchObject({ state: 'unread', reason: 'not a page this version requests', read: [] });
   });
 });
 
@@ -588,10 +596,17 @@ describe('Amendment B1 — a model page is the page asked for, or it is unread',
     const control = await readPagesFromNetwork({ fetchImpl: serve(MIN), ledger: MIN_LEDGER.set });
     expect(control.rows.get('gpt-4o-mini')?.state).toBe('confirmed'); // its own page confirms it
     const read = await readPagesFromNetwork({ fetchImpl: serve(planted()), ledger: MIN_LEDGER.set });
-    expect(read.rows.get('gpt-4o-mini')).toEqual({ state: 'unread', reason: NOT_THE_PAGE });
+    // 0.4.4 (R4): the state says which of the row's two pages was not read, and that the other was
+    expect(read.rows.get('gpt-4o-mini')).toMatchObject({
+      state: 'unread',
+      reason: NOT_THE_PAGE,
+      notRead: [{ url: MINI, reason: NOT_THE_PAGE }],
+      read: [{ url: 'https://developers.openai.com/api/docs/deprecations.md', stands: true }],
+    });
     expect(read.rows.get('gpt-4o')?.state).toBe('confirmed');
     const page = read.pages.find((p) => p.url === MINI)!;
-    expect(!page.ok && page.missing).toEqual(['a "Model ID: `gpt-4o-mini`" line (found `gpt-4o`)']);
+    // 0.4.4 (R5, R6): the title is part of the shape now, so the plant misses two pieces: the title and the one id line
+    expect(!page.ok && page.missing).toEqual(['the title "GPT-4o mini" (found "GPT-4o")', 'exactly one "Model ID: `gpt-4o-mini`" line (found `gpt-4o`)']);
     const { destinationSentence } = await import('../src/engine.js');
     const m = MIN_LEDGER.set.urls.length;
     expect(destinationSentence(read)).toContain(`It read ${m - 1} of ${m} provider pages in this run`);
@@ -600,12 +615,12 @@ describe('Amendment B1 — a model page is the page asked for, or it is unread',
 
   it('the plant, through --pages: the same row unread, and the generator stops on it', () => {
     const d = planted();
-    expect(readPagesFromDir(d, MIN_LEDGER.set).rows.get('gpt-4o-mini')).toEqual({ state: 'unread', reason: NOT_THE_PAGE });
+    expect(readPagesFromDir(d, MIN_LEDGER.set).rows.get('gpt-4o-mini')).toMatchObject({ state: 'unread', reason: NOT_THE_PAGE, notRead: [{ url: MINI, reason: NOT_THE_PAGE }] });
     const out = join(tmp('gen-043-'), 'ledger.ts');
     const g = spawnSync(process.execPath, [GEN, '--pages', d, '--out', out], { encoding: 'utf8' });
     expect(g.status).toBe(1);
     expect(g.stderr).toContain(
-      'stop: openai-model-gpt-4o-mini.md is not the page this version reads — it lacks a "Model ID: `gpt-4o-mini`" line (found `gpt-4o`)',
+      'stop: openai-model-gpt-4o-mini.md is not the page this version reads — it lacks the title "GPT-4o mini" (found "GPT-4o"); exactly one "Model ID: `gpt-4o-mini`" line (found `gpt-4o`)',
     );
     expect(existsSync(out)).toBe(false);
   });
@@ -614,14 +629,18 @@ describe('Amendment B1 — a model page is the page asked for, or it is unread',
     const real = readFileSync(join(MIN, 'openai-model-gpt-4o.md'), 'utf8');
     const seam = (async (u: string) => (u === MINI ? new Response(real, { status: 200 }) : new Response('x', { status: 503 }))) as unknown as typeof fetch;
     const read = await readPagesFromNetwork({ fetchImpl: seam });
-    expect(read.rows.get('gpt-4o-mini')).toEqual({ state: 'unread', reason: 'HTTP 503' }); // its deprecations page did not answer either
+    expect(read.rows.get('gpt-4o-mini')).toMatchObject({ state: 'unread', reason: 'HTTP 503', read: [] }); // its deprecations page did not answer either
     // the record of the release, with only the model page's outcome taken from the planted read: every other page as it was read
     const { fromRecord } = await import('../src/pages.js');
     const planted = fromRecord({ how: 'record', pages: READ.pages.map((p) => (p.url === MINI ? read.pages.find((q) => q.url === MINI)! : p)), changedRows: [], changedDefinitions: [] });
     expect(planted.pages.find((p) => p.url === MINI)!.ok).toBe(false);
     const f = lineOf(runCheck(ex([{ model: 'gpt-4o-mini' }]), { pages: planted }), 'gpt-4o-mini')!;
     expect(f.confidence).toBe('likely');
-    expect(f.detail).toContain('it was not read in this run (not the page this version reads).');
+    // 0.4.4 (R4): the deprecations page WAS read in this run; only the model page was not, and the line says so by name
+    expect(f.detail).toContain(
+      "In this run OpenAI's deprecations page was read (2026-11-18 18:23 UTC) and still says this, and OpenAI's model page for GPT-4o mini was not read (not the page this version reads);",
+    );
+    expect(f.detail).not.toContain('was not read in this run (not the page this version reads)');
   });
 
   it('no page of the made-up set is accepted at another source page’s address (the cross matrix)', () => {
@@ -633,7 +652,7 @@ describe('Amendment B1 — a model page is the page asked for, or it is unread',
       'google-deprecations.html',
       'google-changelog.html',
       'deepseek-updates.html',
-      'deepseek-news.html',
+      'deepseek-first-api-call.html',
     ];
     const accepted: string[] = [];
     for (const at of files)
@@ -653,7 +672,13 @@ describe('Amendment B2(b) — a row whose second page is unread is unread, never
     expect(row.alsoUrl).toBe('https://developers.openai.com/api/docs/models/gpt-4o-mini.md');
     const text = readFileSync(join(MIN, 'openai-deprecations.md'), 'utf8');
     const s = rowState(row, (u) => (u === row.url ? { ok: true, text, at: '2026-11-16T22:54:38Z' } : { ok: false, reason: 'HTTP 503' }));
-    expect(s).toEqual({ state: 'unread', reason: 'HTTP 503' });
+    // 0.4.4 (R4): and which page was read, which was not
+    expect(s).toEqual({
+      state: 'unread',
+      reason: 'HTTP 503',
+      notRead: [{ url: row.alsoUrl, reason: 'HTTP 503' }],
+      read: [{ url: row.url, at: '2026-11-16T22:54:38Z', stands: true }],
+    });
   });
   it('fromRecord: the same, from a kept record', async () => {
     const { fromRecord } = await import('../src/pages.js');
@@ -661,7 +686,12 @@ describe('Amendment B2(b) — a row whose second page is unread is unread, never
       url === row.alsoUrl ? { url, ok: false as const, reason: 'HTTP 503' } : { url, ok: true as const, at: '2026-11-16T22:54:38Z' },
     );
     const read = fromRecord({ how: 'record', pages, changedRows: [], changedDefinitions: [] }, MIN_LEDGER.set);
-    expect(read.rows.get('gpt-4o-mini')).toEqual({ state: 'unread', reason: 'HTTP 503' });
+    expect(read.rows.get('gpt-4o-mini')).toEqual({
+      state: 'unread',
+      reason: 'HTTP 503',
+      notRead: [{ url: row.alsoUrl, reason: 'HTTP 503' }],
+      read: [{ url: row.url, at: '2026-11-16T22:54:38Z', stands: true }],
+    });
     expect(read.rows.get('gpt-mini-a')?.state).toBe('confirmed');
   });
 });
@@ -670,8 +700,9 @@ describe('Amendment B5 — the README says the three conditions and names the te
   const readme = readFileSync(join(PKG, 'README.md'), 'utf8');
   it('Certain on all three, never on a page read alone', () => {
     expect(readme).not.toContain('A line from a page read in this run is *Certain*');
+    // 0.4.4 (R6): Google's page is titled "Release notes" (the sentence until 0.4.3 said "a changelog")
     expect(readme).toContain(
-      "A provider line is *Certain* only when all three hold: its page was read in this run and still carries the line; the call is on the provider's own API; and the line is not this check's reading of a changelog that names a model in words.",
+      "A provider line is *Certain* only when all three hold: its page was read in this run and still carries the line; the call is on the provider's own API; and the line is not this check's reading of a provider's release notes that name a model in words.",
     );
   });
   it('the ten titles, as the pages give them', () => {

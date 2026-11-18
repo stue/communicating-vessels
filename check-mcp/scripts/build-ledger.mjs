@@ -15,8 +15,9 @@
  *   google-deprecations.html    https://aistudio.google.com/docs/deprecations
  *   google-changelog.html       https://aistudio.google.com/docs/changelog
  *   deepseek-updates.html       https://api-docs.deepseek.com/updates
- *   deepseek-news.html          https://api-docs.deepseek.com/news
- *   read-times.json             { "<file>": "<ISO UTC time of the curl>" }
+ *   deepseek-first-api-call.html https://api-docs.deepseek.com/news   (0.4.4, R6: the page that address serves is titled
+ *                               "Your First API Call"; until 0.4.3 the file was named deepseek-news.html)
+ *   read-times.json            { "<file>": "<ISO UTC time of the curl>" }
  *   google-model-pages.json     0.4.3 (R6): { "<id>": { "status": <HTTP status>, "at": "<ISO UTC time>" } } for each
  *                               changelog row's id — Google's model page https://aistudio.google.com/docs/models/<id>.
  *                               Written by this script with --fetch-model-pages (its only request, a GET per id);
@@ -29,6 +30,13 @@
  * 0.4.3 (R3): before any row is written, every page is checked against the shape this version expects of
  * it (src/ledger-check.mjs, PAGE_SHAPES — the same check the run-time read makes). A page whose shape
  * differs stops the generator with the page and the missing piece named; no ledger is written.
+ * 0.4.4 (R6): the shape includes the page's own title, so a page whose title changed stops the generator
+ * too; the title read from each page is written into the ledger's source list, and the card names the
+ * page by it.
+ * 0.4.4 (R9): every sentence typed in this file is checked on its saved page before anything is written
+ * (`onPage` and `said` below, and push()'s quote check); a typed value inside a sentence (a date, a name, a
+ * model id) is checked inside the sentence it comes from. The drift script re-reads each of them with the
+ * rows: each is a row's quote, note or second quote, or a definition.
  */
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
@@ -45,6 +53,7 @@ import {
   googleRowCells,
   pageTextOf,
   pageShapeMisses,
+  pageTitleOf,
 } from '../src/ledger-check.mjs';
 
 const args = process.argv.slice(2);
@@ -63,7 +72,7 @@ const PRINT = args.includes('--print');
 
 // ── 0.4.3 (R3): each page is the page this version reads, or nothing is written ──
 {
-  const fixed = ['anthropic-deprecations.md', 'openai-deprecations.md', 'google-deprecations.html', 'google-changelog.html', 'deepseek-updates.html', 'deepseek-news.html'];
+  const fixed = ['anthropic-deprecations.md', 'openai-deprecations.md', 'google-deprecations.html', 'google-changelog.html', 'deepseek-updates.html', 'deepseek-first-api-call.html'];
   const models = ['gpt-4o', 'gpt-4o-mini', 'gpt-4.1', 'gpt-4.1-mini'].map((id) => `openai-model-${id}.md`).filter((f) => existsSync(join(PAGES, f)));
   for (const f of [...fixed, ...models]) {
     if (!existsSync(join(PAGES, f))) {
@@ -576,9 +585,12 @@ const unbacktick = (s) =>
   const modelPages = JSON.parse(readFileSync(mpFile, 'utf8'));
   for (const n of NAMED) {
     said(n.heading, n.quote);
+    // 0.4.4 (R9): the name typed beside the sentence is the sentence's own words
+    if (!n.quote.includes(n.namedAs)) throw new Error(`changelog: the name "${n.namedAs}" is not in its sentence "${n.quote}"`);
     for (const id of n.ids) {
       const intro = INTRO[id];
       if (intro) said(intro.heading, intro.quote);
+      if (intro && !intro.quote.startsWith(`${id}:`)) throw new Error(`changelog: the introduction "${intro.quote}" does not name ${id}`);
       const mp = modelPages[id];
       push({
         id,
@@ -604,9 +616,10 @@ const unbacktick = (s) =>
 // ── DeepSeek (prose pages: each row names its sentence) ─────────────────
 {
   const fu = 'deepseek-updates.html';
-  const fn = 'deepseek-news.html';
+  // 0.4.4 (R6): the page served at /news is titled "Your First API Call" (DeepSeek's quick-start page)
+  const fn = 'deepseek-first-api-call.html';
   const upd = htmlToText(page(fu));
-  const news = htmlToText(page(fn));
+  const firstCall = htmlToText(page(fn));
   const entryDate = (sentence) => {
     // the "Date: YYYY-MM-DD" heading the sentence sits under
     const i = upd.indexOf(sentence);
@@ -622,21 +635,40 @@ const unbacktick = (s) =>
   const RETIRED =
     'The previous-generation models V4 Flash and V4 Flash Vision Exp have been retired; for compatibility, the model names deepseek-v4-flash and deepseek-v4-flash-vision-exp are temporarily routed to V4.1 Flash.';
   const RENAME = 'Change the model name to deepseek-flash to call the latest V4.1 Flash model.';
-  const NEWS =
+  const FIRST_CALL =
     'The legacy names deepseek-v4-flash and deepseek-v4-flash-vision-exp are still accepted, but the corresponding models have been retired; their requests are served by DeepSeek-V4.1-Flash-1017 and billed at the Flash price.';
-  for (const s of [LEGACY_POINT, RENAME]) if (!upd.includes(s)) throw new Error(`deepseek: sentence not on ${fu}: ${s}`);
-  if (!news.includes(NEWS)) throw new Error(`deepseek: sentence not on ${fn}: ${NEWS}`);
+  // 0.4.4 (R9): each typed sentence on its page, in one place — the build stops on the first one a saved page no longer carries
+  const onPage = (text, file, s) => {
+    if (!quoteOn(text, s)) throw new Error(`deepseek: sentence not on ${file}: ${s}`);
+  };
+  // 0.4.4 Amendment A4: each row's `pageWord` is the phrase of its own sentence that its word is mapped from — the
+  // page's words, checked here inside that sentence and on the saved page by the same line (until fix pass 1 the
+  // legacy rows carried a paraphrase that is on no page)
+  const LEGACY_WORD = 'legacy API model names';
+  const RETIRED_WORD = 'have been retired';
+  for (const [w, s] of [[LEGACY_WORD, LEGACY], [RETIRED_WORD, RETIRED]]) {
+    if (!s.includes(w)) throw new Error(`deepseek: "${w}" is not in "${s}"`);
+  }
+  for (const s of [LEGACY, LEGACY_POINT, RETIRED, RENAME, LEGACY_WORD, RETIRED_WORD]) onPage(upd, fu, s);
+  onPage(firstCall, fn, FIRST_CALL);
+  // the typed values below come from these sentences: each is checked inside the sentence it comes from
+  const LEGACY_DATE = /\((\d{4}-\d{2}-\d{2})\)/.exec(LEGACY)?.[1];
+  const POINTED_TO = 'deepseek-v4-flash';
+  const ROUTES_TO = 'V4.1 Flash';
+  if (!LEGACY_DATE) throw new Error(`deepseek: no date in "${LEGACY}"`);
+  if (!LEGACY_POINT.includes(` ${POINTED_TO},`)) throw new Error(`deepseek: "${POINTED_TO}" is not in "${LEGACY_POINT}"`);
+  if (!RETIRED.includes(`routed to ${ROUTES_TO}.`)) throw new Error(`deepseek: "${ROUTES_TO}" is not in "${RETIRED}"`);
   for (const id of ['deepseek-chat', 'deepseek-reasoner']) {
     if (!LEGACY.includes(id)) throw new Error('deepseek legacy sentence does not name ' + id);
     push({
       id,
       provider: 'deepseek',
       word: 'legacy',
-      pageWord: 'legacy API model name, to be discontinued',
+      pageWord: LEGACY_WORD,
       announced: entryDate(LEGACY),
-      shutdown: /\((\d{4}-\d{2}-\d{2})\)/.exec(LEGACY)[1],
-      dateText: '2026-07-24',
-      pointedTo: 'deepseek-v4-flash',
+      shutdown: LEGACY_DATE,
+      dateText: LEGACY_DATE,
+      pointedTo: POINTED_TO,
       url: URL.deepseekUpdates,
       readOn: readOnOf(fu),
       quote: LEGACY,
@@ -646,21 +678,21 @@ const unbacktick = (s) =>
     });
   }
   for (const id of ['deepseek-v4-flash', 'deepseek-v4-flash-vision-exp']) {
-    if (!RETIRED.includes(id) || !NEWS.includes(id)) throw new Error('deepseek retired sentence does not name ' + id);
+    if (!RETIRED.includes(id) || !FIRST_CALL.includes(id)) throw new Error('deepseek retired sentence does not name ' + id);
     push({
       id,
       provider: 'deepseek',
       word: 'retired',
-      pageWord: 'have been retired',
+      pageWord: RETIRED_WORD,
       announced: entryDate(RETIRED),
       replacement: /model name to (deepseek-[a-z0-9.-]+)/.exec(RENAME)[1],
-      routesTo: 'V4.1 Flash',
+      routesTo: ROUTES_TO,
       url: URL.deepseekUpdates,
       readOn: readOnOf(fu),
       quote: RETIRED,
       note: RENAME,
-      alsoUrl: URL.deepseekNews,
-      alsoQuote: NEWS,
+      alsoUrl: URL.deepseekFirstApiCall,
+      alsoQuote: FIRST_CALL,
       alsoReadOn: readOnOf(fn),
       _file: fu,
       _text: upd,
@@ -695,11 +727,12 @@ const sources = [
   ['google', URL.google, 'google-deprecations.html'],
   ['google', URL.googleChangelog, 'google-changelog.html'],
   ['deepseek', URL.deepseekUpdates, 'deepseek-updates.html'],
-  ['deepseek', URL.deepseekNews, 'deepseek-news.html'],
+  ['deepseek', URL.deepseekFirstApiCall, 'deepseek-first-api-call.html'],
   ...['gpt-4o', 'gpt-4o-mini', 'gpt-4.1', 'gpt-4.1-mini']
     .filter((id) => existsSync(join(PAGES, `openai-model-${id}.md`)))
     .map((id) => ['openai', URL.openaiModel(id), `openai-model-${id}.md`]),
-].map(([provider, url, file]) => ({ provider, url, readAt: readTimes[file], sha256: sha(file) }));
+  // 0.4.4 (R6): each page's own title, as read from the saved page (the shape check above has already asserted it)
+].map(([provider, url, file]) => ({ provider, url, readAt: readTimes[file], sha256: sha(file), title: pageTitleOf(file, pageTextOf(file, page(file))) }));
 
 const byProvider = {};
 for (const r of rows) byProvider[r.provider] = (byProvider[r.provider] ?? 0) + 1;

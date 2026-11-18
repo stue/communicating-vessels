@@ -63,7 +63,11 @@ export const PAGE_URL = {
   /** 0.4.3 (R6): a Google model page — requested by the generator only, for a changelog row's id; never at run time. */
   googleModel: (id) => `https://aistudio.google.com/docs/models/${id}`,
   deepseekUpdates: 'https://api-docs.deepseek.com/updates',
-  deepseekNews: 'https://api-docs.deepseek.com/news',
+  /**
+   * 0.4.4 (R6): the address is /news, and the page it serves is titled "Your First API Call" — DeepSeek's quick-start
+   * page, which carries the sentence two rows quote and /updates does not (read 2026-11-17T23:17:08Z). Named by its title.
+   */
+  deepseekFirstApiCall: 'https://api-docs.deepseek.com/news',
 };
 
 /** The saved file name for a source URL, or undefined for a URL the generator does not read. */
@@ -74,7 +78,7 @@ export function pageFileOf(url) {
     [PAGE_URL.google]: 'google-deprecations.html',
     [PAGE_URL.googleChangelog]: 'google-changelog.html',
     [PAGE_URL.deepseekUpdates]: 'deepseek-updates.html',
-    [PAGE_URL.deepseekNews]: 'deepseek-news.html',
+    [PAGE_URL.deepseekFirstApiCall]: 'deepseek-first-api-call.html',
   };
   if (fixed[url]) return fixed[url];
   const m = /^https:\/\/developers\.openai\.com\/api\/docs\/models\/([a-z0-9.-]+)\.md$/.exec(url);
@@ -220,16 +224,39 @@ const GOOGLE_TABLE_HEADERS = [
   ['Agent', 'Release date', 'Shutdown date', 'Recommended replacement'],
 ];
 
+// ── 0.4.4 (R6): each page's own title, read where the page writes it ────
+/** A markdown page's front-matter `title:` (Anthropic's page carries its title there and has no "# " heading). */
+const frontMatterTitle = (text) => (text.startsWith('---\n') ? /^title:[ \t]*(.+?)[ \t]*$/m.exec(text.slice(4, text.indexOf('\n---', 4)))?.[1] : undefined);
+/** The page's first "# " heading (OpenAI's markdown pages; Google's pages, as htmlToText gives them). */
+const firstHeading = (text) => /^# (.+?)\s*$/m.exec(text)?.[1];
+/** The page's <title>, which htmlToText leaves as the first line (DeepSeek's pages). */
+const firstLine = (text) => text.split('\n')[0];
+const DEEPSEEK_SUFFIX = / \| DeepSeek API Docs$/;
+/** The title this version expects of each OpenAI model page it reads, by the model id in its address (read 2026-11-17T23:17:08Z). */
+export const OPENAI_MODEL_TITLE = { 'gpt-4o': 'GPT-4o', 'gpt-4o-mini': 'GPT-4o mini', 'gpt-4.1': 'GPT-4.1', 'gpt-4.1-mini': 'GPT-4.1 mini' };
+const modelIdOf = (file) => /^openai-model-([a-z0-9.-]+)\.md$/.exec(file)?.[1];
+/** The miss for a title that is not the one expected, in words. */
+const titleMiss = (expected, got) => (got === expected ? [] : [`the title "${expected}" (found ${got === undefined ? 'none' : `"${got}"`})`]);
+
 /**
  * What this version expects of each page, in words (for the report and a refusal), and the check.
  * Keys are the saved file names (pageFileOf); `openai-model-*.md` stands for each OpenAI model page.
+ *
+ * 0.4.4 (R6): each entry also says where the page writes its title (`title`), the title it expects (part of
+ * the shape: a page whose title changed is not the page this version reads), and how the card names the page
+ * (`name`, made from the title the ledger's source list carries: the title itself, or a plain description
+ * that does not contradict it).
  */
 export const PAGE_SHAPES = {
   'anthropic-deprecations.md': {
     expects: [
+      'the title "Model deprecations" (its front matter)',
       'under "## Model status", a table with the columns "API model name", "Current state", "Deprecated", "Tentative retirement date", a state word on every row',
       'under "## Deprecation history", a table with the columns "Retirement date", "Deprecated model", "Recommended replacement"',
     ],
+    title: frontMatterTitle,
+    expectedTitle: () => 'Model deprecations',
+    name: (t) => `${t.toLowerCase()} page`,
     misses(text) {
       const m = mdTableExpect(text, 'Model status', ['API model name', 'Current state', 'Deprecated', 'Tentative retirement date'], 'Current state');
       const sec = mdSection(text, 'Deprecation history');
@@ -238,16 +265,21 @@ export const PAGE_SHAPES = {
         : mdTables(sec).some((t) => sameColumns(t.header, ['Retirement date', 'Deprecated model', 'Recommended replacement']))
           ? []
           : ['a table under "## Deprecation history" with the columns "Retirement date", "Deprecated model", "Recommended replacement"'];
-      return [...m, ...h];
+      return [...titleMiss('Model deprecations', frontMatterTitle(text)), ...m, ...h];
     },
   },
   'openai-deprecations.md': {
     expects: [
+      'the title "Deprecations" (its "# " heading)',
       'under "## Upcoming deprecations", a table with the columns "Shutdown date", "Affected model", "Status", "Recommended replacement", "Notice date", a status word on every row',
       'under "## Past deprecations", a table with the columns "Shutdown date", "Affected model or feature", "Listed replacement", "Notice date"',
     ],
+    title: firstHeading,
+    expectedTitle: () => 'Deprecations',
+    name: (t) => `${t.toLowerCase()} page`,
     misses(text) {
       return [
+        ...titleMiss('Deprecations', firstHeading(text)),
         ...mdTableExpect(text, 'Upcoming deprecations', ['Shutdown date', 'Affected model', 'Status', 'Recommended replacement', 'Notice date'], 'Status'),
         ...mdTableExpect(text, 'Past deprecations', ['Shutdown date', 'Affected model or feature', 'Listed replacement', 'Notice date']),
       ];
@@ -255,32 +287,48 @@ export const PAGE_SHAPES = {
   },
   'openai-model-*.md': {
     expects: [
-      'a "# <model name>" heading',
-      'Amendment B1: a "Model ID: `<id>`" line naming the model the URL names (<id> = the URL\'s last segment without ".md")',
+      'the title the model\'s own page carries (its "# " heading: GPT-4o, GPT-4o mini, GPT-4.1, GPT-4.1 mini)',
+      'Amendment B1, 0.4.4 (R5): exactly one "Model ID:" line, and it is "Model ID: `<id>`" for the model the URL names (<id> = the URL\'s last segment without ".md")',
       'a "Status: <word>" line',
     ],
+    title: firstHeading,
+    expectedTitle: (file) => OPENAI_MODEL_TITLE[modelIdOf(file)],
+    name: (t) => `model page for ${t}`,
     misses(text, file = '') {
       const out = [];
-      if (!/^# \S/m.test(text)) out.push('a "# <model name>" heading');
+      const id = modelIdOf(file);
+      const expected = OPENAI_MODEL_TITLE[id];
+      if (expected === undefined) out.push(`a model page this version reads (${file || 'no file'} is not one)`);
+      else out.push(...titleMiss(expected, firstHeading(text)));
       // Amendment B1: the page is the page asked for — its own id line names the model the URL names. Another deprecated
       // model's page has the same shape and the same "Status: Deprecated", and must not confirm this model's rows.
-      const id = /^openai-model-([a-z0-9.-]+)\.md$/.exec(file)?.[1];
-      const line = /^Model ID: `([^`]+)`\s*$/m.exec(text)?.[1];
-      if (!id || line !== id) out.push(`a "Model ID: \`${id ?? '<id>'}\`" line (found ${line === undefined ? 'none' : `\`${line}\``})`);
+      // 0.4.4 (R5): and there is exactly one such line — a page with two is not judged by the first.
+      const lines = [...text.matchAll(/^Model ID:.*$/gm)].map((m) => m[0]);
+      const ids = lines.map((l) => /^Model ID: `([^`]+)`\s*$/.exec(l)?.[1]);
+      if (!id || lines.length !== 1 || ids[0] !== id)
+        out.push(
+          `exactly one "Model ID: \`${id ?? '<id>'}\`" line (found ${
+            lines.length === 0 ? 'none' : lines.map((l, i) => (ids[i] === undefined ? `"${l}"` : `\`${ids[i]}\``)).join(' and ')
+          })`,
+        );
       if (!/^Status: [A-Za-z]/m.test(text)) out.push('a "Status: <word>" line');
       return out;
     },
   },
   'google-deprecations.html': {
     expects: [
+      'the title "Gemini deprecations" (its "# " heading)',
       'tables whose header row is "Model | Release date | Shutdown date | Recommended replacement" (or "Agent | …" with the same three columns after it), at least one of the first',
       'a "## " heading over every table',
       'a "### Deprecated models" heading',
     ],
+    title: firstHeading,
+    expectedTitle: () => 'Gemini deprecations',
+    name: (t) => `${t} page`,
     misses(text) {
       const rows = googleTableRows(text);
       const headers = rows.filter((r) => !/`/.test(r.cells[0] ?? ''));
-      const out = [];
+      const out = [...titleMiss('Gemini deprecations', firstHeading(text))];
       if (!headers.some((r) => sameColumns(r.cells, GOOGLE_TABLE_HEADERS[0])))
         out.push(`a table whose header row is ${cols(GOOGLE_TABLE_HEADERS[0])}`);
       const odd = headers.find((r) => !GOOGLE_TABLE_HEADERS.some((h) => sameColumns(r.cells, h)));
@@ -291,28 +339,35 @@ export const PAGE_SHAPES = {
     },
   },
   'google-changelog.html': {
-    expects: ['dated "## <Month> <D>, <YYYY>" headings', 'a "**Model updates:**" label under one of them'],
+    expects: ['the title "Release notes" (its "# " heading)', 'dated "## <Month> <D>, <YYYY>" headings', 'a "**Model updates:**" label under one of them'],
+    title: firstHeading,
+    expectedTitle: () => 'Release notes',
+    name: (t) => `${t.toLowerCase()} page`,
     misses(text) {
-      const out = [];
+      const out = [...titleMiss('Release notes', firstHeading(text))];
       if (!/^## [A-Z][a-z]+ \d{1,2},? \d{4}/m.test(text)) out.push('a dated "## <Month> <D>, <YYYY>" heading');
       if (!/^\*\*Model updates:\*\*/m.test(text)) out.push('a "**Model updates:**" label');
       return out;
     },
   },
   'deepseek-updates.html': {
-    expects: ['the title "Change Log | DeepSeek API Docs"', '"Date: YYYY-MM-DD" entry headings'],
+    expects: ['the title "Change Log | DeepSeek API Docs" (its <title>)', '"Date: YYYY-MM-DD" entry headings'],
+    title: firstLine,
+    expectedTitle: () => 'Change Log | DeepSeek API Docs',
+    name: (t) => t.replace(DEEPSEEK_SUFFIX, '').toLowerCase(),
     misses(text) {
-      const out = [];
-      if (text.split('\n')[0] !== 'Change Log | DeepSeek API Docs') out.push('the title "Change Log | DeepSeek API Docs"');
+      const out = [...titleMiss('Change Log | DeepSeek API Docs', firstLine(text))];
       if (!/^Date: \d{4}-\d{2}-\d{2}/m.test(text)) out.push('a "Date: YYYY-MM-DD" entry heading');
       return out;
     },
   },
-  'deepseek-news.html': {
-    expects: ['the title "Your First API Call | DeepSeek API Docs"', 'the parameter table\'s "base_url (OpenAI)" row'],
+  'deepseek-first-api-call.html': {
+    expects: ['the title "Your First API Call | DeepSeek API Docs" (its <title>; the page served at /news)', 'the parameter table\'s "base_url (OpenAI)" row'],
+    title: firstLine,
+    expectedTitle: () => 'Your First API Call | DeepSeek API Docs',
+    name: (t) => `“${t.replace(DEEPSEEK_SUFFIX, '')}” page`,
     misses(text) {
-      const out = [];
-      if (text.split('\n')[0] !== 'Your First API Call | DeepSeek API Docs') out.push('the title "Your First API Call | DeepSeek API Docs"');
+      const out = [...titleMiss('Your First API Call | DeepSeek API Docs', firstLine(text))];
       if (!text.includes('base_url (OpenAI)')) out.push('the parameter table\'s "base_url (OpenAI)" row');
       return out;
     },
@@ -334,6 +389,17 @@ export function pageShapeMisses(file, text) {
   return s.misses(text, file);
 }
 
+/** 0.4.4 (R6): the page's own title, read where that page writes it; undefined for a file this version does not read. */
+export function pageTitleOf(file, text) {
+  return pageShapeOf(file)?.title(text);
+}
+
+/** 0.4.4 (R6): how the card names a page, from the title the ledger's source list carries (the provider's name goes before it). */
+export function pageNameOf(file, title) {
+  const s = pageShapeOf(file);
+  return s && title ? s.name(title) : 'page';
+}
+
 // ── 0.4.3 (R1): one row against a set of pages ──────────────────────────
 
 /** Is a ledger row a table row of Google's deprecations page (checked as ONE page row, cell by cell in order)? */
@@ -352,21 +418,33 @@ export function quoteStands(text, quote, table) {
   return table ? oneRowIn(googlePageRows(text), quote.split(' | ')) : quoteOn(text, quote);
 }
 
+/** The pages a row rests on, each once, in order: its own page, then its second page when that is another page. */
+export function rowPages(r) {
+  return [...new Set(rowTests(r).map((t) => t.url))];
+}
+
 /**
  * One row against the pages: `pageOf(url)` answers `{ ok: true, text, at }` for a page read as the page
  * this version knows, or `{ ok: false, reason }`. A row is unread when any page it rests on is unread
  * (the drift script's "not checked"); else changed when a quote is not on its page; else confirmed.
- * @returns {{ state: 'confirmed', at: string } | { state: 'changed', at: string, gone: object[] } | { state: 'unread', reason: string }}
+ *
+ * 0.4.4 (R4): every state also says, page by page, which of the row's pages were read in this run (`read`:
+ * the time, and whether that page still carries its part of the row) and which were not (`notRead`, with the
+ * reason), so the card can name the page that was not read. `reason` stays the first unread page's reason.
+ * @returns {{ state: 'confirmed', at: string, read: object[] } | { state: 'changed', at: string, gone: object[], read: object[] } | { state: 'unread', reason: string, notRead: object[], read: object[] }}
  */
 export function rowState(r, pageOf) {
   const tests = rowTests(r);
-  for (const t of tests) {
-    const p = pageOf(t.url);
-    if (!p.ok) return { state: 'unread', reason: p.reason };
-  }
+  const urls = rowPages(r);
+  const answers = urls.map((url) => ({ url, p: pageOf(url) }));
+  const read = answers
+    .filter((a) => a.p.ok)
+    .map((a) => ({ url: a.url, at: a.p.at, stands: tests.filter((t) => t.url === a.url).every((t) => quoteStands(a.p.text, t.quote, t.table)) }));
+  const notRead = answers.filter((a) => !a.p.ok).map((a) => ({ url: a.url, reason: a.p.reason }));
+  if (notRead.length) return { state: 'unread', reason: notRead[0].reason, notRead, read };
   const at = pageOf(r.url).at;
   const gone = tests.filter((t) => !quoteStands(pageOf(t.url).text, t.quote, t.table));
-  return gone.length ? { state: 'changed', at, gone } : { state: 'confirmed', at };
+  return gone.length ? { state: 'changed', at, gone, read } : { state: 'confirmed', at, read };
 }
 
 /** A definition the card quotes, against the pages: confirmed, changed or unread, as a row. */

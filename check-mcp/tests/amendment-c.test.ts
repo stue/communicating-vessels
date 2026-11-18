@@ -103,7 +103,7 @@ describe('C5 — a Google earliest-possible date reads "not before"', () => {
 describe('C6 — no kgauto in the cliff line', () => {
   it('a cliff line fires and says nothing of kgauto', () => {
     const r = run([{ id: 'a.ts:1', model: 'gpt-5.5', platform: 'provider-api', maxInputTokens: 300_000, estInputTokens: 300_000, estOutputTokens: 100 }]);
-    const cliff = r.findings.find((f) => f.title.includes('cliff'));
+    const cliff = r.findings.find((f) => f.title.includes('the catalog holds a threshold at'));
     expect(cliff).toBeDefined();
     expect(r.card.replaceAll('@warmdrift/kgauto-check', '').replaceAll('@warmdrift/kgauto-compiler', '')).not.toMatch(/kgauto/i);
   });

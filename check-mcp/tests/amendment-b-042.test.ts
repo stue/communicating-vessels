@@ -14,19 +14,19 @@ const listedLine = (id: string) => runCheck(ex(id)).findings.find((f) => f.title
 describe('B1 — the listed line says what the model is', () => {
   it('a row in a family’s main table: "among its current models"', () => {
     expect(listedLine('gemini-4-argon')?.title).toBe(
-      "On Google's own API, `gemini-4-argon` has no shutdown date announced: Google's deprecations page lists it among its current models",
+      "On Google's own API, `gemini-4-argon` has no shutdown date announced: Google's Gemini deprecations page lists it among its current models",
     );
   });
 
   it('a row under Preview models: "among its preview models", with the replacement clause as before', () => {
     expect(listedLine('gemini-3.1-flash-live-preview')?.title).toBe(
-      "On Google's own API, `gemini-3.1-flash-live-preview` has no shutdown date announced: Google's deprecations page lists it among its preview models; its page names `gemini-3.8-live`",
+      "On Google's own API, `gemini-3.1-flash-live-preview` has no shutdown date announced: Google's Gemini deprecations page lists it among its preview models; its page names `gemini-3.8-live`",
     );
   });
 
   it('a row under Preview agents: "among its preview agents"', () => {
     expect(listedLine('deep-research-preview-04-2026')?.title).toBe(
-      "On Google's own API, `deep-research-preview-04-2026` has no shutdown date announced: Google's deprecations page lists it among its preview agents",
+      "On Google's own API, `deep-research-preview-04-2026` has no shutdown date announced: Google's Gemini deprecations page lists it among its preview agents",
     );
   });
 
@@ -38,7 +38,7 @@ describe('B1 — the listed line says what the model is', () => {
       const want = h3 === undefined ? 'current models' : /^Preview models/.test(h3) ? 'preview models' : /^Preview agents/.test(h3) ? 'preview agents' : `?${h3}`;
       by[want] = (by[want] ?? 0) + 1;
       const f = listedLine(r.id);
-      expect(f?.title, r.id).toContain(`: Google's deprecations page lists it among its ${want}`);
+      expect(f?.title, r.id).toContain(`: Google's Gemini deprecations page lists it among its ${want}`);
       expect(f?.title, r.id).not.toContain('is listed on');
       expect(f?.severity, r.id).toBe('info');
     }

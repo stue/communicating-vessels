@@ -100,4 +100,6 @@ export interface LedgerSource {
   readAt: string;
   /** sha256 of the saved page bytes. */
   sha256: string;
+  /** 0.4.4 (R6): the page's own title, as the generator read it from the saved page (and asserted, as part of its shape). */
+  title: string;
 }

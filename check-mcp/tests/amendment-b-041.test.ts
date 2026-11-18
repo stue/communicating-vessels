@@ -38,7 +38,7 @@ describe('B2 — the quality sentence needs an evidence RECORD', () => {
   const QUALITY = 'quality degrades in a measured, repeatable way';
   it('claude-haiku-4-5 (no evidence field, "measured" only in its prose) prints no quality sentence, the plain action, and the ruled evidence words', () => {
     const r = run([{ id: 'a.ts:1', model: 'claude-haiku-4-5', platform: 'provider-api', archetype: 'summarize', estInputTokens: 12_000, expectsStructuredOutput: true }]);
-    const f = r.findings.find((x) => x.title.includes('cliff'))!;
+    const f = r.findings.find((x) => x.title.includes('the catalog holds a threshold at'))!;
     expect(f.detail).not.toContain(QUALITY);
     expect(f.detail).toContain(
       "What the compiler does about it: it stops trusting this model's structured output at or above this size on summarize work, and ranks the model lower for such a request.",
@@ -130,7 +130,8 @@ describe('B6 — a gateway or partner platform takes every provider-page line ou
   it('the same id on the provider’s own API: likely, with no partner sentence (until 0.4.2: certain)', () => {
     const f = lineOf(run([{ id: 'a.ts:1', model: 'claude-haiku-5-5', platform: 'provider-api', ...big }], { pages: READ }), 'context window')!;
     expect(f.confidence).toBe('likely');
-    expect(f.basis).toMatch(/catalog, verified against the provider's page \d{4}-\d{2}-\d{2}/);
+    // 0.4.4 (R1): in words (until 0.4.3: "catalog, verified against the provider's page <date>: maxContextTokens=<n>")
+    expect(f.basis).toMatch(/^your estimate against the model's context limit, [\d,]+ tokens \(the catalog's record, checked against \w+'s documentation on \d{4}-\d{2}-\d{2}\)$/);
     expect(f.detail).not.toContain('may set its own');
   });
 });

@@ -56,8 +56,9 @@ describe('D1 — a word in a path is not a fact about where the site runs', () =
 describe('D2 — the cliff title agrees with its sentence', () => {
   const c: Cliff = { metric: 'input_tokens', threshold: 200_000, action: 'downgrade_quality_warning', reason: 'r' };
   it('at equality the site reaches the cliff; above, it crosses it', () => {
-    expect(cliffLine('m', c, 200_000).title).toBe('`m` has a known input tokens cliff at 200,000 — this site reaches it');
-    expect(cliffLine('m', c, 200_001).title).toBe('`m` has a known input tokens cliff at 200,000 — this site crosses it');
+    // 0.4.4 Amendment A2: the title in the basis's words, with no "cliff" (the 0.4.1–0.4.4 build title is in the filing)
+    expect(cliffLine('m', c, 200_000).title).toBe('`m`: the catalog holds a threshold at 200,000 input tokens, and this site reaches it');
+    expect(cliffLine('m', c, 200_001).title).toBe('`m`: the catalog holds a threshold at 200,000 input tokens, and this site crosses it');
   });
 });
 

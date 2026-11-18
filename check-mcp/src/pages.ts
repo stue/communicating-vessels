@@ -25,6 +25,7 @@ import {
   pageTextOf,
   pageShapeMisses,
   rowState,
+  rowPages,
   definitionState,
   type PageAnswer,
   type RowState,
@@ -244,17 +245,20 @@ export function toRecord(read: PageRead): ReadRecord {
 export function fromRecord(rec: ReadRecord, ledger: LedgerSet = BUNDLED): PageRead {
   const byUrl = new Map(rec.pages.map((p) => [p.url, p]));
   const changed = new Set(rec.changedRows);
+  // 0.4.4 (R4): page by page, as rowState says it — which of a row's pages were read, and which were not and why.
+  // A record keeps the rows that changed, not which page changed them, so a read page "stands" unless its row changed.
   const state = (urls: string[], isChanged: boolean): RowState => {
-    for (const u of urls) {
-      const p = byUrl.get(u);
-      if (!p) return { state: 'unread', reason: 'not a page this version requests' };
-      if (!p.ok) return { state: 'unread', reason: p.reason };
-    }
+    const answers = urls.map((url) => ({ url, p: byUrl.get(url) }));
+    const read = answers.filter((a) => a.p?.ok).map((a) => ({ url: a.url, at: (a.p as Extract<PageOutcome, { ok: true }>).at, stands: !isChanged }));
+    const notRead = answers
+      .filter((a) => !a.p?.ok)
+      .map((a) => ({ url: a.url, reason: !a.p ? 'not a page this version requests' : (a.p as Extract<PageOutcome, { ok: false }>).reason }));
+    if (notRead.length) return { state: 'unread', reason: notRead[0]!.reason, notRead, read };
     const p = byUrl.get(urls[0]!) as Extract<PageOutcome, { ok: true }>;
-    return isChanged ? { state: 'changed', at: p.at, gone: [] } : { state: 'confirmed', at: p.at };
+    return isChanged ? { state: 'changed', at: p.at, gone: [], read } : { state: 'confirmed', at: p.at, read };
   };
   const rows = new Map<string, RowState>();
-  for (const r of ledger.rows) rows.set(r.id, state([r.url, ...(r.alsoUrl && r.alsoQuote ? [r.alsoUrl] : [])], changed.has(r.id)));
+  for (const r of ledger.rows) rows.set(r.id, state(rowPages(r), changed.has(r.id)));
   const defs = new Map<string, RowState>();
   const changedDefs = new Set(rec.changedDefinitions);
   for (const d of ledger.definitions) defs.set(definitionKey(d), state([d.url], changedDefs.has(definitionKey(d))));

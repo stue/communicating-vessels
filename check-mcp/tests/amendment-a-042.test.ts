@@ -40,17 +40,20 @@ describe('A1 — an id the provider’s page lists is never "not recognised"', (
     expect(ls[0]!.confidence).toBe('certain');
     expect(ls[0]!.title).toBe(
       // Amendment B1 rewords the A1 line by the row's heading (tests/amendment-b-042.test.ts)
-      "On Google's own API, `gemini-3.1-flash-live-preview` has no shutdown date announced: Google's deprecations page lists it among its preview models; its page names `gemini-3.8-live`",
+      // 0.4.4 (R6): the page by its own title, "Gemini deprecations"
+      "On Google's own API, `gemini-3.1-flash-live-preview` has no shutdown date announced: Google's Gemini deprecations page lists it among its preview models; its page names `gemini-3.8-live`",
     );
-    expect(ls[0]!.basis).toMatch(/^Google's page, read in this run \(\d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC\): https:\/\/aistudio\.google\.com\/docs\/deprecations$/);
+    expect(ls[0]!.basis).toMatch(/^Google's Gemini deprecations page, read in this run \(\d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC\): https:\/\/aistudio\.google\.com\/docs\/deprecations$/);
     expect(res.card).not.toContain('not recognised');
   });
 
   it('a listed id is never counted as flagged by its provider', () => {
+    // 0.4.4 (R3): the header says who flagged how many in a sentence of its own
     const card = runCheck(ex(['gemini-3.1-flash-live-preview'])).card;
-    expect(card).not.toMatch(/flagged by its provider/);
+    expect(card).not.toMatch(/flagged by/);
+    expect(card).toContain('Its provider does not flag it.');
     const two = runCheck(ex(['gemini-3.1-flash-live-preview', 'gemini-2.5-flash-preview-tts'])).card;
-    expect(two).toContain('(1 flagged by its provider)');
+    expect(two).toContain(' 1 is flagged by Google.');
   });
 
   it('a listed id the catalog knows keeps every catalog check: its price line is still on the card', () => {
@@ -80,7 +83,7 @@ describe('A1 — an id the provider’s page lists is never "not recognised"', (
 
   it('--model-facts says the page lists it, with no date, and does not call that a deprecation', () => {
     const out = renderModelFacts('gemini-3.1-flash-live-preview');
-    expect(out).toContain("Google's page lists it: **no shutdown date announced**");
+    expect(out).toContain("Google's Gemini deprecations page lists it: **no shutdown date announced**"); // 0.4.4 (R6): by its title
     expect(out).not.toContain('not recognised');
   });
 });

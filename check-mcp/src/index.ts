@@ -21,3 +21,5 @@ export { START_CHECK_INSTRUCTIONS, SERVER_INSTRUCTIONS } from './instructions.js
 export { OBSERVE_DAY_PLAN } from './observe-plan.js';
 export { renderModelFacts } from './model-facts.js';
 export { CHECK_VERSION } from './version.js';
+// 0.4.4 (R7): scripts/smoke-share.mjs reads the production endpoint from the build, so it has no copy of its own
+export { SHARE_ENDPOINT_DEFAULT } from './share.js';

@@ -5,6 +5,7 @@
  */
 import { allProfiles, tryGetProfile, type ModelProfile } from '@warmdrift/kgauto-compiler';
 import { LEDGER, LEDGER_SOURCES, LEDGER_DEFINITIONS } from './lifecycle-ledger.js';
+import { pageFileOf, pageNameOf } from './ledger-check.mjs';
 import type { LedgerRow, LedgerProvider } from './lifecycle-types.js';
 
 export interface Resolution {
@@ -216,6 +217,32 @@ for (const d of LEDGER_DEFINITIONS) (WORD_DEFINITION[d.provider] ??= {})[d.word]
 /** The page each definition above stands on (Amendment B, ruling 4), from the same ledger rows. */
 export const DEFINITION_PAGE: Partial<Record<LedgerProvider, string>> = {};
 for (const d of LEDGER_DEFINITIONS) DEFINITION_PAGE[d.provider] = d.url;
+
+/**
+ * 0.4.4 (R6): how the card names one of the ledger's pages — by the page's own title, as the ledger's source
+ * list carries it (written by the generator from the saved page): "Google's release notes page", "OpenAI's model
+ * page for GPT-4o mini", "DeepSeek's “Your First API Call” page". `provider` goes before it.
+ */
+export function pageName(provider: string, url: string): string {
+  const P = PROVIDER_NAME[provider as LedgerProvider] ?? provider;
+  const file = pageFileOf(url);
+  const title = LEDGER_SOURCES.find((s) => s.url === url)?.title;
+  return `${P}'s ${file ? pageNameOf(file, title) : 'page'}`;
+}
+
+/**
+ * 0.4.4 (R4, R6): several of one provider's pages, named in one phrase — "OpenAI's deprecations page and its model
+ * page for GPT-4o mini".
+ */
+export function pagesName(provider: string, urls: readonly string[]): string {
+  const [first, ...rest] = [...new Set(urls)];
+  if (first === undefined) return pageName(provider, '');
+  const tail = rest.map((u) => {
+    const file = pageFileOf(u);
+    return `its ${file ? pageNameOf(file, LEDGER_SOURCES.find((s) => s.url === u)?.title) : 'page'}`;
+  });
+  return [pageName(provider, first), ...tail].join(' and ');
+}
 
 export const PARTNER_NAME: Record<Partner, string> = {
   vertex: 'Vertex AI',

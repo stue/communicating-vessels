@@ -5,15 +5,28 @@
  * The live --share write is smoked separately (scripts/smoke-share.mjs)
  * because it needs the deployed endpoint; here --share is exercised on its
  * FAILURE path (unreachable endpoint must not corrupt the check output).
+ *
+ * 0.4.4 (R8): the temporary folders it makes are removed when it exits, green or not.
  */
 import { execFileSync } from 'node:child_process';
-import { writeFileSync, mkdtempSync } from 'node:fs';
+import { writeFileSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const bin = join(here, '../dist/bin.js');
+
+// R8: every folder this smoke makes, removed on exit — after the last gate, or after the first red one
+const made = [];
+const tempDir = (prefix) => {
+  const d = mkdtempSync(join(tmpdir(), prefix));
+  made.push(d);
+  return d;
+};
+process.on('exit', () => {
+  for (const d of made) rmSync(d, { recursive: true, force: true });
+});
 
 const gates = [];
 const gate = (name, ok, detail = '') => {
@@ -32,7 +45,7 @@ const run = (cliArgs, opts = {}) => {
   }
 };
 
-const dir = mkdtempSync(join(tmpdir(), 'kgauto-check-smoke-'));
+const dir = tempDir('kgauto-check-smoke-');
 const extractPath = join(dir, 'extract.json');
 writeFileSync(
   extractPath,
@@ -56,7 +69,7 @@ gate('G1e version stamp in the footer', /@warmdrift\/kgauto-check \d+\.\d+\.\d+ 
 // G1f/G1g — 0.4.3 (R1): --offline makes no request and says so; --pages without read-times.json is refused
 const off = run(['--extract', extractPath, '--offline']);
 gate('G1f --offline: the card says no network request was made, and no provider line is Certain', off.code === 0 && /made no network request \(--offline\)/.test(off.out) && !/## Certain[\s\S]*own API[\s\S]*## Likely/.test(off.out));
-const noTimes = mkdtempSync(join(tmpdir(), 'kgauto-check-pages-'));
+const noTimes = tempDir('kgauto-check-pages-');
 const refused = run(['--extract', extractPath, '--pages', noTimes]);
 gate('G1g --pages <dir> without read-times.json is refused, exit 1', refused.code === 1 && /no read-times\.json/.test(refused.err));
 const both = run(['--extract', extractPath, '--pages', noTimes, '--offline']);

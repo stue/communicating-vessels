@@ -1,4 +1,6 @@
-# Deprecations (a made-up page in the shape of developers.openai.com's, for tests/check-043.test.ts)
+# Deprecations
+
+> A made-up page in the shape of developers.openai.com's, for tests/check-043.test.ts (its title is the real page's, 0.4.4 R6).
 
 **Shutdown.** The model no longer accepts requests through the standard API.
 

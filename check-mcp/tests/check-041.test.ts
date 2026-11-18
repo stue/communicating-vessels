@@ -45,30 +45,32 @@ describe('R1 — a cliff line is worded from the cliff', () => {
       { project: { name: 't' }, callSites: [{ id: 'a.ts:1', model: 'fx-model', platform: 'provider-api', estInputTokens: 50_000, toolCount: 5, expectsStructuredOutput: true, ...site } as never] },
       { resolve: () => ({ canonical: 'fx-model', profile: p }), roster: () => [p] },
     );
-    return r.findings.find((f) => f.title.includes('cliff'));
+    return r.findings.find((f) => f.title.includes('the catalog holds a threshold at'));
   };
   const base = { metric: 'input_tokens', threshold: 10_000, reason: 'fixture reason' } as const;
 
   it('the fresh-eyes line: gpt-6-luna on the real catalog says what the profile says — a refused request on one probe, on one endpoint', async () => {
     const { runCheck } = await import('../src/engine.js');
     const r = runCheck({ project: { name: 't' }, callSites: [{ id: 'cfg.ts:1', model: 'gpt-6-luna', platform: 'provider-api', toolCount: 30 }] });
-    const f = r.findings.find((x) => x.title.includes('cliff'))!;
-    expect(f.title).toBe('`gpt-6-luna` has a known tool count cliff at 1 — this site crosses it');
+    const f = r.findings.find((x) => x.title.includes('the catalog holds a threshold at'))!;
+    // 0.4.4 Amendment A2: no "cliff" and no "probe" in our own words on the line
+    expect(f.title).toBe('`gpt-6-luna`: the catalog holds a threshold at 1 tool, and this site crosses it');
     expect(f.confidence).toBe('likely');
     expect(f.detail).not.toContain(QUALITY);
     // 0.4.3 (R8): alpha.134's reason (v2/src/profiles.ts, the gpt-6-luna profile)
     expect(f.detail).toContain("rejects function tools with reasoning_effort on /v1/chat/completions (HTTP 400, probed 2026-11-12, n=1; reasoning_effort 'none' → 200 with the tool call): ");
     expect(f.detail).toContain('It is about one endpoint, `/v1/chat/completions`: it says nothing about the model reached another way.');
     expect(f.detail).toContain("What the compiler does about it: it turns the model's thinking off for the request.");
-    expect(f.detail).toContain('Evidence: a probe reproduced it, last run 2026-11-12, on 1 call (the count its reason gives).');
+    expect(f.detail).toContain('Evidence: a test reproduced the problem, last run 2026-11-12, on 1 call (the count its reason gives).');
     expect(f.detail).toContain('This site offers 30 tools, over the line.');
-    expect(f.basis).toBe("the catalog's cliff rule (evidence: probed, confirmed, 2026-11-12) vs this site's tool count");
+    // 0.4.4 (R1): in words (until 0.4.3: "the catalog's cliff rule (evidence: probed, confirmed, 2026-11-12) vs this site's tool count")
+    expect(f.basis).toBe("a threshold the catalog holds for this model (1 tool; a test reproduced the problem on 2026-11-12), against this site's tool count");
   });
 
   it('a pricing-tier rule with no evidence record (gpt-6-astra) is not called a quality loss', async () => {
     const { runCheck } = await import('../src/engine.js');
     const r = runCheck({ project: { name: 't' }, callSites: [{ id: 'cfg.ts:1', model: 'gpt-6-astra', platform: 'provider-api', estInputTokens: 400_000 }] });
-    const f = r.findings.find((x) => x.title.includes('cliff'))!;
+    const f = r.findings.find((x) => x.title.includes('the catalog holds a threshold at'))!;
     expect(f.confidence).toBe('likely');
     expect(f.detail).not.toContain(QUALITY);
     // 0.4.3 (R8): alpha.134 rewrote this reason from the model's own page
@@ -103,11 +105,12 @@ describe('R1 — a cliff line is worded from the cliff', () => {
 
   it('the evidence is said in plain words, with its date where the profile gives one', async () => {
     const said = async (over: Partial<Cliff>) => (await cliffFinding({ ...base, action: 'downgrade_quality_warning', ...over } as Cliff))!.detail;
-    expect(await said({ evidence: { class: 'probed', verdict: 'flagged', lastProbed: '2026-09-01' } })).toContain('Evidence: a probe did not reproduce it, last run 2026-09-01.');
+    // 0.4.4 Amendment A2: a test, in the words the basis uses (foundWords)
+    expect(await said({ evidence: { class: 'probed', verdict: 'flagged', lastProbed: '2026-09-01' } })).toContain('Evidence: a test did not reproduce the problem, last run 2026-09-01.');
     expect(await said({ evidence: { class: 'probed', verdict: 'knee-moved', lastProbed: '2026-09-02' } })).toContain(
-      'Evidence: a probe moved its threshold and the rule was re-pinned, last run 2026-09-02.',
+      'Evidence: a test moved the threshold, and the catalog was changed to match, last run 2026-09-02.',
     );
-    expect(await said({ evidence: { class: 'probed' } })).toContain('Evidence: a probe ran; its verdict is not recorded.');
+    expect(await said({ evidence: { class: 'probed' } })).toContain('Evidence: a test was run and its result is not recorded.');
     expect(await said({ evidence: { class: 'observed', lastProbed: '2026-08-01' } })).toContain('Evidence: observed in real calls, last seen 2026-08-01.');
     expect(await said({ evidence: { class: 'assumed' } })).toContain('Evidence: carried over from a similar model, not measured on this one.');
     expect(await said({ evidence: { class: 'asserted' } })).toContain('Evidence: stated in the catalog without a measurement.');
@@ -122,7 +125,7 @@ describe('R1 — a cliff line is worded from the cliff', () => {
   it('a capability-reducing action the compiler holds back is said as held back', async () => {
     const f = await cliffFinding({ ...base, metric: 'tool_count', threshold: 2, action: 'strip_tools', evidence: { class: 'asserted' } } as Cliff);
     expect(f!.detail).toContain(
-      'What the compiler does about it: it would send the request without its tools, but holds that back until a probe confirms the cliff.',
+      'What the compiler does about it: it would send the request without its tools, but holds that back until a test reproduces the problem.',
     );
     const g = await cliffFinding({ ...base, metric: 'tool_count', threshold: 2, action: 'strip_tools', evidence: { class: 'probed', verdict: 'confirmed' } } as Cliff);
     expect(g!.detail).toContain('What the compiler does about it: it sends the request without its tools.');
@@ -131,7 +134,7 @@ describe('R1 — a cliff line is worded from the cliff', () => {
   it('a structured-output rule speaks only where the site parses structured output, as the compiler applies it', async () => {
     const { runCheck } = await import('../src/engine.js');
     const site = { id: 'a.ts:1', model: 'claude-haiku-4-5', platform: 'provider-api', archetype: 'summarize', estInputTokens: 12_000 };
-    const cliffOf = (s: object) => runCheck({ project: { name: 't' }, callSites: [s as never] }).findings.find((f) => f.title.includes('cliff'));
+    const cliffOf = (s: object) => runCheck({ project: { name: 't' }, callSites: [s as never] }).findings.find((f) => f.title.includes('the catalog holds a threshold at'));
     expect(cliffOf(site)).toBeUndefined();
     const f = cliffOf({ ...site, expectsStructuredOutput: true })!;
     // Amendment B2: no evidence record, so no quality sentence.
@@ -159,7 +162,7 @@ describe('R1 — a cliff line is worded from the cliff', () => {
         const r = runCheck({ project: { name: 't' }, callSites: [site as never] }, {
           resolve: (id) => ({ canonical: id, profile: id === p.id ? p : undefined }),
         });
-        const lines = r.findings.filter((f) => f.title.includes(' cliff at '));
+        const lines = r.findings.filter((f) => f.title.includes('the catalog holds a threshold at'));
         for (const f of lines) {
           fired++;
           expect(f.confidence, `${p.id} ${c.metric}`).toBe('likely');
@@ -230,7 +233,7 @@ describe('Amendment A1 — no internal application’s name on a stranger’s ca
           ...(c.metric === 'input_tokens' ? { estInputTokens: c.threshold } : { toolCount: c.threshold }),
         };
         const r = runCheck({ project: { name: 't' }, callSites: [site as never] }, { resolve: (id) => ({ canonical: id, profile: id === p.id ? p : undefined }) });
-        fired += r.findings.filter((f) => f.title.includes(' cliff at ')).length;
+        fired += r.findings.filter((f) => f.title.includes('the catalog holds a threshold at')).length;
         expect(named(r.card), p.id).toEqual([]);
       }
     }
@@ -240,7 +243,7 @@ describe('Amendment A1 — no internal application’s name on a stranger’s ca
   it('the haiku-4-5 line keeps its action and its evidence, and (alpha.134) quotes its reason, which names no application', async () => {
     const { runCheck } = await import('../src/engine.js');
     const r = runCheck({ project: { name: 't' }, callSites: [{ id: 'a.ts:1', model: 'claude-haiku-4-5', platform: 'provider-api', archetype: 'summarize', estInputTokens: 12_000, expectsStructuredOutput: true }] });
-    const f = r.findings.find((x) => x.title.includes('cliff'))!;
+    const f = r.findings.find((x) => x.title.includes('the catalog holds a threshold at'))!;
     // Amendment B: no quality sentence without an evidence record (B2); 12,000 on a rule at 12,000 is at the line (B1).
     expect(f.detail).toBe(
       "The catalog's reason (for summarize work): “On summarize with more than 12,000 input tokens, every structured-output reply in the measurement window failed to parse (measured on production summarize traffic, 2026-07-25 to 2026-07-27); the model led those calls only when input size made its price dominate”. " +
@@ -345,8 +348,8 @@ describe('R5 — two sentences', () => {
     const heading = r.card.split('\n').find((l) => l.startsWith('## Likely'))!;
     // 0.4.3 (R1): the heading names the page read on an earlier day first
     expect(heading).toBe(
-      // Amendment B4 (0.4.3): and why a changelog line is there
-      '## Likely — a provider’s page as read on an earlier day (the day is on the line); a provider’s changelog about a model it names in words; priced from your estimates; a provider’s word where the call may not use its own API; no retry or fallback found in the code',
+      // Amendment B4 (0.4.3): and why a changelog line is there; 0.4.4 (R6): named as Google's page is titled, "Release notes"
+      '## Likely — a provider’s page as read on an earlier day (the day is on the line); a provider’s release notes that name a model in words, not by its id; priced from your estimates; a provider’s word where the call may not use its own API; no retry or fallback found in the code',
     );
     // the card under it carries one of each of the two new kinds
     const likely = r.findings.filter((f) => f.confidence === 'likely').map((f) => f.title);
@@ -403,10 +406,11 @@ describe('R7 — the share path says what it stores', () => {
 });
 
 describe('R9 — version, changelog, readme', () => {
-  it('the package is 0.4.3 and the changelog says so first', () => {
-    expect(pkg.version).toBe('0.4.3');
+  it('the package is 0.4.4 and the changelog says so first', () => {
+    expect(pkg.version).toBe('0.4.4');
     const log = readFileSync(join(PKG_DIR, 'CHANGELOG.md'), 'utf8');
-    expect(log.split('\n').find((l) => l.startsWith('## '))).toBe('## 0.4.3 — 2026-11-16');
+    // 0.4.4 Amendment B2: dated the day the ledger was read and the release ships
+    expect(log.split('\n').find((l) => l.startsWith('## '))).toBe('## 0.4.4 — 2026-11-18');
   });
 
   it("the README's example card is this build's output on the stored example extract, byte for byte", async () => {

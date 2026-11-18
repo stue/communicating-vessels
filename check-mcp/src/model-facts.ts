@@ -1,7 +1,7 @@
 import { LIBRARY_VERSION } from '@warmdrift/kgauto-compiler';
 import { retirementFloorClause } from '@warmdrift/kgauto-compiler/profiles';
-import { analyseModel, rowStateIn, daysSinceRead } from './engine.js';
-import { PROVIDER_NAME, LEDGER_READ_ON, PARTNER_NAME, GATEWAYS, partnerPage } from './lifecycle.js';
+import { analyseModel, rowStateIn, daysSinceRead, pageLineQuote } from './engine.js';
+import { PROVIDER_NAME, LEDGER_READ_ON, PARTNER_NAME, GATEWAYS, partnerPage, pageName, pagesName } from './lifecycle.js';
 import { unreadAll, NOT_READ_BY_CALLER, readInThisRun, pagesCount, lastReadAt, minuteOf, type PageRead } from './pages.js';
 
 /** Amendment B4: "n days before this lookup", said as the card says it — "the day of this lookup" at 0, "1 day" at 1. */
@@ -63,21 +63,27 @@ export function renderModelFacts(model: string, opts: { pages?: PageRead; surfac
     out.push(
       r.namedAs
         ? // 0.4.3 (R6): the changelog names the model in words; the link from the id to the name is this check's (Amendment B4).
-          `- ${P}'s changelog, by this check's reading of the id as ${r.namedAs}: **${r.pageWord}** (${r.entryHeading}) — the changelog names the model in words, not by this id, so the link is this check's`
+          // 0.4.4 (R6): the page by its own title (Google's is "Release notes").
+          `- ${pageName(r.provider, r.url)}, by this check's reading of the id as ${r.namedAs}: **${r.pageWord}** (${r.entryHeading}) — the page names the model in words, not by this id, so the link is this check's`
         : r.word === 'listed'
           ? // 0.4.2 Amendment A1: listed on the page with no date and no deprecation word, in the page's own words.
-            `- ${P}'s page lists it: **${r.pageWord.charAt(0).toLowerCase()}${r.pageWord.slice(1)}**${repl}`
+            `- ${pageName(r.provider, r.url)} lists it: **${r.pageWord.charAt(0).toLowerCase()}${r.pageWord.slice(1)}**${repl}`
           : `- ${P}'s word: **${r.word}**${dates.length ? ` (${dates.join('; ')})` : ''}${repl}${r.routesTo ? ` · requests routed to: ${r.routesTo}` : ''}`,
     );
     // 0.4.3 (R2): when the page was read, in the line.
     const st = rowStateIn(read, r.id);
+    // 0.4.4 (R4): when one of the row's pages was read in this run and another was not, the line names the one not read
+    const partly = st.state === 'unread' && (st.read?.length ?? 0) > 0;
     const when =
       st.state === 'confirmed'
         ? `read in this run, ${minuteOf(st.at)} UTC`
         : st.state === 'changed'
           ? `read ${r.readOn}; the page has changed since — it no longer carries this line as it was read, so read the page before acting on the date`
-          : `read ${r.readOn}, ${daysBeforeLookup(today, r.readOn)}; not read in this run (${st.reason})`;
-    out.push(`- source: ${r.url} (${when}) — “${r.quote.replace(/\s+/g, ' ').slice(0, 300)}”`);
+          : partly
+            ? `read in this run, ${minuteOf(st.read!.map((x) => x.at).sort().at(-1)!)} UTC; ${pagesName(r.provider, (st.notRead ?? []).map((n) => n.url))} not read in this run (${st.reason}), as read ${r.readOn}, ${daysBeforeLookup(today, r.readOn)}`
+            : `read ${r.readOn}, ${daysBeforeLookup(today, r.readOn)}; not read in this run (${st.reason})`;
+    // 0.4.4 (R2): the quote as the card prints it — never cut inside a word or an id (until 0.4.3: `.slice(0, 300)`)
+    out.push(`- source: ${r.url} (${when}) — “${pageLineQuote(r)}”`);
     if (r.alsoUrl) out.push(`- also: ${r.alsoUrl}${r.alsoHeading ? ` (${r.alsoHeading})` : ` (read ${r.alsoReadOn})`} — “${r.alsoQuote}”`);
     if (r.modelPage?.status === 404) out.push(`- ${P}'s model page for this id answered 404 on ${r.modelPage.at.slice(0, 10)} (${r.modelPage.url})`);
     if (a.via) out.push(`- matched the dated snapshot \`${a.via}\` the page lists`);
@@ -128,7 +134,7 @@ export function renderModelFacts(model: string, opts: { pages?: PageRead; surfac
     `- tool definitions per call the catalog's router sends to it: ${p.maxTools === 0 ? 'none (the router’s own wire for this model sends no tools; that is not a limit of the model)' : `up to ${p.maxTools} (a routing default, not a provider-stated limit)`}`,
   );
   out.push(
-    `- capabilities: parallel tool calls ${p.parallelToolCalls ? 'yes' : 'no (measured sequential calls)'} · structured output: ${p.structuredOutput} · streaming: ${p.streaming ? 'yes' : 'no'}`,
+    `- capabilities: parallel tool calls ${p.parallelToolCalls ? 'yes' : 'no (the catalog records sequential calls)'} · structured output: ${p.structuredOutput} · streaming: ${p.streaming ? 'yes' : 'no'}`,
   );
   out.push(
     p.cliffs.length > 0

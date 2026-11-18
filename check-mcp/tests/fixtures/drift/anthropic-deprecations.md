@@ -1,5 +1,6 @@
 ---
-title: Model deprecations (a made-up page in the shape of platform.claude.com's, for tests/ledger-drift.test.ts)
+title: Model deprecations
+description: A made-up page in the shape of platform.claude.com's, for tests/ledger-drift.test.ts (its title is the real page's, 0.4.4 R6).
 ---
 
 * **Retired:** The model is no longer available for use. Requests to retired models fail.

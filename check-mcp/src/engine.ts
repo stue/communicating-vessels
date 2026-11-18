@@ -36,7 +36,7 @@ import {
   isCapabilityReducing,
   type ModelProfile,
 } from '@warmdrift/kgauto-compiler';
-import { retirementFloorClause, deriveCliffEvidenceClass } from '@warmdrift/kgauto-compiler/profiles';
+import { retirementFloorClause, deriveCliffEvidenceClass, providerDisplayName } from '@warmdrift/kgauto-compiler/profiles';
 import type { Extract } from './extract.js';
 import { CHECK_VERSION } from './version.js';
 import {
@@ -54,11 +54,14 @@ import {
   partnerPage,
   siteState,
   coveredBy,
+  pageName,
+  pagesName,
   type SiteState,
   type Partner,
   type Resolution,
 } from './lifecycle.js';
 import type { LedgerRow } from './lifecycle-types.js';
+import { rowPages } from './ledger-check.mjs';
 import {
   unreadAll,
   NOT_READ_BY_CALLER,
@@ -202,6 +205,12 @@ export interface ModelAnalysis {
 }
 
 const capital = (w: string) => w.charAt(0).toUpperCase() + w.slice(1);
+/** 0.4.4 (R3): a count with its noun, the plural written out — "1 AI call site", "8 model ids"; never "(s)". */
+export const count = (n: number, noun: string) => `${n} ${noun}${n === 1 ? '' : 's'}`;
+/** "a", "a and b", "a, b and c". */
+const andList = (xs: string[]) => (xs.length <= 1 ? (xs[0] ?? '') : `${xs.slice(0, -1).join(', ')} and ${xs.at(-1)}`);
+/** 0.4.4 (R1): a provider's name as its pages write it — the ledger's four, else the compiler's own (`zai` → "Z.ai"), never a catalog key. */
+const providerWord = (p: string) => PROVIDER_NAME[p as keyof typeof PROVIDER_NAME] ?? providerDisplayName(p);
 
 /**
  * Amendment C, ruling 1: the fact is stated about the provider's own API, which is true wherever
@@ -214,14 +223,16 @@ const UNSTATED_CLAUSE =
 
 function placeLine(line: Line, provider: string, st: SiteState): Line {
   if (st.providerApi) return line;
-  const P = PROVIDER_NAME[provider as keyof typeof PROVIDER_NAME] ?? provider;
+  const P = providerWord(provider);
   const parts: string[] = [];
   let basis = line.basis;
   if (st.partner) {
     const N = PARTNER_NAME[st.partner];
     const covered = coveredBy(provider, st.partner);
     if (covered) {
-      parts.push(`${P}'s deprecations page says its dates apply on ${covered}, so they hold on this site's platform too.`);
+      // 0.4.4 (R6): the page by its own title
+      const dep = DEFINITION_PAGE[provider as keyof typeof DEFINITION_PAGE];
+      parts.push(`${dep ? pageName(provider, dep) : `${P}'s deprecations page`} says its dates apply on ${covered}, so they hold on this site's platform too.`);
     } else {
       const page = partnerPage(st.partner, provider);
       const where = page ? ` (its page: ${page}).` : ' (no page of its own for this model was read).';
@@ -259,26 +270,54 @@ function daysBefore(today: string, readOn: string): string {
  * 0.4.3 (R2): the state sentence and basis every provider line carries — when its page was read, in the line.
  * Confirmed: read in this run, with its time. Unread: the page as this version read it, n days before, and why
  * it was not read. Changed: the line no longer on the page, and the page to read before acting.
+ *
+ * 0.4.4 (R6): each page is named by its own title ("OpenAI's deprecations page", "Google's release notes page").
+ * 0.4.4 (R4): a row that rests on two pages, one read in this run and one not, says which, by name — in the
+ * sentence and in the basis. The tier rule is unchanged: such a row is unread, and never Certain.
  */
 function stateWords(
-  P: string,
-  row: { readOn: string; url: string; alsoUrl?: string },
+  row: { provider: string; readOn: string; url: string; quote: string; note?: string; section?: string; alsoUrl?: string; alsoQuote?: string },
   st: RowState,
   today: string,
 ): { titlePrefix: string; tail: string; basis: string } {
-  const also = row.alsoUrl && row.alsoUrl !== row.url ? ` (and ${row.alsoUrl})` : '';
+  const urls = rowPages(row);
+  const all = pagesName(row.provider, urls);
+  const at = (us: readonly string[]) => us.join(' and ');
   if (st.state === 'confirmed')
-    return { titlePrefix: '', tail: '', basis: `${P}'s page, read in this run (${minuteOf(st.at)} UTC): ${row.url}${also}` };
+    return { titlePrefix: '', tail: '', basis: `${all}, read in this run (${minuteOf(st.at)} UTC): ${at(urls)}` };
   if (st.state === 'changed')
     return {
       titlePrefix: `As read on ${row.readOn} (the page has changed since): `,
-      tail: `${P}'s page no longer carries this line as it was read. Read the page before acting on the date: ${row.url}. A newer version of the check carries a newer read.`,
-      basis: `${P}'s page as read ${row.readOn}, changed when read in this run (${minuteOf(st.at)} UTC): ${row.url}${also}`,
+      tail: `This line is no longer on ${all} as it was read. Read the page before acting on the date: ${row.url}. A newer version of the check carries a newer read.`,
+      basis: `${all} as read ${row.readOn}, changed when read in this run (${minuteOf(st.at)} UTC): ${at(urls)}`,
     };
+  const notRead = st.notRead ?? urls.map((url) => ({ url, reason: st.reason }));
+  const read = st.read ?? [];
+  const days = daysBefore(today, row.readOn);
+  if (read.length === 0) {
+    const N = pagesName(row.provider, notRead.map((n) => n.url));
+    const many = notRead.length > 1;
+    const reasons = [...new Set(notRead.map((n) => n.reason))];
+    const why = reasons.length === 1 ? reasons[0] : notRead.map((n) => `${pageName(row.provider, n.url)}: ${n.reason}`).join('; ');
+    return {
+      titlePrefix: '',
+      tail: `This is ${N} as this version of the check read ${many ? 'them' : 'it'} on ${row.readOn}, ${days}; ${many ? 'they were' : 'it was'} not read in this run (${why}).`,
+      basis: `${N} as read ${row.readOn}: ${at(urls)}`,
+    };
+  }
+  // R4: one page read in this run, another not — the sentence and the basis name each.
+  const R = pagesName(row.provider, read.map((r) => r.url));
+  const N = pagesName(row.provider, notRead.map((n) => n.url));
+  const t = minuteOf(read.map((r) => r.at).sort().at(-1)!);
+  const stands = read.every((r) => r.stands);
+  const was = (n: number) => (n > 1 ? 'were' : 'was');
   return {
     titlePrefix: '',
-    tail: `This is ${P}'s page as this version of the check read it on ${row.readOn}, ${daysBefore(today, row.readOn)}; it was not read in this run (${st.reason}).`,
-    basis: `${P}'s page as read ${row.readOn}: ${row.url}${also}`,
+    tail:
+      `In this run ${R} ${was(read.length)} read (${t} UTC) and ${stands ? 'still says this' : 'no longer says this as it was read'}, ` +
+      `and ${N} ${was(notRead.length)} not read (${[...new Set(notRead.map((n) => n.reason))].join('; ')}); ` +
+      `for ${notRead.length > 1 ? 'those pages' : 'that page'}, this is what this version of the check read on ${row.readOn}, ${days}.`,
+    basis: `${R}, read in this run (${t} UTC): ${at(read.map((r) => r.url))}; ${N}, not read in this run, as read ${row.readOn}: ${at(notRead.map((n) => n.url))}`,
   };
 }
 
@@ -286,9 +325,11 @@ function stateWords(
 function changelogLine(a: { shown: string; row: LedgerRow; checksSkip: boolean; state: RowState; today: string }): Line {
   const { row, shown } = a;
   const P = PROVIDER_NAME[row.provider];
-  const w = stateWords(P, row, a.state, a.today);
+  // 0.4.4 (R6): the page by its own title — Google's is titled "Release notes"
+  const page = pageName(row.provider, row.url);
+  const w = stateWords(row, a.state, a.today);
   const parts: string[] = [
-    `${P}'s changelog names the model in words, not by this id; the link from \`${a.row.id}\` to “${row.namedAs}” is this check's, so this line is Likely whatever the page says.`,
+    `${page} names the model in words, not by this id; the link from \`${a.row.id}\` to “${row.namedAs}” is this check's, so this line is Likely whatever the page says.`,
   ];
   if (row.alsoQuote && row.alsoHeading)
     parts.push(`Its entry of ${row.alsoHeading} introduced the id: “${row.alsoQuote}” — the only place a ${P} page this version read carries it.`);
@@ -300,10 +341,46 @@ function changelogLine(a: { shown: string; row: LedgerRow; checksSkip: boolean; 
   return {
     severity: 'red',
     confidence: 'likely',
-    title: `${w.titlePrefix}${shown} is, by this check's reading, ${row.namedAs}: ${P}'s changelog says “${row.quote}” (${row.entryHeading})`,
+    title: `${w.titlePrefix}${shown} is, by this check's reading, ${row.namedAs}: ${page} says “${cutQuote(row.quote)}” (${row.entryHeading})`,
     detail: parts.join(' '),
-    basis: w.basis.replace(`${P}'s page`, `${P}'s changelog`),
+    basis: w.basis,
   };
+}
+
+// ── 0.4.4 (R2): a quote is the page's words, or it is marked ───────────
+/** A quote longer than this is cut; every row of the ledger read 2026-11-17 is shorter (the longest, 259 characters, is Google's reroute of gemini-2.5-flash). */
+export const QUOTE_LIMIT = 300;
+
+/**
+ * A quote as the card prints it: whole when it is short enough; else cut at the last sentence end or table-cell
+ * boundary before the limit, outside any backticks, and ended with "…" (inside the quotation marks, which the
+ * caller adds). A quote with no such boundary before the limit is printed whole: never cut inside a word or an id.
+ */
+export function cutQuote(s: string, limit: number = QUOTE_LIMIT): string {
+  if (s.length <= limit) return s;
+  let best = -1;
+  let ticks = 0;
+  for (let i = 0; i < s.length && i < limit; i++) {
+    if (s[i] === '`') ticks++;
+    if (ticks % 2 !== 0) continue;
+    // a sentence end: the punctuation is kept, the cut is after it
+    if (/[.!?]/.test(s[i]!) && /\s/.test(s[i + 1] ?? '') && i + 1 + 1 <= limit) best = i + 1;
+    // a table-cell boundary: the cut is before " | "
+    if (s.startsWith(' | ', i) && i > 0 && i + 1 <= limit) best = i;
+  }
+  return best > 0 ? `${s.slice(0, best)}…` : s;
+}
+
+/** The page's line as the card quotes it: the same whitespace and markdown normalisation as before, then cutQuote. */
+export function pageLineQuote(row: LedgerRow): string {
+  // 0.4.2: markdown markup is not the page's words — links lose their URL, bold its asterisks (OpenAI's page of 2026-11-14 bolds every date).
+  // Amendment A1: a Google table row's quote is its cells joined by " | "; an empty last cell is not quoted.
+  return cutQuote(
+    (row.section !== undefined ? row.quote.replace(/ \| $/, '') : row.quote)
+      .replace(/\s+/g, ' ')
+      .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+      .replace(/\*\*/g, ''),
+  );
 }
 
 /** R2: one ledger row → the provider's word about its own API, when, and the replacement the page names. */
@@ -359,7 +436,8 @@ function ledgerLine(a: {
             : /^Preview agents/i.test(h3)
               ? 'among its preview agents'
               : `under its heading “${h3}”`;
-      title = `${on} has ${row.pageWord.charAt(0).toLowerCase()}${row.pageWord.slice(1)}: ${P}'s deprecations page lists it ${among}`;
+      // 0.4.4 (R6): the page by its own title ("Gemini deprecations")
+      title = `${on} has ${row.pageWord.charAt(0).toLowerCase()}${row.pageWord.slice(1)}: ${pageName(row.provider, row.url)} lists it ${among}`;
       break;
     }
     default: {
@@ -383,19 +461,20 @@ function ledgerLine(a: {
   // 0.4.3 (R2): a definition is quoted only when it is on its page in this run or its page is unread; a changed one is not.
   const defText = WORD_DEFINITION[row.provider]?.[row.word];
   const def = defText && definitionStateIn(a.pages, { provider: row.provider, word: row.word }).state !== 'changed' ? defText : undefined;
-  if (def) parts.push(`${P}'s deprecations page (${DEFINITION_PAGE[row.provider]}): “${def}”`);
+  // 0.4.4 (R6): the page by its own title
+  if (def) parts.push(`${pageName(row.provider, DEFINITION_PAGE[row.provider]!)} (${DEFINITION_PAGE[row.provider]}): “${def}”`);
   if (row.word === 'legacy' && row.pointedTo) {
     parts.push(`When ${P} announced it (${row.announced}), the name pointed to \`${row.pointedTo}\`.`);
   }
   if (row.word === 'retired' && row.routesTo) {
-    parts.push(`${P}'s page: the name is "temporarily routed to ${row.routesTo}".`);
+    // 0.4.4 (R6): the page by its own title
+    parts.push(`${pageName(row.provider, row.url)}: the name is "temporarily routed to ${row.routesTo}".`);
   }
   if (parts.length === 0 || (!def && row.word !== 'legacy' && !a.via))
-    // 0.4.2: markdown markup is not the page's words — links lose their URL, bold its asterisks (OpenAI's page of 2026-11-14 bolds every date).
-    // Amendment A1: a Google table row's quote is its cells joined by " | "; an empty last cell is not quoted.
-    parts.unshift(`The page's line: “${(row.section !== undefined ? row.quote.replace(/ \| $/, '') : row.quote).replace(/\s+/g, ' ').replace(/\[([^\]]+)\]\([^)]*\)/g, '$1').replace(/\*\*/g, '').slice(0, 240)}”.`);
+    // 0.4.4 (R2): never cut inside a word or an id (until 0.4.3: `.slice(0, 240)`, which cut Google's reroute of gemini-2.5-flash inside an id)
+    parts.unshift(`The page's line: “${pageLineQuote(row)}”.`);
   if (a.checksSkip) parts.push('The catalog has no entry for it, so its limits and price were not checked.');
-  const w = stateWords(P, row, a.state, a.today);
+  const w = stateWords(row, a.state, a.today);
   if (w.tail) parts.push(w.tail);
   const severity: Severity =
     row.word === 'listed' ? 'info' : row.word === 'retired' || row.word === 'shut down' || (row.word === 'legacy' && past) ? 'red' : 'yellow';
@@ -416,7 +495,7 @@ function ledgerLine(a: {
 function providerLifecycleLine(shown: string, p: ModelProfile): Line | undefined {
   const pl = p.providerLifecycle;
   if (!pl || pl.status === 'active') return undefined;
-  const P = PROVIDER_NAME[p.provider as keyof typeof PROVIDER_NAME] ?? p.provider;
+  const P = providerWord(p.provider);
   const floor = retirementFloorClause({ retirementFloor: pl.retirementFloor, readOn: pl.readOn });
   return {
     severity: pl.status === 'retired' ? 'red' : 'yellow',
@@ -426,7 +505,8 @@ function providerLifecycleLine(shown: string, p: ModelProfile): Line | undefined
       pl.status === 'legacy'
         ? `${P}'s word for a model that no longer receives updates and may be deprecated later.`
         : `${P}'s word, read on the model's own page.`,
-    basis: `catalog providerLifecycle, read ${pl.readOn}: ${pl.url}`,
+    // 0.4.4 (R1): a sentence, not the catalog's field name
+    basis: `${P}'s page for this model, as the catalog read it ${pl.readOn}: ${pl.url}`,
   };
 }
 
@@ -452,9 +532,10 @@ const ACTION_WOULD: Record<string, string> = {
 const QUALITY_ACTIONS = new Set(['downgrade_quality_warning', 'quality_gate_structured']);
 
 function actionSentence(c: Cliff): string {
-  // The compiler holds a capability-reducing action back until a probe confirms the cliff (its evidence gate).
+  // The compiler holds a capability-reducing action back until a confirming test is on record (its evidence gate).
+  // 0.4.4 Amendment A2: said in the words the basis uses (the 0.4.3 wording is in the filing's fix pass 1 report).
   if (isCapabilityReducing(c.action) && !hasConfirmedEvidence(c)) {
-    return `What the compiler does about it: it would ${ACTION_WOULD[c.action] ?? c.action.replaceAll('_', ' ')}, but holds that back until a probe confirms the cliff.`;
+    return `What the compiler does about it: it would ${ACTION_WOULD[c.action] ?? c.action.replaceAll('_', ' ')}, but holds that back until a test reproduces the problem.`;
   }
   // Amendment B2: the structured-output gate in plain words.
   if (c.action === 'quality_gate_structured') {
@@ -480,14 +561,15 @@ function evidenceSentence(c: Cliff): string {
   const when = ev.lastProbed ? `, last ${ev.class === 'observed' ? 'seen' : 'run'} ${ev.lastProbed}` : '';
   switch (ev.class) {
     case 'probed': {
+      // 0.4.4 Amendment A2: a test, in the words the basis uses (foundWords), never our word for it
       const v =
         ev.verdict === 'confirmed'
-          ? 'a probe reproduced it'
+          ? 'a test reproduced the problem'
           : ev.verdict === 'knee-moved'
-            ? 'a probe moved its threshold and the rule was re-pinned'
+            ? 'a test moved the threshold, and the catalog was changed to match'
             : ev.verdict === 'flagged'
-              ? 'a probe did not reproduce it'
-              : 'a probe ran; its verdict is not recorded';
+              ? 'a test did not reproduce the problem'
+              : 'a test was run and its result is not recorded';
       return `Evidence: ${v}${when}${count}.`;
     }
     case 'observed':
@@ -551,16 +633,49 @@ export function cliffLine(canonical: string, c: Cliff, metricValue: number): Lin
       ? `This site offers ${metricValue.toLocaleString()} ${metricValue === 1 ? 'tool' : 'tools'}, ${where}.`
       : `Your estimate of ${metricValue.toLocaleString()} sits ${where}.`,
   );
-  const ev = c.evidence;
-  const tag = ev ? `evidence: ${[ev.class, ev.verdict, ev.lastProbed].filter(Boolean).join(', ')}` : 'no evidence record';
   return {
     severity: 'yellow',
     confidence: 'likely',
     // Amendment D2: the title agrees with the sentence — "reaches" at equality, "crosses" above.
-    title: `\`${canonical}\` has a known ${c.metric.replaceAll('_', ' ')} cliff at ${c.threshold.toLocaleString()} — this site ${metricValue === c.threshold ? 'reaches' : 'crosses'} it`,
+    // 0.4.4 Amendment A2: none of our words for the rule on a line a card prints; the threshold in the basis's words
+    title: `\`${canonical}\`: the catalog holds a threshold at ${thresholdWords(c)}, and this site ${metricValue === c.threshold ? 'reaches' : 'crosses'} it`,
     detail: parts.join(' '),
-    basis: `the catalog's cliff rule (${tag}) vs ${c.metric === 'tool_count' ? "this site's tool count" : 'your estimate'}`,
+    basis: `a threshold the catalog holds for this model (${thresholdWords(c)}; ${foundWords(c)}), against ${c.metric === 'tool_count' ? "this site's tool count" : 'your estimate'}`,
   };
+}
+
+/** 0.4.4 (R1): what the threshold is, in words. */
+function thresholdWords(c: Cliff): string {
+  const n = c.threshold.toLocaleString();
+  if (c.metric === 'tool_count') return `${n} ${c.threshold === 1 ? 'tool' : 'tools'}`;
+  if (c.metric === 'input_tokens') return `${n} input tokens`;
+  return `${n}, counted as ${c.metric.replaceAll('_', ' ')}`;
+}
+
+/**
+ * 0.4.4 (R1): where the threshold came from, in words, taken from the cliff's evidence RECORD (never from its prose):
+ * every value this can take, by class and verdict, with and without a date.
+ */
+export function foundWords(c: Pick<Cliff, 'evidence'>): string {
+  const ev = c.evidence;
+  if (!ev) return 'no record of how it was found';
+  const on = ev.lastProbed ? ` on ${ev.lastProbed}` : '';
+  switch (ev.class) {
+    case 'probed':
+      return ev.verdict === 'confirmed'
+        ? `a test reproduced the problem${on}`
+        : ev.verdict === 'knee-moved'
+          ? `a test moved the threshold${on}, and the catalog was changed to match`
+          : ev.verdict === 'flagged'
+            ? `a test${on} did not reproduce the problem`
+            : `a test was run${on}; its result is not recorded`;
+    case 'observed':
+      return `the problem was seen in real calls${ev.lastProbed ? `, last on ${ev.lastProbed}` : ''}`;
+    case 'assumed':
+      return 'carried over from a similar model, not tested on this one';
+    default:
+      return 'stated by the catalog, with no test behind it';
+  }
 }
 
 export function analyseModel(
@@ -626,7 +741,9 @@ export function analyseModel(
         `The check could not match this id to the catalog or to a provider's deprecation list, so nothing about it was checked: ` +
         `not its lifecycle, its limits or its price.` +
         (fam ? ` Its name sorts above every \`${fam}\` id the check knows, so it may be newer than the catalog.` : ''),
-      basis: 'catalog lookup and the providers’ deprecation lists',
+      // 0.4.4 Amendment A1: a sentence, not a noun phrase; the lookup is the catalog and every page the ledger is built
+      // from (deprecations, release notes, a change log), so the basis does not name deprecation pages alone
+      basis: "this id was looked up in the catalog and in the providers' pages this check reads, and matched neither",
     });
   }
   return { res, shown: shownId, row, via: hit.via, profile, canonical: profile ? canonical : res.base, lines, partner, state: st };
@@ -669,10 +786,11 @@ export function runCheck(extract: Extract, opts: EngineOptions = {}): CheckResul
     // 0.4.3 (R1): a catalog value is Likely in every run — its page is not read at run time; the line carries
     // the day the catalog was dated against it (until 0.4.2: certain when dated and on the provider's own API).
     const docTier: Confidence = 'likely';
-    const docBasis = profile.verifiedAgainstDocs
-      ? `catalog, verified against the provider's page ${profile.verifiedAgainstDocs}`
-      : 'catalog value, not dated against a provider page';
-    const PP = PROVIDER_NAME[profile.provider as keyof typeof PROVIDER_NAME] ?? profile.provider;
+    const PP = providerWord(profile.provider);
+    // 0.4.4 (R1): where a catalog value came from, in words (until 0.4.3: "catalog, verified against the provider's page <date>")
+    const docSource = profile.verifiedAgainstDocs
+      ? `the catalog's record, checked against ${PP}'s documentation on ${profile.verifiedAgainstDocs}`
+      : `the catalog's record, not checked against ${PP}'s documentation`;
     // Amendment D1: a partner named only by words in the path or notes is a sign, not a fact about
     // where the site runs; a stated platform or the id's own form is. A disagreement is said as the
     // lifecycle line says it.
@@ -697,7 +815,7 @@ export function runCheck(extract: Extract, opts: EngineOptions = {}): CheckResul
           `Your ${site.maxInputTokens !== undefined ? 'worst-case' : 'typical'} input estimate ` +
           `(${worstIn.toLocaleString()} tokens) exceeds the model's ${profile.maxContextTokens.toLocaleString()}-token ` +
           `window. Those calls fail outright or silently truncate, depending on the provider.${whose}`,
-        basis: `your estimate vs ${docBasis}: maxContextTokens=${profile.maxContextTokens}`,
+        basis: `your estimate against the model's context limit, ${profile.maxContextTokens.toLocaleString()} tokens (${docSource})`,
         callSites: at,
       });
     }
@@ -710,7 +828,7 @@ export function runCheck(extract: Extract, opts: EngineOptions = {}): CheckResul
           `You expect ~${site.estOutputTokens.toLocaleString()} output tokens; the model caps at ` +
           `${profile.maxOutputTokens.toLocaleString()}. Responses will be cut mid-generation — on JSON ` +
           `output this is the classic unparseable-tail failure.${whose}`,
-        basis: `your estimate vs ${docBasis}: maxOutputTokens=${profile.maxOutputTokens}`,
+        basis: `your estimate against the model's output limit, ${profile.maxOutputTokens.toLocaleString()} tokens (${docSource})`,
         callSites: at,
       });
     }
@@ -721,11 +839,12 @@ export function runCheck(extract: Extract, opts: EngineOptions = {}): CheckResul
       add({
         severity: 'yellow',
         confidence: 'likely',
-        title: `the catalog measured \`${canonical}\` making tool calls one at a time`,
+        // 0.4.4 (R1): "measured" only where a record says so — the catalog's value is a yes/no with no record behind it
+        title: `the catalog records \`${canonical}\` making tool calls one at a time`,
         detail:
-          `This site relies on parallel tool use. A measurement made for the catalog (not a provider statement) found the ` +
-          `model calls tools sequentially — roughly 10× fewer operations per step on agentic workloads.`,
-        basis: 'catalog parallelToolCalls=false (a catalog measurement, not a provider page)',
+          `This site relies on parallel tool use. The catalog records that the model calls tools one at a time (its own finding, ` +
+          `not a provider statement) — roughly 10× fewer operations per step on agentic workloads.`,
+        basis: "the catalog records that this model does not make tool calls in parallel; that is the catalog's own finding, not a provider page",
         callSites: at,
       });
     }
@@ -737,7 +856,7 @@ export function runCheck(extract: Extract, opts: EngineOptions = {}): CheckResul
         detail:
           `Output-shape failures here land on your parser as intermittent exceptions. Models with ` +
           `native or grammar-constrained output move that failure from runtime to the request.${whose}`,
-        basis: `${docBasis}: structuredOutput=none`,
+        basis: `${docSource}: the model has no structured-output mode`,
         callSites: at,
       });
     }
@@ -757,13 +876,13 @@ export function runCheck(extract: Extract, opts: EngineOptions = {}): CheckResul
 
     // ── Resilience ─────────────────────────────────────────────────────
     if (site.retry === 'none') {
-      const PN = PROVIDER_NAME[profile.provider as keyof typeof PROVIDER_NAME] ?? profile.provider;
+      const PN = providerWord(profile.provider);
       add({
         severity: 'yellow',
         confidence: 'likely',
         title: `no second model and no retry found at this site`,
         detail: `If ${PN} fails this request, the error reaches your users.`,
-        basis: 'extract retry=none: what was read in the code at this site',
+        basis: 'the extract of your code says this call has no retry and no second model',
         callSites: at,
       });
     }
@@ -781,10 +900,12 @@ export function runCheck(extract: Extract, opts: EngineOptions = {}): CheckResul
         severity: 'info',
         confidence: 'likely',
         title: `~$${perCall.toFixed(4)}/call on \`${canonical}\`${monthly !== undefined ? ` (~$${monthly.toFixed(2)}/month at your volume)` : ''}`,
+        // 0.4.4 Amendment A1: the basis is a sentence, and the detail says where the prices came from in the same words as
+        // the basis and the limit lines (docSource); "verified" is no longer printed here
         detail:
-          `From your token estimates and doc-verified prices ($${profile.costInputPer1m}/M in, ` +
-          `$${profile.costOutputPer1m}/M out${profile.verifiedAgainstDocs ? `, verified ${profile.verifiedAgainstDocs}` : ''}).${whose}`,
-        basis: 'arithmetic on your estimates × verified catalog prices',
+          `From your token estimates and the catalog's prices for this model ($${profile.costInputPer1m}/M in, ` +
+          `$${profile.costOutputPer1m}/M out; ${docSource}).${whose}`,
+        basis: `your token estimates multiplied by the catalog's prices for this model (${docSource})`,
         callSites: at,
       });
       if (inputShare > 0.85) {
@@ -796,7 +917,7 @@ export function runCheck(extract: Extract, opts: EngineOptions = {}): CheckResul
             `Above ~85% input share, spend is dominated by context rather than answers — the ` +
             `single strongest signal of a leaking prompt. What's actually IN that context, and how ` +
             `much of it each call needed, is measurable, not guessable.`,
-          basis: 'your token estimates; the >85% threshold is a measured portfolio heuristic',
+          basis: "your token estimates; 85% is a rule of thumb from the projects the check's makers run, not a provider's figure",
           callSites: at,
         });
       }
@@ -817,16 +938,21 @@ export function runCheck(extract: Extract, opts: EngineOptions = {}): CheckResul
           );
         const cheapest = cheaper[0];
         if (cheapest) {
+          // 0.4.4 Amendment B1: the line agrees with its count — one model is "prices", "That model is", "it"
+          const one = cheaper.length === 1;
           add({
             severity: 'info',
             confidence: 'measurable-only',
-            title: `${cheaper.length} model(s) in the catalog price under half of \`${canonical}\` on ${archetype} work`,
+            title: `${count(cheaper.length, 'model')} in the catalog ${one ? 'prices' : 'price'} under half of \`${canonical}\` on ${archetype} work`,
             detail:
-              `Cheapest: \`${cheapest.id}\` at ~$${perCallCostUsd(cheapest, site.estInputTokens, site.estOutputTokens).toFixed(4)}/call. ` +
-              `The price is arithmetic; whether any of them holds YOUR quality bar on ${archetype} work is ` +
+              `${one ? 'That model is' : 'Cheapest:'} \`${cheapest.id}\` at ~$${perCallCostUsd(cheapest, site.estInputTokens, site.estOutputTokens).toFixed(4)}/call. ` +
+              `The price is arithmetic; whether ${one ? 'it' : 'any of them'} holds YOUR quality bar on ${archetype} work is ` +
               `exactly what a one-day observe run with a judged eval measures. The check never ` +
               `ranks a model on price alone.`,
-            basis: 'verified catalog prices; quality deliberately unclaimed',
+            // 0.4.4 Amendment A1: a sentence, not a noun phrase; it says what the line does not claim
+            basis: one
+              ? "your token estimates at that model's prices in the catalog; nothing on this line says how well it would do your work"
+              : "your token estimates at each model's prices in the catalog; nothing on this line says how well any of them would do your work",
             callSites: at,
           });
         }
@@ -852,7 +978,8 @@ export function runCheck(extract: Extract, opts: EngineOptions = {}): CheckResul
         `your actual input-waste ratio per call; which call sites dominate spend; whether a cheaper ` +
         `model holds quality on your real traffic. These need one day of observed calls — ` +
         `observe-only, your keys, no routing changes.`,
-      basis: 'the honest limit of static analysis',
+      // 0.4.4 Amendment A1: a sentence, not a noun phrase
+      basis: 'this check reads the extract of your code and runs none of your calls, so it cannot see how they behave',
       callSites: everyWhere,
     });
   }
@@ -912,6 +1039,14 @@ const CONTEXT_WORDS: Record<string, (n: number) => string> = {
   docs: (n) => `${n} in docs`,
   example: (n) => `${n} in examples`,
 };
+/** 0.4.4 Amendment A3: each kind of place in words, for the sentence that says the counting order. */
+const CONTEXT_PLACE: Record<string, string> = {
+  runs: 'code that runs',
+  unstated: 'where the extract does not say',
+  test: 'tests',
+  example: 'examples',
+  docs: 'docs',
+};
 /** The header's order (R4's sentence): runs, tests, docs, examples, not stated. */
 const HEADER_ORDER = ['runs', 'test', 'docs', 'example', 'unstated'];
 
@@ -921,8 +1056,9 @@ const TIER_HEADING: Record<Confidence, string> = {
   certain: 'Certain — on the provider’s page as read in this run, or read from your code',
   // 0.4.1 (R5): since 0.4.0 this tier also holds a provider's word on a call that may not use the provider's own
   // API (a partner, a gateway, an unstated platform) and the no-fallback line; 0.4.3 (R1): and a page as read on an earlier day.
+  // 0.4.4 (R6): Google's page is titled "Release notes", so the heading says release notes (until 0.4.3: "changelog")
   likely:
-    'Likely — a provider’s page as read on an earlier day (the day is on the line); a provider’s changelog about a model it names in words; priced from your estimates; a provider’s word where the call may not use its own API; no retry or fallback found in the code',
+    'Likely — a provider’s page as read on an earlier day (the day is on the line); a provider’s release notes that name a model in words, not by its id; priced from your estimates; a provider’s word where the call may not use its own API; no retry or fallback found in the code',
   'measurable-only': 'Only measurable — what the observe day answers',
 };
 const SEV_MARK: Record<Severity, string> = { red: '\u{1F534}', yellow: '\u{1F7E1}', info: 'ℹ️' };
@@ -965,32 +1101,79 @@ export function renderCard(
     // 0.4.3 (R4): the flagged count, by where each id is written; a model counts once, under the first of
     // runs · not stated · test · example · docs that any of its sites carries.
     const stated = [...extract.callSites, ...(extract.models ?? [])].some((s) => s.context !== undefined);
+    const contextsOf = (m: string) => [
+      ...extract.callSites.filter((s) => s.model === m).map((s) => s.context),
+      ...(extract.models ?? []).filter((s) => s.model === m).map((s) => s.context),
+    ];
     const ctxClass = (m: string): string => {
-      const cs = [
-        ...extract.callSites.filter((s) => s.model === m).map((s) => s.context),
-        ...(extract.models ?? []).filter((s) => s.model === m).map((s) => s.context),
-      ];
-      const c = CONTEXT_ORDER.find((o) => cs.includes(o));
+      const c = CONTEXT_ORDER.find((o) => contextsOf(m).includes(o));
       return c ?? 'unstated';
     };
+    /** 0.4.4 Amendment A3: the kinds of place an id is written in (a site with no context is its own kind, "not stated"). */
+    const kindsOf = (m: string) => new Set(contextsOf(m).map((c) => c ?? 'unstated'));
     const byCtx = new Map<string, number>();
     for (const m of flaggedIds) byCtx.set(ctxClass(m), (byCtx.get(ctxClass(m)) ?? 0) + 1);
-    const ctxParts = HEADER_ORDER.filter((k) => (byCtx.get(k) ?? 0) > 0).map((k) => CONTEXT_WORDS[k]!(byCtx.get(k)!));
-    // Amendment B4: an id flagged only by this check's reading of a provider's changelog (R6) is counted apart from
-    // the provider's own flags; the context counts stay over both together.
-    const byChangelog = flaggedIds.filter((m) => analyses.get(m)?.row?.namedAs !== undefined).length;
-    const byProvider = flagged - byChangelog;
-    const flagParts = [
-      byProvider > 0 ? `${byProvider} flagged by its provider` : '',
-      byChangelog > 0 ? `${byChangelog} by this check's reading of a provider's changelog` : '',
-    ].filter(Boolean);
-    const flaggedText = flagParts.length ? `${flagParts.join(', ')}${stated && ctxParts.length ? ` — ${ctxParts.join(', ')}` : ''}` : '';
-    const unknownText = unknown > 0 ? `${unknown} not recognised` : '';
-    const counts = [flaggedText, unknownText].filter(Boolean);
-    lines.push(
-      `${extract.callSites.length} AI call site(s), ${models.length} model id(s): ${models.map(label).join(', ')}` +
-        (counts.length ? ` (${counts.join(stated && ctxParts.length ? '; ' : ', ')})` : ''),
-    );
+    // 0.4.4 (R3): the header says what each number counts — the ids and the call sites; then how many ids are flagged
+    // and by whom (the provider by name when there is one); then where the flagged ids are written. Two sentences where
+    // 0.4.3 had one with a dash, and every plural written out.
+    // Amendment B4 (kept): an id flagged only by this check's reading of a provider's changelog (R6) is counted apart
+    // from the provider's own flags; the "where" counts are over both together, each id once.
+    const changelogIds = flaggedIds.filter((m) => analyses.get(m)?.row?.namedAs !== undefined);
+    const providerIds = flaggedIds.filter((m) => !changelogIds.includes(m));
+    const providerOf = (m: string) => {
+      const a = analyses.get(m);
+      return a?.row && a.row.word !== 'listed' ? a.row.provider : (a?.profile?.provider ?? a?.row?.provider ?? '');
+    };
+    const flaggers = [...new Set(providerIds.map(providerOf))];
+    const who = flaggers.length === 1 ? providerWord(flaggers[0]!) : 'their providers';
+    const changelogPages = [...new Set(changelogIds.map((m) => `${analyses.get(m)!.row!.provider}|${analyses.get(m)!.row!.url}`))];
+    const changelogWho =
+      changelogPages.length === 1
+        ? pageName(changelogPages[0]!.split('|')[0]!, changelogPages[0]!.split('|')[1]!)
+        : 'their providers’ release notes';
+    const isAre = (n: number) => (n === 1 ? 'is' : 'are');
+    const sentences: string[] = [`${count(extract.callSites.length, 'AI call site')} and ${count(models.length, 'model id')}: ${models.map(label).join(', ')}.`];
+    if (providerIds.length && changelogIds.length)
+      sentences.push(`${providerIds.length} ${isAre(providerIds.length)} flagged by ${who}, and ${changelogIds.length} by this check's reading of ${changelogWho}.`);
+    else if (providerIds.length) sentences.push(`${providerIds.length} ${isAre(providerIds.length)} flagged by ${who}.`);
+    else if (changelogIds.length) sentences.push(`${changelogIds.length} ${isAre(changelogIds.length)} flagged by this check's reading of ${changelogWho}.`);
+    if (unknown > 0) sentences.push(`${unknown} ${isAre(unknown)} not recognised.`);
+    if (flagged === 0 && unknown < models.length)
+      sentences.push(
+        unknown === 0
+          ? models.length === 1
+            ? 'Its provider does not flag it.'
+            : 'No provider flags any of them.'
+          : models.length - unknown === 1
+            ? 'The other one is not flagged by its provider.'
+            : `No provider flags the other ${models.length - unknown}.`,
+      );
+    if (stated && flagged > 0) {
+      const ks = HEADER_ORDER.filter((k) => (byCtx.get(k) ?? 0) > 0);
+      if (flagged === 1) {
+        const k = ks[0]!;
+        sentences.push(k === 'unstated' ? 'The extract does not say where the flagged id is written.' : `The flagged id is ${CONTEXT_WORDS[k]!(1).replace(/^1 /, '')}.`);
+      } else {
+        const parts = ks.map((k, i) => {
+          const n = byCtx.get(k)!;
+          const w = CONTEXT_WORDS[k]!(n);
+          return i === 0 ? w.replace(/^(\d+) /, `$1 ${isAre(n)} `) : w;
+        });
+        sentences.push(`Of the ${count(flagged, 'flagged id')}, ${andList(parts)}.`);
+        // 0.4.4 Amendment A3: the counting rule is said only when it did something — when a flagged id is written in more
+        // than one kind of place, and so was counted under one of them. The order is the one ctxClass counts by.
+        const several = flaggedIds.filter((m) => kindsOf(m).size > 1).length;
+        if (several > 0) {
+          const order = CONTEXT_ORDER.map((o) => CONTEXT_PLACE[o ?? 'unstated']!).join(', ');
+          sentences.push(
+            several === 1
+              ? `1 of them is written in more than one kind of place, and is counted once, under the first that applies in this order: ${order}.`
+              : `${several} of them are written in more than one kind of place, and each is counted once, under the first that applies in this order: ${order}.`,
+          );
+        }
+      }
+    }
+    lines.push(sentences.join(' '));
     if (!stated) {
       lines.push('');
       lines.push('The extract does not say where each id is written, so this count is of every place an id appears.');

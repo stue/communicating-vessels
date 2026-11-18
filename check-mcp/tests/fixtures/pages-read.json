@@ -5,61 +5,61 @@
       "url": "https://platform.claude.com/docs/en/about-claude/model-deprecations.md",
       "file": "anthropic-deprecations.md",
       "ok": true,
-      "at": "2026-11-16T22:54:38Z"
+      "at": "2026-11-18T18:23:56Z"
     },
     {
       "url": "https://developers.openai.com/api/docs/deprecations.md",
       "file": "openai-deprecations.md",
       "ok": true,
-      "at": "2026-11-16T22:54:38Z"
+      "at": "2026-11-18T18:23:56Z"
     },
     {
       "url": "https://aistudio.google.com/docs/deprecations",
       "file": "google-deprecations.html",
       "ok": true,
-      "at": "2026-11-16T22:54:39Z"
+      "at": "2026-11-18T18:23:56Z"
     },
     {
       "url": "https://aistudio.google.com/docs/changelog",
       "file": "google-changelog.html",
       "ok": true,
-      "at": "2026-11-16T22:54:40Z"
+      "at": "2026-11-18T18:23:57Z"
     },
     {
       "url": "https://api-docs.deepseek.com/updates",
       "file": "deepseek-updates.html",
       "ok": true,
-      "at": "2026-11-16T22:54:40Z"
+      "at": "2026-11-18T18:23:57Z"
     },
     {
       "url": "https://api-docs.deepseek.com/news",
-      "file": "deepseek-news.html",
+      "file": "deepseek-first-api-call.html",
       "ok": true,
-      "at": "2026-11-16T22:54:41Z"
+      "at": "2026-11-18T18:23:59Z"
     },
     {
       "url": "https://developers.openai.com/api/docs/models/gpt-4o.md",
       "file": "openai-model-gpt-4o.md",
       "ok": true,
-      "at": "2026-11-16T22:54:38Z"
+      "at": "2026-11-18T18:23:59Z"
     },
     {
       "url": "https://developers.openai.com/api/docs/models/gpt-4o-mini.md",
       "file": "openai-model-gpt-4o-mini.md",
       "ok": true,
-      "at": "2026-11-16T22:54:38Z"
+      "at": "2026-11-18T18:23:59Z"
     },
     {
       "url": "https://developers.openai.com/api/docs/models/gpt-4.1.md",
       "file": "openai-model-gpt-4.1.md",
       "ok": true,
-      "at": "2026-11-16T22:54:39Z"
+      "at": "2026-11-18T18:23:59Z"
     },
     {
       "url": "https://developers.openai.com/api/docs/models/gpt-4.1-mini.md",
       "file": "openai-model-gpt-4.1-mini.md",
       "ok": true,
-      "at": "2026-11-16T22:54:39Z"
+      "at": "2026-11-18T18:23:59Z"
     }
   ],
   "changedRows": [],

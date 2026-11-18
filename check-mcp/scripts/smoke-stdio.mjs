@@ -11,14 +11,22 @@
  * 0.4.3 (R5): share_card posts to THIS smoke's own listener on 127.0.0.1, never to production: the
  * child's KGAUTO_SHARE_ENDPOINT_OVERRIDE is set here, and the smoke exits 1 before spawning the
  * server if that override is unset or is not a 127.0.0.1 address.
+ * 0.4.4 (R8): the temporary folder it makes is removed when it exits, green or not.
  */
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:http';
+import { rmSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const bin = join(here, '../dist/bin.js');
+
+// R8: every folder this smoke makes, removed on exit — after the last gate, or after the first red one
+const made = [];
+process.on('exit', () => {
+  for (const d of made) rmSync(d, { recursive: true, force: true });
+});
 
 // ── the smoke's own share endpoint, on 127.0.0.1 ───────────────────────
 const posts = [];
@@ -193,6 +201,7 @@ const { execFileSync } = await import('node:child_process');
 const { writeFileSync, mkdtempSync } = await import('node:fs');
 const { tmpdir } = await import('node:os');
 const dir = mkdtempSync(join(tmpdir(), 'kgauto-check-smoke-'));
+made.push(dir);
 const extractPath = join(dir, 'extract.json');
 writeFileSync(
   extractPath,

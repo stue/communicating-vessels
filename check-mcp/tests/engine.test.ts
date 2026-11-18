@@ -111,7 +111,8 @@ describe('runCheck — certain-tier catalog facts', () => {
     ).findings.find((f) => f.title.includes('context window'));
     expect(certain?.severity).toBe('red');
     expect(certain?.confidence).toBe('likely');
-    expect(certain?.basis).toMatch(/verified against the provider's page \d{4}-\d{2}-\d{2}/);
+    // 0.4.4 (R1): the day the catalog was dated, in words (until 0.4.3: "verified against the provider's page <date>")
+    expect(certain?.basis).toMatch(/checked against \w+'s documentation on \d{4}-\d{2}-\d{2}\)$/);
 
     const likely = runCheck(
       extract([{ id: 's1', model: 'good-model', estInputTokens: 300_000 }]),
@@ -139,7 +140,7 @@ describe('runCheck — cliffs', () => {
       extract([{ id: 's1', model: 'cliff-model', archetype: 'summarize', estInputTokens: 9_000, estOutputTokens: 200 }]),
       opts,
     );
-    const f = r.findings.find((x) => x.title.includes('cliff'));
+    const f = r.findings.find((x) => x.title.includes('the catalog holds a threshold at'));
     expect(f).toBeDefined();
     expect(f?.confidence).toBe('likely');
   });
@@ -149,7 +150,7 @@ describe('runCheck — cliffs', () => {
       extract([{ id: 's1', model: 'cliff-model', archetype: 'classify', estInputTokens: 9_000 }]),
       opts,
     );
-    expect(titles(r)).not.toContain('cliff');
+    expect(titles(r)).not.toContain('the catalog holds a threshold at');
   });
 });
 

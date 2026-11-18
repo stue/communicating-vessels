@@ -1,0 +1,103 @@
+Anthropic's model deprecations page as read <date>, changed when read in this run (<time> UTC): <url>
+Anthropic's model deprecations page as read <date>: <url>
+Anthropic's model deprecations page, read in this run (<time> UTC): <url>
+Anthropic's page for this model, as the catalog read it <date>: <url>
+DeepSeek's change log and its “Your First API Call” page as read <date>, changed when read in this run (<time> UTC): <url> and <url>
+DeepSeek's change log and its “Your First API Call” page as read <date>: <url> and <url>
+DeepSeek's change log and its “Your First API Call” page, read in this run (<time> UTC): <url> and <url>
+DeepSeek's change log as read <date>, changed when read in this run (<time> UTC): <url>
+DeepSeek's change log as read <date>: <url>
+DeepSeek's change log, read in this run (<time> UTC): <url>
+DeepSeek's change log, read in this run (<time> UTC): <url>; DeepSeek's “Your First API Call” page, not read in this run, as read <date>: <url>
+DeepSeek's “Your First API Call” page, read in this run (<time> UTC): <url>; DeepSeek's change log, not read in this run, as read <date>: <url>
+Google's Gemini deprecations page and its release notes page as read <date>, changed when read in this run (<time> UTC): <url> and <url>
+Google's Gemini deprecations page and its release notes page as read <date>: <url> and <url>
+Google's Gemini deprecations page and its release notes page, read in this run (<time> UTC): <url> and <url>
+Google's Gemini deprecations page as read <date>, changed when read in this run (<time> UTC): <url>
+Google's Gemini deprecations page as read <date>: <url>
+Google's Gemini deprecations page, read in this run (<time> UTC): <url>
+Google's Gemini deprecations page, read in this run (<time> UTC): <url>; Google's release notes page, not read in this run, as read <date>: <url>
+Google's release notes page as read <date>, changed when read in this run (<time> UTC): <url>
+Google's release notes page as read <date>: <url>
+Google's release notes page, read in this run (<time> UTC): <url>
+Google's release notes page, read in this run (<time> UTC): <url>; Google's Gemini deprecations page, not read in this run, as read <date>: <url>
+OpenAI's deprecations page and its model page for GPT-4o as read <date>, changed when read in this run (<time> UTC): <url> and <url>
+OpenAI's deprecations page and its model page for GPT-4o as read <date>: <url> and <url>
+OpenAI's deprecations page and its model page for GPT-4o mini as read <date>, changed when read in this run (<time> UTC): <url> and <url>
+OpenAI's deprecations page and its model page for GPT-4o mini as read <date>: <url> and <url>
+OpenAI's deprecations page and its model page for GPT-4o mini, read in this run (<time> UTC): <url> and <url>
+OpenAI's deprecations page and its model page for GPT-4o, read in this run (<time> UTC): <url> and <url>
+OpenAI's deprecations page and its model page for GPT-<n>.<n> as read <date>, changed when read in this run (<time> UTC): <url> and <url>
+OpenAI's deprecations page and its model page for GPT-<n>.<n> as read <date>: <url> and <url>
+OpenAI's deprecations page and its model page for GPT-<n>.<n> mini as read <date>, changed when read in this run (<time> UTC): <url> and <url>
+OpenAI's deprecations page and its model page for GPT-<n>.<n> mini as read <date>: <url> and <url>
+OpenAI's deprecations page and its model page for GPT-<n>.<n> mini, read in this run (<time> UTC): <url> and <url>
+OpenAI's deprecations page and its model page for GPT-<n>.<n>, read in this run (<time> UTC): <url> and <url>
+OpenAI's deprecations page as read <date>, changed when read in this run (<time> UTC): <url>
+OpenAI's deprecations page as read <date>: <url>
+OpenAI's deprecations page, read in this run (<time> UTC): <url>
+OpenAI's deprecations page, read in this run (<time> UTC): <url>; OpenAI's model page for GPT-4o mini, not read in this run, as read <date>: <url>
+OpenAI's deprecations page, read in this run (<time> UTC): <url>; OpenAI's model page for GPT-4o, not read in this run, as read <date>: <url>
+OpenAI's deprecations page, read in this run (<time> UTC): <url>; OpenAI's model page for GPT-<n>.<n> mini, not read in this run, as read <date>: <url>
+OpenAI's deprecations page, read in this run (<time> UTC): <url>; OpenAI's model page for GPT-<n>.<n>, not read in this run, as read <date>: <url>
+OpenAI's model page for GPT-4o mini, read in this run (<time> UTC): <url>; OpenAI's deprecations page, not read in this run, as read <date>: <url>
+OpenAI's model page for GPT-4o, read in this run (<time> UTC): <url>; OpenAI's deprecations page, not read in this run, as read <date>: <url>
+OpenAI's model page for GPT-<n>.<n> mini, read in this run (<time> UTC): <url>; OpenAI's deprecations page, not read in this run, as read <date>: <url>
+OpenAI's model page for GPT-<n>.<n>, read in this run (<time> UTC): <url>; OpenAI's deprecations page, not read in this run, as read <date>: <url>
+a threshold the catalog holds for this model (<n> input tokens; a test did not reproduce the problem), against your estimate
+a threshold the catalog holds for this model (<n> input tokens; a test moved the threshold on <date>, and the catalog was changed to match), against your estimate
+a threshold the catalog holds for this model (<n> input tokens; a test moved the threshold, and the catalog was changed to match), against your estimate
+a threshold the catalog holds for this model (<n> input tokens; a test on <date> did not reproduce the problem), against your estimate
+a threshold the catalog holds for this model (<n> input tokens; a test reproduced the problem on <date>), against your estimate
+a threshold the catalog holds for this model (<n> input tokens; a test reproduced the problem), against your estimate
+a threshold the catalog holds for this model (<n> input tokens; a test was run on <date>; its result is not recorded), against your estimate
+a threshold the catalog holds for this model (<n> input tokens; a test was run; its result is not recorded), against your estimate
+a threshold the catalog holds for this model (<n> input tokens; carried over from a similar model, not tested on this one), against your estimate
+a threshold the catalog holds for this model (<n> input tokens; no record of how it was found), against your estimate
+a threshold the catalog holds for this model (<n> input tokens; stated by the catalog, with no test behind it), against your estimate
+a threshold the catalog holds for this model (<n> input tokens; the problem was seen in real calls), against your estimate
+a threshold the catalog holds for this model (<n> input tokens; the problem was seen in real calls, last on <date>), against your estimate
+a threshold the catalog holds for this model (<n> tool; a test reproduced the problem on <date>), against this site's tool count
+a threshold the catalog holds for this model (<n> tools; a test did not reproduce the problem), against this site's tool count
+a threshold the catalog holds for this model (<n> tools; a test moved the threshold on <date>, and the catalog was changed to match), against this site's tool count
+a threshold the catalog holds for this model (<n> tools; a test moved the threshold, and the catalog was changed to match), against this site's tool count
+a threshold the catalog holds for this model (<n> tools; a test on <date> did not reproduce the problem), against this site's tool count
+a threshold the catalog holds for this model (<n> tools; a test reproduced the problem on <date>), against this site's tool count
+a threshold the catalog holds for this model (<n> tools; a test reproduced the problem), against this site's tool count
+a threshold the catalog holds for this model (<n> tools; a test was run on <date>; its result is not recorded), against this site's tool count
+a threshold the catalog holds for this model (<n> tools; a test was run; its result is not recorded), against this site's tool count
+a threshold the catalog holds for this model (<n> tools; carried over from a similar model, not tested on this one), against this site's tool count
+a threshold the catalog holds for this model (<n> tools; no record of how it was found), against this site's tool count
+a threshold the catalog holds for this model (<n> tools; stated by the catalog, with no test behind it), against this site's tool count
+a threshold the catalog holds for this model (<n> tools; the problem was seen in real calls), against this site's tool count
+a threshold the catalog holds for this model (<n> tools; the problem was seen in real calls, last on <date>), against this site's tool count
+the catalog records that this model does not make tool calls in parallel; that is the catalog's own finding, not a provider page
+the catalog's record, checked against Anthropic's documentation on <date>: the model has no structured-output mode
+the catalog's record, not checked against Anthropic's documentation: the model has no structured-output mode
+the extract of your code says this call has no retry and no second model
+this check reads the extract of your code and runs none of your calls, so it cannot see how they behave
+this id was looked up in the catalog and in the providers' pages this check reads, and matched neither
+your estimate against the model's context limit, <n> tokens (the catalog's record, checked against Anthropic's documentation on <date>)
+your estimate against the model's context limit, <n> tokens (the catalog's record, checked against DeepSeek's documentation on <date>)
+your estimate against the model's context limit, <n> tokens (the catalog's record, checked against Google's documentation on <date>)
+your estimate against the model's context limit, <n> tokens (the catalog's record, checked against Moonshot's documentation on <date>)
+your estimate against the model's context limit, <n> tokens (the catalog's record, checked against OpenAI's documentation on <date>)
+your estimate against the model's context limit, <n> tokens (the catalog's record, checked against Z.ai's documentation on <date>)
+your estimate against the model's context limit, <n> tokens (the catalog's record, not checked against Anthropic's documentation)
+your estimate against the model's output limit, <n> tokens (the catalog's record, checked against Anthropic's documentation on <date>)
+your estimate against the model's output limit, <n> tokens (the catalog's record, checked against DeepSeek's documentation on <date>)
+your estimate against the model's output limit, <n> tokens (the catalog's record, checked against Google's documentation on <date>)
+your estimate against the model's output limit, <n> tokens (the catalog's record, checked against Moonshot's documentation on <date>)
+your estimate against the model's output limit, <n> tokens (the catalog's record, checked against OpenAI's documentation on <date>)
+your estimate against the model's output limit, <n> tokens (the catalog's record, checked against Z.ai's documentation on <date>)
+your estimate against the model's output limit, <n> tokens (the catalog's record, not checked against Anthropic's documentation)
+your token estimates at each model's prices in the catalog; nothing on this line says how well any of them would do your work
+your token estimates at that model's prices in the catalog; nothing on this line says how well it would do your work
+your token estimates multiplied by the catalog's prices for this model (the catalog's record, checked against Anthropic's documentation on <date>)
+your token estimates multiplied by the catalog's prices for this model (the catalog's record, checked against DeepSeek's documentation on <date>)
+your token estimates multiplied by the catalog's prices for this model (the catalog's record, checked against Google's documentation on <date>)
+your token estimates multiplied by the catalog's prices for this model (the catalog's record, checked against Moonshot's documentation on <date>)
+your token estimates multiplied by the catalog's prices for this model (the catalog's record, checked against OpenAI's documentation on <date>)
+your token estimates multiplied by the catalog's prices for this model (the catalog's record, checked against Z.ai's documentation on <date>)
+your token estimates multiplied by the catalog's prices for this model (the catalog's record, not checked against Anthropic's documentation)
+your token estimates; <n>% is a rule of thumb from the projects the check's makers run, not a provider's figure

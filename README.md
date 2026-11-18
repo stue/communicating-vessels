@@ -8,7 +8,7 @@ The check reads your project and tells you which of its model ids the provider h
 
 ## Run it
 
-    npx -y @warmdrift/kgauto-check@0.4.3 --extract-contract
+    npx -y @warmdrift/kgauto-check@0.4.4 --extract-contract
 
 Your coding agent reads the contract, reads your code, writes a small extract (identifiers and counts only) and runs the check on it. The card comes back in your terminal.
 
