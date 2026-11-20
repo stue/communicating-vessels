@@ -41,7 +41,7 @@ describe('B2 — the quality sentence needs an evidence RECORD', () => {
     const f = r.findings.find((x) => x.title.includes('the catalog holds a threshold at'))!;
     expect(f.detail).not.toContain(QUALITY);
     expect(f.detail).toContain(
-      "What the compiler does about it: it stops trusting this model's structured output at or above this size on summarize work, and ranks the model lower for such a request.",
+      "If you call this model through `@warmdrift/kgauto-compiler`, it stops trusting this model's structured output at or above this size on summarize work, and ranks the model lower for such a request.",
     );
     expect(f.detail).toContain("Evidence: no evidence record; the catalog's note describes a measured incident.");
   });

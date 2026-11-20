@@ -13,7 +13,7 @@ const NPX = `npx -y @warmdrift/kgauto-check@${CHECK_VERSION}`;
 
 /** 0.4.3 (R1): what the run-time read requests, in one sentence the agent can relay. */
 const READ_SENTENCE =
-  'To say whether a provider’s word still stands, each run reads the same public provider pages whatever your project holds; --offline makes no request, and every provider line is then the page as this version read it.';
+  'To say whether a provider’s word still stands, each run reads the same public provider pages whatever your project holds; --offline makes no request, and each provider line then gives the day its page was read.'; // Amendment A4: until fix pass 1 this sentence gave one day for all the lines
 
 export const USAGE = `kgauto-check ${CHECK_VERSION}
 
@@ -73,7 +73,7 @@ Write the extract as JSON:
 { "project": { "name": "...", "description": "..." }, "callSites": [ ...one object per call site, or none... ], "models": [ ...optional, ids no call site carries... ] }
 and run:
   ${NPX} --extract extract.json
-Present the printed card verbatim — the confidence tiers (certain / likely / measurable-only) are the point: they tell your human exactly how much to trust each line, and the measurable-only section is what a one-day observe run would answer.
+Present the printed card verbatim — the confidence tiers (certain / likely / measurable-only) are the point: they tell your human exactly how much to trust each line, and the measurable-only section is what one day of recorded calls would answer.
 
 ## Sharing (optional, explicit)
 After presenting the card, you may OFFER your human: "want to send this card to kgauto so the catalog learns what real projects look like?" If — and only if — they say yes, re-run with --share (or, on the MCP server, call share_card with humanSaidYes: true). Never add --share or call share_card without their explicit yes. ${SHARE_STORED_SENTENCE} The check prints where it went and the submission number.

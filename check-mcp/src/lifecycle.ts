@@ -6,7 +6,7 @@
 import { allProfiles, tryGetProfile, type ModelProfile } from '@warmdrift/kgauto-compiler';
 import { LEDGER, LEDGER_SOURCES, LEDGER_DEFINITIONS } from './lifecycle-ledger.js';
 import { pageFileOf, pageNameOf } from './ledger-check.mjs';
-import type { LedgerRow, LedgerProvider } from './lifecycle-types.js';
+import type { LedgerRow, LedgerProvider, DefinitionWord } from './lifecycle-types.js';
 
 export interface Resolution {
   /** The id exactly as configured. */
@@ -138,6 +138,13 @@ export function resolveId(configured: string): Resolution {
 // ── ledger lookup ─────────────────────────────────────────────────────────
 const byId = new Map<string, LedgerRow>();
 for (const r of LEDGER) byId.set(r.id, r);
+// 0.4.5: a row the page writes with a prefix the lookup removes is also found under the id the lookup arrives at —
+// Google's deprecations page, read 2026-11-20T05:02:18Z, lists `models/genie-4`, which resolveId reads as `genie-4`.
+// Without this, that id (written either way) would be "not recognised" while the page lists it.
+for (const r of LEDGER) {
+  const b = resolveId(r.id).base;
+  if (b !== r.id && !byId.has(b)) byId.set(b, r);
+}
 
 /**
  * Undated base ids whose every dated row on the page agrees (same word, same
@@ -211,7 +218,7 @@ export const LEDGER_READ_ON = LEDGER_SOURCES.map((s) => s.readAt.slice(0, 10)).s
  * generated ledger (LEDGER_DEFINITIONS), checked on the page like its rows: OpenAI
  * rewrote its sentence between the 2026-11-12 and 2026-11-14 reads.
  */
-export const WORD_DEFINITION: Partial<Record<LedgerProvider, Partial<Record<LedgerRow['word'], string>>>> = {};
+export const WORD_DEFINITION: Partial<Record<LedgerProvider, Partial<Record<DefinitionWord, string>>>> = {};
 for (const d of LEDGER_DEFINITIONS) (WORD_DEFINITION[d.provider] ??= {})[d.word] = d.quote;
 
 /** The page each definition above stands on (Amendment B, ruling 4), from the same ledger rows. */

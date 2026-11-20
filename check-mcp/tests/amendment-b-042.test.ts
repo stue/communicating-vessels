@@ -42,6 +42,7 @@ describe('B1 — the listed line says what the model is', () => {
       expect(f?.title, r.id).not.toContain('is listed on');
       expect(f?.severity, r.id).toBe('info');
     }
-    expect(by).toEqual({ 'current models': 20, 'preview models': 9, 'preview agents': 3 });
+    // 0.4.5: Google's page read 2026-11-20T05:02:18Z lists two more (`gemini-4-neon`, `models/genie-4`; until 0.4.5: 20)
+    expect(by).toEqual({ 'current models': 22, 'preview models': 9, 'preview agents': 3 });
   });
 });

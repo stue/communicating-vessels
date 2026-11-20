@@ -60,7 +60,14 @@ describe('0.4.2 R1 — the ledger, re-read from all four providers', () => {
 
   it('the definitions the card quotes are ledger rows of their own, each on a recorded source page', () => {
     const urls = new Set(LEDGER_SOURCES.map((s) => s.url));
-    expect(LEDGER_DEFINITIONS.map((d) => `${d.provider}:${d.word}`).sort()).toEqual(['anthropic:retired', 'google:shut down', 'openai:shut down']);
+    // 0.4.5: and two sentences kept the same way — Anthropic's notice period (R4 b) and OpenAI's sentence about fine-tunes (R5)
+    expect(LEDGER_DEFINITIONS.map((d) => `${d.provider}:${d.word}`).sort()).toEqual([
+      'anthropic:notice period',
+      'anthropic:retired',
+      'google:shut down',
+      'openai:fine-tuned versions',
+      'openai:shut down',
+    ]);
     for (const d of LEDGER_DEFINITIONS) expect(urls.has(d.url), d.provider).toBe(true);
   });
 

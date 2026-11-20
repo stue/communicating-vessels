@@ -40,6 +40,14 @@ export function renderModelFacts(model: string, opts: { pages?: PageRead; surfac
   const looked = a.res.base !== model || (a.profile && a.canonical !== model) ? a.profile ? a.canonical : a.res.base : undefined;
   out.push(`# ${model}${looked ? ` (looked up as \`${looked}\`${a.res.steps.length ? `: ${a.res.steps.join(', ')}` : ''})` : ''}`);
   out.push('');
+  // 0.4.5 (R5): a fine-tune is looked up by its base, for lifecycle only; the card's own line says it the same way
+  if (a.fineTuneOf) {
+    out.push(`- read as a fine-tune of \`${a.fineTuneOf}\`, by this check's reading of the id: what follows is the base model's, and limits and price are not looked up for a fine-tune`);
+    for (const l of a.lines) out.push(`- ${l.title} — ${l.detail}`);
+    out.push('');
+    out.push(factsFooter(read, surface));
+    return out.join('\n');
+  }
 
   if (a.row) {
     const r = a.row;
@@ -115,7 +123,8 @@ export function renderModelFacts(model: string, opts: { pages?: PageRead; surfac
   }
 
   const pl = p.providerLifecycle;
-  if (!a.row || a.row.word === 'listed') {
+  // 0.4.5: an Active row (Anthropic's status table) keeps the model page's word beside it, as a listed row does
+  if (!a.row || a.row.word === 'listed' || a.row.word === 'active') {
     out.push(
       pl
         ? `- ${PROVIDER_NAME[p.provider as keyof typeof PROVIDER_NAME] ?? p.provider}'s word: **${pl.status}** (model page, read ${pl.readOn})${retirementFloorClause({ retirementFloor: pl.retirementFloor, readOn: pl.readOn })}${pl.replacement ? ` · names \`${pl.replacement}\`` : ''} — ${pl.url}`

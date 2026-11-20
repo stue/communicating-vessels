@@ -1,0 +1,50 @@
+{
+  "project": {
+    "name": "verifier-045"
+  },
+  "callSites": [],
+  "models": [
+    {
+      "model": "ft:gpt-4o-2024-08-06:acme::abc123",
+      "where": "src/a.py:1",
+      "platform": "provider-api",
+      "context": "runs"
+    },
+    {
+      "model": "claude-opus-4-5-20251101",
+      "where": "src/b.py:1",
+      "platform": "provider-api",
+      "context": "runs"
+    },
+    {
+      "model": "claude-opus-4-5",
+      "where": "src/c.py:1",
+      "platform": "provider-api",
+      "context": "runs"
+    },
+    {
+      "model": "claude-haiku-4-5-20251001",
+      "where": "src/d.py:1",
+      "platform": "provider-api",
+      "context": "runs"
+    },
+    {
+      "model": "claude-opus-4-6",
+      "where": "src/e.py:1",
+      "platform": "provider-api",
+      "context": "runs"
+    },
+    {
+      "model": "gpt-4o",
+      "where": "src/f.py:1",
+      "platform": "provider-api",
+      "context": "runs"
+    },
+    {
+      "model": "claude-sonnet-4-6",
+      "where": "src/g.py:1",
+      "platform": "provider-api",
+      "context": "runs"
+    }
+  ]
+}

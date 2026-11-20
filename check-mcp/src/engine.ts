@@ -139,6 +139,9 @@ const machineToday = () => new Date().toISOString().slice(0, 10);
 export const DESTINATION_SENTENCE =
   'The check reads your repository on your machine; nothing about your project leaves it unless you choose to share the result.';
 
+/** 0.4.5 (R7 a): what "the catalog" is, said once in the footer of a card that says it. */
+export const CATALOG_SENTENCE = `The catalog on this card is the set of model records this check carries (\`@warmdrift/kgauto-compiler\` ${LIBRARY_VERSION}).`;
+
 /** Amendment B3: the last sentence of a card the CLI will send (--share), printed and stored. */
 export const SHARE_SENTENCE = 'Because you ran it with --share, this card and the extract are sent after it is printed.';
 /** 0.4.3 (R5): the same, for a card the server sends on share_card. */
@@ -167,7 +170,9 @@ export function destinationSentence(read: PageRead, share = false, surface: 'cli
       ? [head, missedSentence, last].filter(Boolean).join(' ')
       : [head, 'Nothing about your project was sent anywhere, and no rows were written anywhere.', missedSentence].filter(Boolean).join(' ');
   }
-  const bundled = `every provider line is the page as this version read it on ${LEDGER_READ_ON}.`;
+  // 0.4.5 (R2): the day the deprecation pages were read, and that a line from a model's own page carries its own (until
+  // 0.4.4: "every provider line is the page as this version read it on <day>", beside lines that said another day)
+  const bundled = `the deprecation pages behind its provider lines are as this version read them on ${LEDGER_READ_ON}, and a line taken from a model's own page gives the day that page was read.`;
   const head =
     read.how === 'switched-off'
       ? share
@@ -202,6 +207,10 @@ export interface ModelAnalysis {
   partner?: Partner;
   /** Amendment D1: the site's state, so a line can say where its partner came from. */
   state?: SiteState;
+  /** 0.4.5 (R5): set when the id reads as a fine-tune (`ft:<base>:…`): the base it was looked up by, for lifecycle only. */
+  fineTuneOf?: string;
+  /** 0.4.5 (R5): the base's catalog entry, read for its lifecycle word only (never for limits or price). */
+  baseProfile?: ModelProfile;
 }
 
 const capital = (w: string) => w.charAt(0).toUpperCase() + w.slice(1);
@@ -383,6 +392,68 @@ export function pageLineQuote(row: LedgerRow): string {
   );
 }
 
+// ── 0.4.5 (R6): a row matched by a display name ─────────────────────────
+/**
+ * A row the generator wrote for an alias by its display name ("GPT-4o (`gpt-4o-2024-08-06`, `gpt-4o-2024-11-20`)"):
+ * the name and the snapshots its cell names, read from the row's own quote (the page's line); undefined for any other row.
+ */
+export function displayNameRow(row: LedgerRow): { name: string; snapshots: string[] } | undefined {
+  if (row.matchedBy !== 'display-name') return undefined;
+  const cell = row.quote
+    .split(/(?<!\\)\|/)
+    .map((c) => c.trim())
+    .find((c) => /^[A-Z][A-Za-z0-9.\- ]*? \(`/.test(c));
+  if (!cell) return undefined;
+  return { name: /^(.*?) \(`/.exec(cell)![1]!, snapshots: [...cell.matchAll(/`([^`]+)`/g)].map((m) => m[1]!) };
+}
+
+/**
+ * R6: a date is printed beside the id it belongs to. The deprecations page dates the snapshots its row names; the alias
+ * is the model page's, and only its word ("Status: Deprecated") is that page's. The title says whose word and whose date,
+ * and that the link from the alias to the row is this check's; the line is never Certain.
+ */
+function displayNameLine(a: {
+  shown: string;
+  row: LedgerRow;
+  checksSkip: boolean;
+  state: RowState;
+  today: string;
+  display: { name: string; snapshots: string[] };
+}): Line {
+  const { row, shown, display } = a;
+  const P = PROVIDER_NAME[row.provider];
+  const status = row.alsoQuote ?? '';
+  const word = status.replace(/^Status:\s*/, '').toLowerCase() || row.word;
+  const date = row.shutdown;
+  const floor = row.shutdownFloor;
+  const when = date ? `a shutdown date of ${date}` : floor ? `a shutdown date not before ${floor}` : 'no shutdown date';
+  // the line agrees with its count: one snapshot is "the snapshot … its replacement"
+  const one = display.snapshots.length === 1;
+  const their = one ? 'its' : 'their';
+  const repl = row.replacement
+    ? row.replacementForm
+      ? `, and for ${their} replacement says “${row.replacement}”`
+      : `, with \`${row.replacement}\` as ${their} replacement`
+    : '';
+  const w = stateWords(row, a.state, a.today);
+  const parts = [
+    `The page's line: “${pageLineQuote(row)}”.`,
+    `The link from \`${row.id}\` to that row is this check's reading of the name “${display.name}”, so this line is Likely whatever the pages say.`,
+  ];
+  if (a.checksSkip) parts.push('The catalog has no entry for it, so its limits and price were not checked.');
+  if (w.tail) parts.push(w.tail);
+  return {
+    severity: word === 'shut down' ? 'red' : 'yellow',
+    confidence: 'likely',
+    title:
+      `${w.titlePrefix}On ${P}'s own API, ${shown} is ${word} by its model page's word (“${status}”); ` +
+      `${pageName(row.provider, row.url)} gives ${when} to ${andList(display.snapshots.map((s) => `\`${s}\``))}, the ${one ? 'snapshot' : 'snapshots'} its row “${display.name}” names${repl}; ` +
+      `the link from \`${row.id}\` to that row is this check's`,
+    detail: parts.join(' '),
+    basis: w.basis,
+  };
+}
+
 /** R2: one ledger row → the provider's word about its own API, when, and the replacement the page names. */
 function ledgerLine(a: {
   shown: string;
@@ -402,7 +473,9 @@ function ledgerLine(a: {
   const floor = row.shutdownFloor;
   const past = date !== undefined && date <= readOn;
   const on = `On ${P}'s own API, ${shown}`;
+  const display = displayNameRow(row);
   let title: string;
+  if (display) return displayNameLine({ ...a, display });
   switch (row.word) {
     case 'retired':
       title = date ? `${on} was retired on ${date}` : `${on} was retired${row.announced ? ` (change log, ${row.announced})` : ''}`;
@@ -510,6 +583,116 @@ function providerLifecycleLine(shown: string, p: ModelProfile): Line | undefined
   };
 }
 
+// ── 0.4.5 (R4): an Active row of a provider's status table ──────────────
+/**
+ * The days a page's notice period runs before a retirement: the line about an Active row's date prints only when the
+ * floor has passed or lies this many days or fewer after the run. Anthropic's page, read 2026-11-20T05:02:18Z: "providing
+ * at least 60 days’ notice before model retirement for publicly released models" (the sentence the line quotes).
+ */
+export const ACTIVE_WINDOW_DAYS = 60;
+
+/** Whole days from the run's day to `iso` (both UTC dates); negative once `iso` has passed. */
+export function daysUntil(today: string, iso: string): number {
+  return Math.round((Date.parse(`${iso}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / 86_400_000);
+}
+
+/** A date's distance from the run, in words: "4 days after this run", "the day of this run", "a date 36 days before this run". */
+export function distanceWords(today: string, iso: string): string {
+  const n = daysUntil(today, iso);
+  if (n === 0) return 'the day of this run';
+  const days = (k: number) => `${k} day${k === 1 ? '' : 's'}`;
+  return n > 0 ? `${days(n)} after this run` : `a date ${days(-n)} before this run`;
+}
+
+/** R4 (b): does the line about this floor print? Only when it has passed or lies within the notice period. */
+export const floorInWindow = (today: string, floor: string | undefined) => floor !== undefined && daysUntil(today, floor) <= ACTIVE_WINDOW_DAYS;
+
+/** The provider's notice sentence for an Active row, when its page carries it in this run or was not read (never a changed one). */
+function noticeQuote(provider: LedgerRow['provider'], pages: PageRead | undefined): string | undefined {
+  const q = WORD_DEFINITION[provider]?.['notice period'];
+  return q && definitionStateIn(pages, { provider, word: 'notice period' }).state !== 'changed' ? q : undefined;
+}
+
+/**
+ * R4: what the card says of an id the provider's status table lists as Active — never "not recognised", never a flag.
+ *  - (e) the catalog carries the provider's word for the model too (its model page): one line, the word the model page's
+ *    with the day the catalog read it, the floor the deprecations page's with that page's own read state; Likely, as
+ *    every catalog word is. Two floors that differ both print, each beside its page.
+ *  - (b) else, a floor that has passed or lies within the notice period: one ℹ️ line with the state, the page's date
+ *    text in quotes and the distance in days, saying no retirement is announced.
+ *  - (d) else, no catalog entry: one ℹ️ line saying the page lists it Active and what was not checked.
+ *  - else (the catalog has the model and calls it active too, the floor further out): nothing.
+ * (c) The two ℹ️ lines are Certain only when the page was read in this run and the row stands (placeLine lowers them
+ * off the provider's own API).
+ */
+function activeLines(a: {
+  shown: string;
+  row: LedgerRow;
+  via?: string;
+  profile?: ModelProfile;
+  state: RowState;
+  today: string;
+  pages?: PageRead;
+}): Line[] {
+  const { row, shown, today } = a;
+  const P = PROVIDER_NAME[row.provider];
+  const on = `On ${P}'s own API, ${shown}`;
+  const dep = pageName(row.provider, row.url);
+  const w = stateWords(row, a.state, today);
+  const notice = noticeQuote(row.provider, a.pages);
+  const viaSentence = a.via ? `The page lists the dated snapshot \`${a.via}\`.` : undefined;
+  const floor = row.shutdownFloor;
+  const dateWords = row.dateText ? `, with a tentative retirement date of “${row.dateText}”${floor ? `, ${distanceWords(today, floor)}` : ''}` : '';
+  const pl = a.profile?.providerLifecycle;
+
+  if (a.profile && pl && pl.status !== 'active') {
+    // (e) one line: the model page's word and day; the deprecations page's floor, with its own read state
+    const PP = providerWord(a.profile.provider);
+    const changed = a.state.state === 'changed' ? `, as read on ${row.readOn} (the page has changed since),` : '';
+    let title = `${on} is ${capital(pl.status)}: its model page says so (read ${pl.readOn}); ${dep}${changed} lists it as Active${dateWords}`;
+    if (pl.retirementFloor && pl.retirementFloor !== floor) title += `; its model page gave a retirement floor of ${pl.retirementFloor} (read ${pl.readOn})`;
+    if (pl.replacement) title += `; its model page names \`${pl.replacement}\``;
+    const parts = [
+      viaSentence,
+      pl.status === 'legacy' ? `${PP}'s word for a model that no longer receives updates and may be deprecated later.` : `${PP}'s word, read on the model's own page.`,
+      notice ? `No retirement is announced for it on ${dep}, which says “${notice}”` : `No retirement is announced for it on ${dep}.`,
+      a.state.state === 'confirmed'
+        ? `That page was read in this run (${minuteOf(a.state.at)} UTC); the model page was not, and its word is as the catalog read it on ${pl.readOn}.`
+        : w.tail,
+    ].filter((x): x is string => !!x);
+    return [
+      {
+        // Amendment A3: the status table is the provider's lifecycle page, read in the run; the model page's word is a
+        // badge on a model the same provider lists as Active — ℹ️, never 🟡, and not a flag (until fix pass 1: 🟡, flagged)
+        severity: 'info',
+        confidence: 'likely',
+        title,
+        detail: parts.join(' '),
+        basis: `${PP}'s page for this model, as the catalog read it ${pl.readOn}: ${pl.url}; ${w.basis}`,
+      },
+    ];
+  }
+
+  const confidence: Confidence = a.state.state === 'confirmed' ? 'certain' : 'likely';
+  const noEntry = a.profile ? undefined : 'The catalog has no entry for it, so its limits and price were not checked.';
+  if (floorInWindow(today, floor)) {
+    // (b) the date line: ℹ️, the state, the page's date text and the distance; nothing is announced
+    const parts = [
+      viaSentence,
+      notice ? `No retirement is announced for it: ${dep} lists it as Active, and says “${notice}”` : `No retirement is announced for it: ${dep} lists it as Active.`,
+      noEntry,
+      w.tail || undefined,
+    ].filter((x): x is string => !!x);
+    return [{ severity: 'info', confidence, title: `${w.titlePrefix}${on} is Active${dateWords}`, detail: parts.join(' '), basis: w.basis }];
+  }
+  if (!a.profile) {
+    // (d) no id in an extract goes unmentioned
+    const parts = [viaSentence, noEntry, w.tail || undefined].filter((x): x is string => !!x);
+    return [{ severity: 'info', confidence, title: `${w.titlePrefix}${on} is Active on ${dep}`, detail: parts.join(' '), basis: w.basis }];
+  }
+  return [];
+}
+
 // ── 0.4.1 (R1): a cliff line is worded from the cliff ───────────────────
 type Cliff = ModelProfile['cliffs'][number];
 
@@ -531,19 +714,26 @@ const ACTION_WOULD: Record<string, string> = {
 };
 const QUALITY_ACTIONS = new Set(['downgrade_quality_warning', 'quality_gate_structured']);
 
+/**
+ * 0.4.5 (R7 b): the sentence is conditional — it says what the compiler does for a caller who calls this model through it,
+ * never as a fact about the reader's project (until 0.4.4: "What the compiler does about it: it …", a bare "the compiler"
+ * a stranger has no reason to know). Kept rather than dropped: it is the line's only word on whether the rule acts or is
+ * held back until a test reproduces the problem.
+ */
+export const COMPILER_IF = 'If you call this model through `@warmdrift/kgauto-compiler`, it';
 function actionSentence(c: Cliff): string {
   // The compiler holds a capability-reducing action back until a confirming test is on record (its evidence gate).
   // 0.4.4 Amendment A2: said in the words the basis uses (the 0.4.3 wording is in the filing's fix pass 1 report).
   if (isCapabilityReducing(c.action) && !hasConfirmedEvidence(c)) {
-    return `What the compiler does about it: it would ${ACTION_WOULD[c.action] ?? c.action.replaceAll('_', ' ')}, but holds that back until a test reproduces the problem.`;
+    return `${COMPILER_IF} would ${ACTION_WOULD[c.action] ?? c.action.replaceAll('_', ' ')}, but holds that back until a test reproduces the problem.`;
   }
   // Amendment B2: the structured-output gate in plain words.
   if (c.action === 'quality_gate_structured') {
     // Amendment D3: the rule fires at >=, so "at or above".
-    return `What the compiler does about it: it stops trusting this model's structured output at or above this size${c.whenIntent ? ` on ${c.whenIntent} work` : ''}, and ranks the model lower for such a request.`;
+    return `${COMPILER_IF} stops trusting this model's structured output at or above this size${c.whenIntent ? ` on ${c.whenIntent} work` : ''}, and ranks the model lower for such a request.`;
   }
   const w = ACTION_WORDS[c.action];
-  return w ? `What the compiler does about it: it ${w}.` : `What the compiler does about it: its action is "${c.action.replaceAll('_', ' ')}".`;
+  return w ? `${COMPILER_IF} ${w}.` : `${COMPILER_IF} applies the rule's action, "${c.action.replaceAll('_', ' ')}".`;
 }
 
 /** The evidence in plain words: its class, and the date and count where the profile gives them. */
@@ -678,6 +868,119 @@ export function foundWords(c: Pick<Cliff, 'evidence'>): string {
   }
 }
 
+// ── 0.4.5 (R5): a fine-tune is looked up by its base, for lifecycle only ─
+/**
+ * A fine-tuned model's id, `ft:<base>:…` (OpenAI writes `ft:gpt-4o-2024-08-06:<org>:<suffix>:<id>`); the base is the second
+ * field. Amendment A6: `ft:<base>` with nothing after the base is read the same way; `ft::…` names no base and is no
+ * fine-tune the check can name (until fix pass 1: only `ft:<base>:…`).
+ */
+const FINE_TUNE = /^ft:([^:]+)(?::|$)/;
+
+/**
+ * R5: the base's lifecycle line, for a fine-tune of it. Always Likely: the link from the fine-tune to its base is this
+ * check's reading of the id, and the line says so, as the release-notes line does. The catalog is not consulted for
+ * limits or price (the profile stays empty, so no request-shape check runs), and the line says that too.
+ *
+ * Amendment A2: the title names the id as a fine-tune of its base, then gives the base's word and date as the base's,
+ * and the replacement as the page's replacement for the base (R6's rule; until fix pass 1 the title put all three on
+ * the fine-tune: "`ft:…` (a fine-tune of `<base>`) is deprecated and shuts down on …; its page names …").
+ *
+ * Amendment A1: the provider's sentence about fine-tunes is quoted where the check holds one for the base's row —
+ * OpenAI's, under its table of upcoming deprecations, speaking of "the models listed above". Otherwise the line says
+ * only that the check quotes no such sentence (until fix pass 1: "The pages this check reads do not say what happens to
+ * a fine-tune of this model.", false of OpenAI's page, whose "Historical notes" speak of the models shut down in
+ * October 2026; that note links to an anchor on the HTML page, not to a section of the page this check reads, so no
+ * row can be tied to it mechanically).
+ */
+function analyseFineTune(
+  configured: string,
+  res: Resolution,
+  base: string,
+  opts: EngineOptions,
+  site: { id?: string; where?: string; notes?: string; platform?: string },
+): ModelAnalysis {
+  const resolveCat = opts.resolve ?? defaultResolve;
+  const bres: Resolution = { ...res, base };
+  const st = siteState(site, bres);
+  const hit = lookupLedger(bres);
+  const baseProfile = catalogProfile(hit.catalogId, (id) => resolveCat(id).profile).profile;
+  const today = opts.today ?? machineToday();
+  const shown = `\`${configured}\``;
+  const named = `\`${base}\``;
+  const link = `The link from ${shown} to \`${base}\` is this check's reading of the id, so this line is Likely whatever the page says.`;
+  const notChecked = 'Its limits and price were not checked: the check does not look a fine-tune up in the catalog.';
+  const out = (lines: Line[]): ModelAnalysis => ({
+    res,
+    shown,
+    row: hit.row,
+    via: hit.via,
+    canonical: base,
+    lines,
+    partner: st.partner,
+    state: st,
+    fineTuneOf: base,
+    ...(baseProfile ? { baseProfile } : {}),
+  });
+  const row = hit.row;
+  const provider = row?.provider ?? baseProfile?.provider;
+  if (!row && !baseProfile) {
+    return out([
+      {
+        severity: 'info',
+        confidence: 'certain',
+        title: `${shown} was not recognised`,
+        detail:
+          `It reads as a fine-tune of \`${base}\`, and the check could not match \`${base}\` to the catalog or to a provider's deprecation list, ` +
+          `so nothing about it was checked: not its lifecycle, its limits or its price.`,
+        basis: "this id's base was looked up in the catalog and in the providers' pages this check reads, and matched neither",
+      },
+    ]);
+  }
+  // the provider's sentence about fine-tunes, where its page says it of this row
+  const q = provider ? WORD_DEFINITION[provider as LedgerRow['provider']]?.['fine-tuned versions'] : undefined;
+  const says = row && q && row.provider === 'openai' && /^Upcoming deprecations/.test(row.pageWord);
+  const ftSentence = says
+    ? definitionStateIn(opts.pages, { provider: row.provider, word: 'fine-tuned versions' }).state === 'changed'
+      ? `The sentence this version read on ${pageName(row.provider, row.url)} about fine-tunes is not on it as read in this run.`
+      : `${pageName(row.provider, row.url)}: “${q}”`
+    : `This check quotes no sentence of ${provider ? providerWord(provider) : 'the provider'}'s about fine-tunes of this model.`;
+
+  let line: Line | undefined;
+  if (row) {
+    const rowLines =
+      row.word === 'active'
+        ? activeLines({ shown: named, row, via: hit.via, profile: baseProfile, state: rowStateIn(opts.pages, row.id), today, pages: opts.pages })
+        : [ledgerLine({ shown: named, row, via: hit.via, res: bres, checksSkip: false, state: rowStateIn(opts.pages, row.id), today, pages: opts.pages })];
+    line = rowLines[0];
+  } else if (baseProfile) {
+    line = providerLifecycleLine(named, baseProfile);
+  }
+  const isA = `${shown} is a fine-tune of \`${base}\` (this check's reading of the id)`;
+  let title: string;
+  if (!line) {
+    // the base is known and nothing flags it: one ℹ️ line, so no id in an extract goes unmentioned
+    line = { severity: 'info', confidence: 'likely', title: '', detail: '', basis: "the catalog's record of the base model, and the providers' pages this check reads" };
+    title = `${isA}; no page this check reads flags the base`;
+  } else {
+    // A2: the base's line was built about the base; the fine-tune is named as a fine-tune of it, then "for the base, …"
+    const on = `On ${providerWord(provider!)}'s own API, `;
+    const at = line.title.indexOf(on);
+    const baseTitle = (at === -1 ? line.title : line.title.slice(at + on.length)).replace(
+      /; its page names (`[^`]+`)$/,
+      "; the page names $1 as the base's replacement",
+    );
+    title = at === -1 ? `${isA}: ${baseTitle}` : `${line.title.slice(0, at)}${on}${isA}, and for the base, ${baseTitle}`;
+  }
+  const rest = line.detail.replace(' The catalog has no entry for it, so its limits and price were not checked.', '').replace(/^The catalog has no entry for it, so its limits and price were not checked\.\s*/, '');
+  const fineLine: Line = {
+    ...line,
+    title,
+    confidence: 'likely',
+    detail: [link, ftSentence, notChecked, rest].filter(Boolean).join(' '),
+  };
+  return out([provider ? placeLine(fineLine, provider, st) : fineLine]);
+}
+
 export function analyseModel(
   configured: string,
   opts: EngineOptions = {},
@@ -686,6 +989,8 @@ export function analyseModel(
   const resolveCat = opts.resolve ?? defaultResolve;
   const roster = opts.roster ?? allProfiles;
   const res = resolveId(configured);
+  const ft = FINE_TUNE.exec(res.base);
+  if (ft) return analyseFineTune(configured, res, ft[1]!, opts, site);
   const st = siteState(site, res);
   const partner = st.partner;
   const hit = lookupLedger(res);
@@ -699,7 +1004,9 @@ export function analyseModel(
   // 0.4.2 Amendment A1: a `listed` row says only that the page lists the id; the catalog's checks and its own
   // lifecycle line (the model page's word) stand beside it, and it never takes the profile away.
   const listed = row?.word === 'listed';
-  if (row && profile && !listed) {
+  // 0.4.5 (R4): an Active row is not a flag either, and never takes the profile away
+  const active = row?.word === 'active';
+  if (row && profile && !listed && !active) {
     // A ledger word that means requests now fail: no request-shape check is meaningful.
     if (row.word === 'retired' && !row.routesTo) profile = undefined;
     else if (row.word === 'shut down' || row.word === 'no longer supported') profile = undefined;
@@ -708,7 +1015,11 @@ export function analyseModel(
   }
 
   const lines: Line[] = [];
-  if (row) {
+  if (row && active) {
+    const today = opts.today ?? machineToday();
+    for (const l of activeLines({ shown: shownId, row, via: hit.via, profile, state: rowStateIn(opts.pages, row.id), today, pages: opts.pages }))
+      lines.push(placeLine(l, row.provider, st));
+  } else if (row) {
     lines.push(
       placeLine(
         ledgerLine({
@@ -915,7 +1226,7 @@ export function runCheck(extract: Extract, opts: EngineOptions = {}): CheckResul
           title: `${Math.round(inputShare * 100)}% of this site's tokens are input`,
           detail:
             `Above ~85% input share, spend is dominated by context rather than answers — the ` +
-            `single strongest signal of a leaking prompt. What's actually IN that context, and how ` +
+            `single strongest signal of a leaking prompt. What's actually in that context, and how ` + // Amendment A7: until fix pass 1, "actually IN"
             `much of it each call needed, is measurable, not guessable.`,
           basis: "your token estimates; 85% is a rule of thumb from the projects the check's makers run, not a provider's figure",
           callSites: at,
@@ -946,8 +1257,10 @@ export function runCheck(extract: Extract, opts: EngineOptions = {}): CheckResul
             title: `${count(cheaper.length, 'model')} in the catalog ${one ? 'prices' : 'price'} under half of \`${canonical}\` on ${archetype} work`,
             detail:
               `${one ? 'That model is' : 'Cheapest:'} \`${cheapest.id}\` at ~$${perCallCostUsd(cheapest, site.estInputTokens, site.estOutputTokens).toFixed(4)}/call. ` +
-              `The price is arithmetic; whether ${one ? 'it' : 'any of them'} holds YOUR quality bar on ${archetype} work is ` +
-              `exactly what a one-day observe run with a judged eval measures. The check never ` +
+              // 0.4.5 (R7 b): no "YOUR", no "observe run", no "judged eval" (until 0.4.4: "whether it holds YOUR quality bar … is
+              // exactly what a one-day observe run with a judged eval measures")
+              `The price is arithmetic; whether ${one ? 'it does' : 'any of them does'} your ${archetype} work as well as \`${canonical}\` is ` +
+              `what a day of recorded calls, with their answers graded, would show. The check never ` +
               `ranks a model on price alone.`,
             // 0.4.4 Amendment A1: a sentence, not a noun phrase; it says what the line does not claim
             basis: one
@@ -972,12 +1285,14 @@ export function runCheck(extract: Extract, opts: EngineOptions = {}): CheckResul
     add({
       severity: 'info',
       confidence: 'measurable-only',
-      title: 'what a code read cannot tell you (and a one-day observe run can)',
+      // 0.4.5 (R7 b): in plain words, naming the command that prints the plan (until 0.4.4: "… (and a one-day observe run
+      // can)", "walkaway failures look like green health checks", "observe-only, your keys, no routing changes")
+      title: 'what a code read cannot tell you (and a day of recorded calls can)',
       detail:
-        `Your actual failure rate per model (walkaway failures look like green health checks); ` +
-        `your actual input-waste ratio per call; which call sites dominate spend; whether a cheaper ` +
-        `model holds quality on your real traffic. These need one day of observed calls — ` +
-        `observe-only, your keys, no routing changes.`,
+        `How often each model's calls fail, counting the failures that still look like a normal answer; ` +
+        `how much of each call's input its answer needed; which call sites carry most of the spend; and whether a cheaper ` +
+        `model does your work as well on your real traffic. One day of recorded calls would show these, made with your own ` +
+        `keys and with no change to where any call goes; ${opts.surface === 'mcp' ? 'the `get_observe_day_plan` tool' : '`--observe-plan`'} prints the plan.`,
       // 0.4.4 Amendment A1: a sentence, not a noun phrase
       basis: 'this check reads the extract of your code and runs none of your calls, so it cannot see how they behave',
       callSites: everyWhere,
@@ -1058,8 +1373,10 @@ const TIER_HEADING: Record<Confidence, string> = {
   // API (a partner, a gateway, an unstated platform) and the no-fallback line; 0.4.3 (R1): and a page as read on an earlier day.
   // 0.4.4 (R6): Google's page is titled "Release notes", so the heading says release notes (until 0.4.3: "changelog")
   likely:
-    'Likely — a provider’s page as read on an earlier day (the day is on the line); a provider’s release notes that name a model in words, not by its id; priced from your estimates; a provider’s word where the call may not use its own API; no retry or fallback found in the code',
-  'measurable-only': 'Only measurable — what the observe day answers',
+    // Amendment A7: and the two kinds of line 0.4.5 adds, in a few words
+    'Likely — a provider’s page as read on an earlier day (the day is on the line); a provider’s release notes that name a model in words, not by its id; an id this check linked to another id’s row (a fine-tune by its base, a name by its display name); priced from your estimates; a provider’s word where the call may not use its own API; no retry or fallback found in the code',
+  // 0.4.5 (R7 b): until 0.4.4, "what the observe day answers"
+  'measurable-only': 'Only measurable — what a day of recorded calls would answer',
 };
 const SEV_MARK: Record<Severity, string> = { red: '\u{1F534}', yellow: '\u{1F7E1}', info: 'ℹ️' };
 
@@ -1083,15 +1400,19 @@ export function renderCard(
     return a ? a.shown : `\`${m}\``;
   };
   // 0.4.2 Amendment A1: a `listed` row is not a flag; the catalog's own lifecycle word still counts.
+  // 0.4.5 (R4 d): nor is an `active` row.
+  const notAFlag = (w: LedgerRow['word']) => w === 'listed' || w === 'active';
   const flaggedIds = models.filter((m) => {
     const a = analyses.get(m);
-    const pl = a?.profile?.providerLifecycle?.status;
-    return (a?.row && a.row.word !== 'listed') || (pl !== undefined && pl !== 'active');
+    // 0.4.5 (R5): a fine-tune's base is read for its lifecycle word too
+    const pl = (a?.profile ?? a?.baseProfile)?.providerLifecycle?.status;
+    // Amendment A3: an id whose deprecations-page row says Active is not flagged, whatever its model page's badge
+    return (a?.row && !notAFlag(a.row.word)) || (pl !== undefined && pl !== 'active' && a?.row?.word !== 'active');
   });
   const flagged = flaggedIds.length;
   const unknown = models.filter((m) => {
     const a = analyses.get(m);
-    return a && !a.row && !a.profile;
+    return a && !a.row && !a.profile && !a.baseProfile;
   }).length;
   if (models.length === 0) {
     lines.push(
@@ -1118,11 +1439,14 @@ export function renderCard(
     // 0.4.3 had one with a dash, and every plural written out.
     // Amendment B4 (kept): an id flagged only by this check's reading of a provider's changelog (R6) is counted apart
     // from the provider's own flags; the "where" counts are over both together, each id once.
-    const changelogIds = flaggedIds.filter((m) => analyses.get(m)?.row?.namedAs !== undefined);
-    const providerIds = flaggedIds.filter((m) => !changelogIds.includes(m));
+    // 0.4.5 (R5): and a fine-tune flagged through its base is counted with them — the link to the base is the check's reading
+    const fineTuneIds = flaggedIds.filter((m) => analyses.get(m)?.fineTuneOf !== undefined);
+    const changelogIds = flaggedIds.filter((m) => analyses.get(m)?.row?.namedAs !== undefined && !fineTuneIds.includes(m));
+    const readingIds = [...changelogIds, ...fineTuneIds];
+    const providerIds = flaggedIds.filter((m) => !readingIds.includes(m));
     const providerOf = (m: string) => {
       const a = analyses.get(m);
-      return a?.row && a.row.word !== 'listed' ? a.row.provider : (a?.profile?.provider ?? a?.row?.provider ?? '');
+      return a?.row && !notAFlag(a.row.word) ? a.row.provider : (a?.profile?.provider ?? a?.row?.provider ?? '');
     };
     const flaggers = [...new Set(providerIds.map(providerOf))];
     const who = flaggers.length === 1 ? providerWord(flaggers[0]!) : 'their providers';
@@ -1131,12 +1455,16 @@ export function renderCard(
       changelogPages.length === 1
         ? pageName(changelogPages[0]!.split('|')[0]!, changelogPages[0]!.split('|')[1]!)
         : 'their providers’ release notes';
+    const readingWho = andList([
+      ...(changelogIds.length ? [changelogWho] : []),
+      ...(fineTuneIds.length ? [fineTuneIds.length === 1 ? "a fine-tune's id" : "fine-tunes' ids"] : []),
+    ]);
     const isAre = (n: number) => (n === 1 ? 'is' : 'are');
     const sentences: string[] = [`${count(extract.callSites.length, 'AI call site')} and ${count(models.length, 'model id')}: ${models.map(label).join(', ')}.`];
-    if (providerIds.length && changelogIds.length)
-      sentences.push(`${providerIds.length} ${isAre(providerIds.length)} flagged by ${who}, and ${changelogIds.length} by this check's reading of ${changelogWho}.`);
+    if (providerIds.length && readingIds.length)
+      sentences.push(`${providerIds.length} ${isAre(providerIds.length)} flagged by ${who}, and ${readingIds.length} by this check's reading of ${readingWho}.`);
     else if (providerIds.length) sentences.push(`${providerIds.length} ${isAre(providerIds.length)} flagged by ${who}.`);
-    else if (changelogIds.length) sentences.push(`${changelogIds.length} ${isAre(changelogIds.length)} flagged by this check's reading of ${changelogWho}.`);
+    else if (readingIds.length) sentences.push(`${readingIds.length} ${isAre(readingIds.length)} flagged by this check's reading of ${readingWho}.`);
     if (unknown > 0) sentences.push(`${unknown} ${isAre(unknown)} not recognised.`);
     if (flagged === 0 && unknown < models.length)
       sentences.push(
@@ -1202,8 +1530,11 @@ export function renderCard(
       lines.push(`  <sub>${sites.join(', ')} · basis: ${f.basis}</sub>`);
     }
   }
+  // 0.4.5 (R7 a): a card that says "the catalog" says once, in its footer, what the catalog is
+  const saysCatalog = /\bthe catalog\b/i.test(lines.join('\n'));
   lines.push('');
   lines.push('---');
+  if (saysCatalog) lines.push(`*${CATALOG_SENTENCE}*`);
   lines.push(`*${destinationSentence(read, share, extra.surface ?? 'cli')}*`);
   // 0.4.3 (R2): the age sentence only when a provider line on the card is not from a page read in this run.
   const notConfirmed = [...analyses.values()].some((a) => a.row && rowStateIn(read, a.row.id).state !== 'confirmed');

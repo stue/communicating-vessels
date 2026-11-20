@@ -102,7 +102,7 @@ describe('R1 — a provider line is Certain only when its page was read in this 
     const read = await readPagesFromNetwork({ fetchImpl: serve(MIN, calls), ledger: MIN_LEDGER.set });
     expect(calls.map((c) => c.url).sort()).toEqual([...MIN_LEDGER.set.urls].sort());
     expect([...read.rows.values()].every((s) => s.state === 'confirmed')).toBe(true);
-    expect(read.rows.size).toBe(18);
+    expect(read.rows.size).toBe(19); // 0.4.5 (R3): the made-up page's Active row is a row (until 0.4.5: 18)
   });
 
   it('the request: plain GET, redirects followed, no cookie, no body, no query string, User-Agent kgauto-check/<version>', async () => {
@@ -227,14 +227,14 @@ describe('R2 — every provider line says when its page was read, in the line', 
   // 0.4.4 (R6): the page is named by its own title ("Model deprecations"); until 0.4.3 "Anthropic's page"
   it('confirmed: basis "<Provider>\'s <page, by its title>, read in this run (<YYYY-MM-DD HH:MM> UTC): <url>"', () => {
     const f = lineOf(runCheck(ex([{ model: 'claude-opus-4-1' }]), { pages: READ }), 'claude-opus-4-1')!;
-    expect(f.basis).toBe("Anthropic's model deprecations page, read in this run (2026-11-18 18:23 UTC): https://platform.claude.com/docs/en/about-claude/model-deprecations.md");
+    expect(f.basis).toBe("Anthropic's model deprecations page, read in this run (2026-11-20 05:02 UTC): https://platform.claude.com/docs/en/about-claude/model-deprecations.md");
   });
 
   it('unread: the detail ends with the day this version read it, n days before, and why not now; the basis says "as read"', async () => {
     const read = await readPagesFromNetwork({ fetchImpl: status(503) });
-    const f = lineOf(runCheck(ex([{ model: 'claude-opus-4-1' }]), { pages: read, today: '2026-11-21' }), 'claude-opus-4-1')!;
+    const f = lineOf(runCheck(ex([{ model: 'claude-opus-4-1' }]), { pages: read, today: '2026-11-23' }), 'claude-opus-4-1')!; // 0.4.5: three days after the re-read (until 0.4.5: 2026-11-21)
     const row = LEDGER.find((r) => r.id === 'claude-opus-4-1-20250805')!;
-    expect(row.readOn).toBe('2026-11-18'); // fix pass 1: the ledger re-read on 2026-11-18 (A4)
+    expect(row.readOn).toBe('2026-11-20'); // 0.4.5: the ledger re-read on 2026-11-20 (until 0.4.5: 2026-11-18, fix pass 1's re-read, A4)
     expect(f.detail.endsWith(`This is Anthropic's model deprecations page as this version of the check read it on ${row.readOn}, 3 days before this run; it was not read in this run (HTTP 503).`)).toBe(true);
     expect(f.basis).toBe(`Anthropic's model deprecations page as read ${row.readOn}: ${row.url}`);
   });
@@ -251,7 +251,7 @@ describe('R2 — every provider line says when its page was read, in the line', 
     (rec.rows as Map<string, unknown>).set('claude-opus-4-1-20250805', { state: 'changed', at: '2026-11-16T22:54:38Z', gone: [] });
     (rec.definitions as Map<string, unknown>).set('anthropic|retired', { state: 'changed', at: '2026-11-16T22:54:38Z', gone: [] });
     const f = lineOf(runCheck(ex([{ model: 'claude-opus-4-1' }]), { pages: rec }), 'claude-opus-4-1')!;
-    expect(f.title.startsWith('As read on 2026-11-18 (the page has changed since): On Anthropic\'s own API')).toBe(true);
+    expect(f.title.startsWith('As read on 2026-11-20 (the page has changed since): On Anthropic\'s own API')).toBe(true);
     expect(f.confidence).toBe('likely');
     expect(f.detail).toContain("This line is no longer on Anthropic's model deprecations page as it was read. Read the page before acting on the date: https://platform.claude.com/docs/en/about-claude/model-deprecations.md. A newer version of the check carries a newer read.");
     expect(f.detail).not.toContain('Requests to retired models fail.');
@@ -270,17 +270,18 @@ describe('R2 — every provider line says when its page was read, in the line', 
     expect(card).toMatch(new RegExp(`no rows were written anywhere\\. ${10 - n} (did not answer|did not answer or answered with a page this version does not read); their lines say so\\.\\*`));
   });
 
+  // 0.4.5 (R2): the footer claims no single day for every line (until 0.4.5: "every provider line is the page as this version read it on <day>")
   it('--offline footer, and the share forms keep their last sentence', async () => {
     const off = await readForRun({ switchedOff: true });
     const card = runCheck(ex([{ model: 'gpt-4o' }]), { pages: off }).card;
-    expect(card).toMatch(/\*This check ran on your machine and made no network request \(--offline\): every provider line is the page as this version read it on \d{4}-\d{2}-\d{2}\. Nothing was uploaded; no rows were written anywhere\.\*/);
+    expect(card).toMatch(/\*This check ran on your machine and made no network request \(--offline\): the deprecation pages behind its provider lines are as this version read them on \d{4}-\d{2}-\d{2}, and a line taken from a model's own page gives the day that page was read\. Nothing was uploaded; no rows were written anywhere\.\*/);
     expect(runCheck(ex([{ model: 'gpt-4o' }]), { pages: off, share: true }).card).toMatch(/Because you ran it with --share, this card and the extract are sent after it is printed\.\*\n/);
     expect(runCheck(ex([{ model: 'gpt-4o' }]), { pages: READ, share: true }).card).toMatch(/whatever your project holds\. Because you ran it with --share, this card and the extract are sent after it is printed\.\*\n/);
   });
 
   it('the stamp: "deprecation pages bundled <date>", and after a read ", read in this run <YYYY-MM-DD HH:MM> UTC"', async () => {
     const last = (c: string) => c.split('\n').at(-1)!;
-    expect(last(runCheck(ex([{ model: 'gpt-4o' }]), { pages: READ }).card)).toMatch(/· deprecation pages bundled \d{4}-\d{2}-\d{2}, read in this run 2026-11-18 18:23 UTC<\/sub>$/);
+    expect(last(runCheck(ex([{ model: 'gpt-4o' }]), { pages: READ }).card)).toMatch(/· deprecation pages bundled \d{4}-\d{2}-\d{2}, read in this run 2026-11-20 05:02 UTC<\/sub>$/);
     expect(last(runCheck(ex([{ model: 'gpt-4o' }]), { pages: await readForRun({ switchedOff: true }) }).card)).toMatch(/· deprecation pages bundled \d{4}-\d{2}-\d{2}<\/sub>$/);
   });
 
@@ -291,8 +292,8 @@ describe('R2 — every provider line says when its page was read, in the line', 
   });
 
   it('--model-facts and get_model_facts follow it: in this run, or the day it was read and why not now', async () => {
-    expect(renderModelFacts('claude-opus-4-1', { pages: READ })).toContain('(read in this run, 2026-11-18 18:23 UTC)');
-    const off = renderModelFacts('claude-opus-4-1', { pages: await readForRun({ switchedOff: true }), today: '2026-11-20' });
+    expect(renderModelFacts('claude-opus-4-1', { pages: READ })).toContain('(read in this run, 2026-11-20 05:02 UTC)');
+    const off = renderModelFacts('claude-opus-4-1', { pages: await readForRun({ switchedOff: true }), today: '2026-11-23' }); // 0.4.5: after the re-read (until 0.4.5: 2026-11-20)
     expect(off).toMatch(/\(read \d{4}-\d{2}-\d{2}, \d+ days before this lookup; not read in this run \(--offline\)\)/);
     expect(off).toContain('this lookup made no network request (--offline)');
   });
@@ -388,9 +389,9 @@ describe('R4 — where an id is written, said by the extract and counted by the 
     const r = runCheck(F, { pages: READ });
     const certain = r.card.split('## Certain')[1]!.split('## Likely')[0]!;
     const sites = [...certain.matchAll(/<sub>([^·]+) ·/g)].map((m) => m[1]!.trim());
+    // 0.4.5 (R6): `gpt-4o` at src/defaults.py:1 is a display-name row, never Certain, so it is not in this tier (until 0.4.5 it was second)
     expect(sites).toEqual([
       'src/realtime.py:49 (runs)',
-      'src/defaults.py:1 (runs)',
       'src/config.py:1',
       'src/config.py:2',
       'tests/test_llm.py:21 (test)',
@@ -398,7 +399,7 @@ describe('R4 — where an id is written, said by the extract and counted by the 
       'examples/router.py:1 (example)',
     ]);
     const marks = [...certain.matchAll(/^- (\S+) \*\*/gm)].map((m) => m[1]);
-    expect(marks.slice(4)).toEqual(['ℹ️', 'ℹ️', 'ℹ️']);
+    expect(marks.slice(3)).toEqual(['ℹ️', 'ℹ️', 'ℹ️']);
     // severity itself is unchanged: the mark is the card's, chosen after the merge
     expect(r.findings.find((f) => f.title.includes('claude-3-5-sonnet-20241022'))!.severity).toBe('red');
     expect(marks[0]).toBe('🔴');
@@ -543,7 +544,7 @@ describe('Amendment A1 — ledger-drift.mjs --fetch --discard-pages', () => {
     const lines = r.stdout.trimEnd().split('\n');
     expect(r.status).toBe(0);
     expect(lines.at(-2)).toBe('pages removed (clean run)');
-    expect(lines.at(-1)).toBe('0 rows moved — 18 rows checked of 18');
+    expect(lines.at(-1)).toBe('0 rows moved — 19 rows checked of 19');
     expect(existsSync(savedIn(r.stdout))).toBe(false);
   });
 
@@ -575,7 +576,7 @@ describe('Amendment A1 — ledger-drift.mjs --fetch --discard-pages', () => {
     const r = run(['--fetch']);
     expect(r.status).toBe(0);
     expect(existsSync(savedIn(r.stdout))).toBe(true);
-    expect(r.stdout.trimEnd().split('\n').at(-1)).toBe('0 rows moved — 18 rows checked of 18');
+    expect(r.stdout.trimEnd().split('\n').at(-1)).toBe('0 rows moved — 19 rows checked of 19');
   });
 });
 
@@ -638,7 +639,7 @@ describe('Amendment B1 — a model page is the page asked for, or it is unread',
     expect(f.confidence).toBe('likely');
     // 0.4.4 (R4): the deprecations page WAS read in this run; only the model page was not, and the line says so by name
     expect(f.detail).toContain(
-      "In this run OpenAI's deprecations page was read (2026-11-18 18:23 UTC) and still says this, and OpenAI's model page for GPT-4o mini was not read (not the page this version reads);",
+      "In this run OpenAI's deprecations page was read (2026-11-20 05:02 UTC) and still says this, and OpenAI's model page for GPT-4o mini was not read (not the page this version reads);",
     );
     expect(f.detail).not.toContain('was not read in this run (not the page this version reads)');
   });

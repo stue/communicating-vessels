@@ -66,7 +66,7 @@ describe('D3 — "at or above this size"', () => {
   it('the structured-output gate fires at >=, and says so', () => {
     const c: Cliff = { metric: 'input_tokens', threshold: 12_000, action: 'quality_gate_structured', whenIntent: 'summarize', reason: 'r' };
     expect(cliffLine('m', c, 12_000).detail).toContain(
-      "What the compiler does about it: it stops trusting this model's structured output at or above this size on summarize work, and ranks the model lower for such a request.",
+      "If you call this model through `@warmdrift/kgauto-compiler`, it stops trusting this model's structured output at or above this size on summarize work, and ranks the model lower for such a request.",
     );
   });
 });

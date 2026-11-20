@@ -2,6 +2,9 @@ Anthropic's model deprecations page as read <date>, changed when read in this ru
 Anthropic's model deprecations page as read <date>: <url>
 Anthropic's model deprecations page, read in this run (<time> UTC): <url>
 Anthropic's page for this model, as the catalog read it <date>: <url>
+Anthropic's page for this model, as the catalog read it <date>: <url>; Anthropic's model deprecations page as read <date>, changed when read in this run (<time> UTC): <url>
+Anthropic's page for this model, as the catalog read it <date>: <url>; Anthropic's model deprecations page as read <date>: <url>
+Anthropic's page for this model, as the catalog read it <date>: <url>; Anthropic's model deprecations page, read in this run (<time> UTC): <url>
 DeepSeek's change log and its “Your First API Call” page as read <date>, changed when read in this run (<time> UTC): <url> and <url>
 DeepSeek's change log and its “Your First API Call” page as read <date>: <url> and <url>
 DeepSeek's change log and its “Your First API Call” page, read in this run (<time> UTC): <url> and <url>

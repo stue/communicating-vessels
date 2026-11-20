@@ -60,7 +60,7 @@ describe('R1 — a cliff line is worded from the cliff', () => {
     // 0.4.3 (R8): alpha.134's reason (v2/src/profiles.ts, the gpt-6-luna profile)
     expect(f.detail).toContain("rejects function tools with reasoning_effort on /v1/chat/completions (HTTP 400, probed 2026-11-12, n=1; reasoning_effort 'none' → 200 with the tool call): ");
     expect(f.detail).toContain('It is about one endpoint, `/v1/chat/completions`: it says nothing about the model reached another way.');
-    expect(f.detail).toContain("What the compiler does about it: it turns the model's thinking off for the request.");
+    expect(f.detail).toContain("If you call this model through `@warmdrift/kgauto-compiler`, it turns the model's thinking off for the request.");
     expect(f.detail).toContain('Evidence: a test reproduced the problem, last run 2026-11-12, on 1 call (the count its reason gives).');
     expect(f.detail).toContain('This site offers 30 tools, over the line.');
     // 0.4.4 (R1): in words (until 0.4.3: "the catalog's cliff rule (evidence: probed, confirmed, 2026-11-12) vs this site's tool count")
@@ -75,7 +75,7 @@ describe('R1 — a cliff line is worded from the cliff', () => {
     expect(f.detail).not.toContain(QUALITY);
     // 0.4.3 (R8): alpha.134 rewrote this reason from the model's own page
     expect(f.detail).toContain('“Over 272K input tokens the request is billed at $20/$75 per 1M');
-    expect(f.detail).toContain('What the compiler does about it: it attaches a warning to the compiled request and leaves the request as it is.');
+    expect(f.detail).toContain('If you call this model through `@warmdrift/kgauto-compiler`, it attaches a warning to the compiled request and leaves the request as it is.');
     expect(f.detail).toContain('Evidence: the rule carries no evidence record.');
     expect(f.detail).toContain('Your estimate of 400,000 sits over the line.');
   });
@@ -125,10 +125,10 @@ describe('R1 — a cliff line is worded from the cliff', () => {
   it('a capability-reducing action the compiler holds back is said as held back', async () => {
     const f = await cliffFinding({ ...base, metric: 'tool_count', threshold: 2, action: 'strip_tools', evidence: { class: 'asserted' } } as Cliff);
     expect(f!.detail).toContain(
-      'What the compiler does about it: it would send the request without its tools, but holds that back until a test reproduces the problem.',
+      'If you call this model through `@warmdrift/kgauto-compiler`, it would send the request without its tools, but holds that back until a test reproduces the problem.',
     );
     const g = await cliffFinding({ ...base, metric: 'tool_count', threshold: 2, action: 'strip_tools', evidence: { class: 'probed', verdict: 'confirmed' } } as Cliff);
-    expect(g!.detail).toContain('What the compiler does about it: it sends the request without its tools.');
+    expect(g!.detail).toContain('If you call this model through `@warmdrift/kgauto-compiler`, it sends the request without its tools.');
   });
 
   it('a structured-output rule speaks only where the site parses structured output, as the compiler applies it', async () => {
@@ -197,7 +197,7 @@ describe('Amendment A1 — no internal application’s name on a stranger’s ca
         if (named(c.reason).length > 0) {
           guarded++;
           expect(l.detail).toContain("The catalog's note for this rule is written for our own records and is not quoted.");
-          expect(l.detail).toMatch(/What the compiler does about it: /);
+          expect(l.detail).toMatch(/If you call this model through `@warmdrift\/kgauto-compiler`, it /); // 0.4.5 (R7 b): until 0.4.5, "What the compiler does about it: "
           expect(l.detail).toMatch(/Evidence: /);
         }
       }
@@ -247,7 +247,7 @@ describe('Amendment A1 — no internal application’s name on a stranger’s ca
     // Amendment B: no quality sentence without an evidence record (B2); 12,000 on a rule at 12,000 is at the line (B1).
     expect(f.detail).toBe(
       "The catalog's reason (for summarize work): “On summarize with more than 12,000 input tokens, every structured-output reply in the measurement window failed to parse (measured on production summarize traffic, 2026-07-25 to 2026-07-27); the model led those calls only when input size made its price dominate”. " +
-        "What the compiler does about it: it stops trusting this model's structured output at or above this size on summarize work, and ranks the model lower for such a request. " +
+        "If you call this model through `@warmdrift/kgauto-compiler`, it stops trusting this model's structured output at or above this size on summarize work, and ranks the model lower for such a request. " +
         "Evidence: no evidence record; the catalog's note describes a measured incident. " +
         'Your estimate of 12,000 sits at the line.',
     );
@@ -349,7 +349,8 @@ describe('R5 — two sentences', () => {
     // 0.4.3 (R1): the heading names the page read on an earlier day first
     expect(heading).toBe(
       // Amendment B4 (0.4.3): and why a changelog line is there; 0.4.4 (R6): named as Google's page is titled, "Release notes"
-      '## Likely — a provider’s page as read on an earlier day (the day is on the line); a provider’s release notes that name a model in words, not by its id; priced from your estimates; a provider’s word where the call may not use its own API; no retry or fallback found in the code',
+      // 0.4.5 Amendment A7: and the id this check linked to another id's row
+      '## Likely — a provider’s page as read on an earlier day (the day is on the line); a provider’s release notes that name a model in words, not by its id; an id this check linked to another id’s row (a fine-tune by its base, a name by its display name); priced from your estimates; a provider’s word where the call may not use its own API; no retry or fallback found in the code',
     );
     // the card under it carries one of each of the two new kinds
     const likely = r.findings.filter((f) => f.confidence === 'likely').map((f) => f.title);
@@ -406,11 +407,11 @@ describe('R7 — the share path says what it stores', () => {
 });
 
 describe('R9 — version, changelog, readme', () => {
-  it('the package is 0.4.4 and the changelog says so first', () => {
-    expect(pkg.version).toBe('0.4.4');
+  it('the package is 0.4.5 and the changelog says so first', () => {
+    expect(pkg.version).toBe('0.4.5');
     const log = readFileSync(join(PKG_DIR, 'CHANGELOG.md'), 'utf8');
-    // 0.4.4 Amendment B2: dated the day the ledger was read and the release ships
-    expect(log.split('\n').find((l) => l.startsWith('## '))).toBe('## 0.4.4 — 2026-11-18');
+    // 0.4.4 Amendment B2: dated the day the ledger was read and the release ships (0.4.5: the ledger read 2026-11-20)
+    expect(log.split('\n').find((l) => l.startsWith('## '))).toBe('## 0.4.5 — 2026-11-20');
   });
 
   it("the README's example card is this build's output on the stored example extract, byte for byte", async () => {

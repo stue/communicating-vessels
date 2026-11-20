@@ -33,7 +33,7 @@ describe('B1 — the cheaper-models line agrees with a count of one, and is as b
   it('one cheaper model: the verb is singular, and the line says “it”, never “any of them”', () => {
     const f = lineWith([mk('made-up-cheap', 1, 4)]);
     expect(f.title).toBe('1 model in the catalog prices under half of `made-up-dear` on summarize work');
-    expect(f.detail).toContain('whether it holds YOUR quality bar on summarize work');
+    expect(f.detail).toContain('whether it does your summarize work as well as `made-up-dear`'); // 0.4.5 (R7 b): until 0.4.5, "holds YOUR quality bar"
     expect(f.detail).not.toMatch(/any of them|Cheapest/);
     expect(f.basis).toBe("your token estimates at that model's prices in the catalog; nothing on this line says how well it would do your work");
   });
@@ -42,7 +42,7 @@ describe('B1 — the cheaper-models line agrees with a count of one, and is as b
     const f = lineWith([mk('made-up-cheap', 1, 4), mk('made-up-cheaper', 0.5, 2)]);
     expect(f.title).toBe('2 models in the catalog price under half of `made-up-dear` on summarize work');
     expect(f.detail).toContain('Cheapest: `made-up-cheaper` at ~$');
-    expect(f.detail).toContain('whether any of them holds YOUR quality bar on summarize work');
+    expect(f.detail).toContain('whether any of them does your summarize work as well as `made-up-dear`'); // 0.4.5 (R7 b)
     expect(f.basis).toBe("your token estimates at each model's prices in the catalog; nothing on this line says how well any of them would do your work");
   });
 });

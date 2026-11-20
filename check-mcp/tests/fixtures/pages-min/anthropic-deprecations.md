@@ -5,6 +5,10 @@ description: A made-up page in the shape of platform.claude.com's, for tests/che
 
 * **Retired:** The model is no longer available for use. Requests to retired models fail.
 
+## Notifications
+
+Anthropic notifies customers with active deployments for models with upcoming retirements, providing at least 60 days’ notice before model retirement for publicly released models.
+
 ## Model status
 
 | API model name    | Current state | Deprecated   | Tentative retirement date      |

@@ -166,6 +166,9 @@ const unbacktick = (s) =>
     if (rm && !hist.has(rm[2])) hist.set(rm[2], { retirementText: rm[1], replacement: rm[3], note, section, line: ln.trim() });
   }
   // Model status table.
+  // 0.4.5 (R3): every row of it is written, Active ones included (until 0.4.4: "Active: no flag", skipped). A state
+  // word this version does not read stops the generator, so a row is never dropped without a word.
+  const STATE_WORDS = { deprecated: 'deprecated', retired: 'retired', legacy: 'legacy', active: 'active' };
   const inStatus = new Set();
   let inTable = false;
   for (const ln of lines) {
@@ -176,8 +179,11 @@ const unbacktick = (s) =>
     if (!m) continue;
     const [, id, state, dep, ret] = m;
     inStatus.add(id);
-    const word = state.toLowerCase();
-    if (!['deprecated', 'retired', 'legacy'].includes(word)) continue; // Active: no flag
+    const word = STATE_WORDS[state.toLowerCase()];
+    if (!word) {
+      console.error(`stop: ${f}: the state "${state}" on ${id} in "## Model status" is not one this version reads (${Object.keys(STATE_WORDS).join(', ')}). No ledger written.`);
+      process.exit(1);
+    }
     const h = hist.get(id);
     push({
       id,
@@ -704,10 +710,28 @@ const unbacktick = (s) =>
 // A ledger line for a word that means requests now fail quotes the provider's own definition of it.
 // Each is named here by its SENTENCE, like DeepSeek's rows, and is written only if it is on the
 // saved page; the drift check (scripts/ledger-drift.mjs) re-reads it with the rows.
+// 0.4.5: two more sentences the card quotes, kept and checked the same way — Anthropic's notice period, which the
+// line for an Active row quotes (R4 b; the page's "## Notifications", read 2026-11-20T05:02:18Z; kept under its own key,
+// `notice period`, not under the row word `active`), and OpenAI's sentence
+// about fine-tunes, under its table of upcoming deprecations, which a fine-tune's line quotes (R5; read 2026-11-20T05:02:18Z).
 const DEFINITIONS = [
   { provider: 'anthropic', word: 'retired', url: URL.anthropic, file: 'anthropic-deprecations.md', quote: 'The model is no longer available for use. Requests to retired models fail.' },
   { provider: 'openai', word: 'shut down', url: URL.openai, file: 'openai-deprecations.md', quote: 'The model no longer accepts requests through the standard API.' },
   { provider: 'google', word: 'shut down', url: URL.google, file: 'google-deprecations.html', quote: 'it is completely turned off, and the endpoint is no longer available.' },
+  {
+    provider: 'anthropic',
+    word: 'notice period',
+    url: URL.anthropic,
+    file: 'anthropic-deprecations.md',
+    quote: 'Anthropic notifies customers with active deployments for models with upcoming retirements, providing at least 60 days’ notice before model retirement for publicly released models.',
+  },
+  {
+    provider: 'openai',
+    word: 'fine-tuned versions',
+    url: URL.openai,
+    file: 'openai-deprecations.md',
+    quote: 'Fine-tuned versions of the models listed above follow the same shutdown schedule as their underlying base models.',
+  },
 ];
 const definitions = DEFINITIONS.map(({ provider, word, url, file, quote }) => {
   const text = file.endsWith('.html') ? htmlToText(page(file)) : page(file);
@@ -716,7 +740,7 @@ const definitions = DEFINITIONS.map(({ provider, word, url, file, quote }) => {
 });
 
 // ── write ────────────────────────────────────────────────────────────────
-const ALLOWED = new Set(['deprecated', 'retired', 'shut down', 'legacy', 'rerouted', 'scheduled for shutdown', 'listed', 'no longer supported']);
+const ALLOWED = new Set(['deprecated', 'retired', 'shut down', 'legacy', 'rerouted', 'scheduled for shutdown', 'listed', 'no longer supported', 'active']);
 for (const r of rows) {
   if (!ALLOWED.has(r.word)) throw new Error(`row ${r.id}: word ${r.word} not in the allowed set`);
   for (const k of Object.keys(r)) if (r[k] === undefined) delete r[k];

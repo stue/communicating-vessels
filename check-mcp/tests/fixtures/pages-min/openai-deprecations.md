@@ -12,6 +12,8 @@
 | **Jan 14, 2099** | GPT-4o (`gpt-4o-2099-01-01`) | Deprecated | `gpt-mini-b` | Oct 14, 2026 |
 | **Jan 14, 2099** | GPT-4o mini (`gpt-4o-mini-2099-01-01`) | Deprecated | `gpt-mini-b` | Oct 14, 2026 |
 
+Fine-tuned versions of the models listed above follow the same shutdown schedule as their underlying base models.
+
 ## Past deprecations
 
 | Shutdown date | Affected model or feature | Listed replacement | Notice date  |

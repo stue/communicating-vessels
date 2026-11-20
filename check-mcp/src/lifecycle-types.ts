@@ -14,7 +14,8 @@ export type LedgerWord =
   | 'rerouted'
   | 'scheduled for shutdown'
   | 'listed'
-  | 'no longer supported';
+  | 'no longer supported'
+  | 'active';
 
 /**
  * 0.4.2 Amendment A1: `listed` is not a provider word about the model's end. It is a table row on the provider's
@@ -22,6 +23,10 @@ export type LedgerWord =
  *
  * 0.4.3 (R6): `no longer supported` is Google's changelog's own phrase ("Gemini 1.0 Pro is no longer supported."),
  * added rather than mapped onto `shut down` or `retired`, which the changelog does not say of these models.
+ *
+ * 0.4.5 (R3): `active` is Anthropic's status table's own state word for a model it has announced no retirement for.
+ * Such a row keeps the page's date text verbatim (`dateText`, "Not sooner than November 24, 2026") and its floor in
+ * `shutdownFloor`. It is not a flag: the card never counts it as one.
  */
 export const LEDGER_WORDS: readonly LedgerWord[] = [
   'deprecated',
@@ -32,7 +37,17 @@ export const LEDGER_WORDS: readonly LedgerWord[] = [
   'scheduled for shutdown',
   'listed',
   'no longer supported',
+  'active',
 ];
+
+/**
+ * 0.4.5: the words a provider's sentence the card quotes is kept under (LEDGER_DEFINITIONS). Besides the
+ * definitions of a row's word, two sentences are kept the same way, checked on their page by the generator,
+ * by the drift script and by the run-time read: Anthropic's notice period, under `notice period` (R4 b), and OpenAI's
+ * sentence about fine-tunes, under `fine-tuned versions` (R5). Neither is a row word, so neither is quoted as the
+ * definition of one.
+ */
+export type DefinitionWord = LedgerWord | 'notice period' | 'fine-tuned versions';
 
 export interface LedgerRow {
   /** The model id exactly as the page writes it. */
@@ -88,7 +103,7 @@ export interface LedgerRow {
 /** 0.4.2: a provider's own definition of a word the card quotes, verbatim from the page it cites. */
 export interface LedgerDefinition {
   provider: LedgerProvider;
-  word: LedgerWord;
+  word: DefinitionWord;
   url: string;
   quote: string;
 }

@@ -28,7 +28,7 @@ const NO_READ_INPUT = {
   [NO_READ_KEY]: z
     .boolean()
     .optional()
-    .describe('true: read no provider page in this run; every provider line is then the page as this version read it'),
+    .describe('true: read no provider page in this run; each provider line then gives the day its page was read'), // Amendment A4
 };
 const noReadAsked = (input: { [NO_READ_KEY]?: boolean }) => input[NO_READ_KEY] === true;
 
@@ -81,9 +81,10 @@ export function buildServer(seams: ServerSeams = {}): McpServer {
   server.registerTool(
     'get_observe_day_plan',
     {
-      title: 'The one-day observe run',
+      // Amendment A5: the plain words first (until fix pass 1: "The one-day observe run")
+      title: 'One day of recorded calls (the observe day)',
       description:
-        "Rung 2: what a one-day, observe-only run on this project's real traffic would measure, and the two honesty requirements any setup must carry (named row destination; observation never intervenes). Ends in a human decision by design.",
+        "Rung 2: what one day of recorded calls on this project's real traffic, with no change to where any call goes, would measure, and the two honesty requirements any setup must carry (named row destination; observation never intervenes). Ends in a human decision by design.",
       inputSchema: {},
     },
     async () => text(OBSERVE_DAY_PLAN),
