@@ -1,0 +1,50 @@
+{
+  "project": {
+    "name": "verifier-046b"
+  },
+  "callSites": [],
+  "models": [
+    {
+      "model": "claude-fable-5-2",
+      "where": "src/a.py:1",
+      "platform": "provider-api",
+      "context": "runs"
+    },
+    {
+      "model": "claude-opus-5-5",
+      "where": "src/b.py:1",
+      "platform": "provider-api",
+      "context": "runs"
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "where": "src/c.py:1",
+      "platform": "provider-api",
+      "context": "runs"
+    },
+    {
+      "model": "claude-haiku-5-5",
+      "where": "src/d.py:1",
+      "platform": "provider-api",
+      "context": "runs"
+    },
+    {
+      "model": "claude-mythos-5-2",
+      "where": "src/e.py:1",
+      "platform": "provider-api",
+      "context": "runs"
+    },
+    {
+      "model": "claude-mythos-5-1",
+      "where": "src/f.py:1",
+      "platform": "provider-api",
+      "context": "runs"
+    },
+    {
+      "model": "claude-mythos-5",
+      "where": "src/g.py:1",
+      "platform": "provider-api",
+      "context": "runs"
+    }
+  ]
+}

@@ -7,7 +7,7 @@
  */
 import { describe, it, expect, afterAll } from 'vitest';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, writeFileSync, cpSync, rmSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, cpSync, rmSync, readdirSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -139,5 +139,67 @@ describe('R2 — ledger-drift.mjs', () => {
     const r = drift(ledgerFile([STEADY, CLAUDE]), dir);
     expect(r.code).toBe(2); // the Anthropic page is not in dir, so its row is not checked
     expect(r.out).toContain('anthropic-deprecations.md');
+  });
+});
+
+// ── 0.4.6 (R5): the drift check says which page did not answer, and shows the row that decides ──
+describe('0.4.6 R5 — ledger-drift.mjs names the page not saved, and prints every line that carries the id', () => {
+  it('a moved status row: `page now:` prints the status table’s row first, then the history row', () => {
+    const moved = { ...CLAUDE, word: 'deprecated', pageWord: 'Deprecated', quote: '| claude-steady-1   | Deprecated    | May 1, 2026  | June 1, 2026              |' };
+    const r = drift(ledgerFile([STEADY, moved]));
+    expect(r.code).toBe(1);
+    const now = r.out.split('\n').filter((l) => l.startsWith('  page now: '));
+    expect(now).toEqual([
+      '  page now: | claude-steady-1 | Retired | May 1, 2026 | June 1, 2026 |',
+      '  page now: | June 1, 2026 | `claude-steady-1` | `claude-steady-2` |',
+    ]);
+  });
+
+  it('the row in the quote’s own table comes first, before a line above it on the page that names the id too', () => {
+    const dir = mkdtempSync(join(ROOT, 'drift-pages-'));
+    for (const f of readdirSync(PAGES)) cpSync(join(PAGES, f), join(dir, f));
+    const page = join(dir, 'anthropic-deprecations.md');
+    const text = readFileSync(page, 'utf8');
+    writeFileSync(page, text.replace('## Model status', 'A sentence that names `claude-steady-1` above the tables.\n\n## Model status'));
+    const moved = { ...CLAUDE, quote: '| claude-steady-1   | Deprecated    | May 1, 2026  | June 1, 2026              |' };
+    const r = drift(ledgerFile([STEADY, moved]), dir);
+    expect(r.out.split('\n').filter((l) => l.startsWith('  page now: '))).toEqual([
+      '  page now: | claude-steady-1 | Retired | May 1, 2026 | June 1, 2026 |',
+      '  page now: A sentence that names `claude-steady-1` above the tables.',
+      '  page now: | June 1, 2026 | `claude-steady-1` | `claude-steady-2` |',
+    ]);
+  });
+
+  it('a page not in the folder: the summary line names it by its address, and why', () => {
+    const r = drift(ledgerFile([STEADY, { ...CLAUDE, id: 'deepseek-x', provider: 'deepseek', url: D, quote: 'A sentence.' }]));
+    expect(r.code).toBe(2);
+    expect(r.out.trim().split('\n').at(-1)).toBe(`0 rows moved — 1 rows checked of 2; 1 not checked — a page was not saved: ${D} (not in ${PAGES})`);
+  });
+
+  it('--fetch, a page that answers 404: the fetch line and the summary line both say HTTP 404', () => {
+    const seam = mkdtempSync(join(ROOT, 'drift-seam-'));
+    for (const f of readdirSync(PAGES)) cpSync(join(PAGES, f), join(seam, f));
+    writeFileSync(join(seam, 'read-times.json'), JSON.stringify({ 'anthropic-deprecations.md': '2026-11-24T09:37:37Z', 'google-deprecations.html': '2026-11-24T09:37:38Z' }));
+    writeFileSync(join(seam, 'statuses.json'), JSON.stringify({ 'anthropic-deprecations.md': 404 }));
+    const r = spawnSync(process.execPath, [SCRIPT, '--fetch', '--ledger', ledgerFile([STEADY, CLAUDE])], {
+      encoding: 'utf8',
+      env: { ...process.env, KGAUTO_LEDGER_DRIFT_FETCH_FROM: seam, TMPDIR: ROOT },
+    });
+    const out = `${r.stdout}${r.stderr}`;
+    expect(r.status).toBe(2);
+    expect(out).toContain(`fetch ${A} (test seam) HTTP 404 — not saved`);
+    expect(out.trim().split('\n').at(-1)).toBe(`0 rows moved — 1 rows checked of 2; 1 not checked — a page was not saved: ${A} (HTTP 404)`);
+  });
+
+  it('two pages not saved: both named, each with its own status', () => {
+    const seam = mkdtempSync(join(ROOT, 'drift-seam-'));
+    writeFileSync(join(seam, 'read-times.json'), '{}');
+    writeFileSync(join(seam, 'statuses.json'), JSON.stringify({ 'anthropic-deprecations.md': 404, 'google-deprecations.html': 503 }));
+    const r = spawnSync(process.execPath, [SCRIPT, '--fetch', '--ledger', ledgerFile([STEADY, CLAUDE])], {
+      encoding: 'utf8',
+      env: { ...process.env, KGAUTO_LEDGER_DRIFT_FETCH_FROM: seam, TMPDIR: ROOT },
+    });
+    expect(r.status).toBe(2);
+    expect(`${r.stdout}`.trim().split('\n').at(-1)).toBe(`0 rows moved — 0 rows checked of 2; 2 not checked — 2 pages were not saved: ${G} (HTTP 503); ${A} (HTTP 404)`);
   });
 });

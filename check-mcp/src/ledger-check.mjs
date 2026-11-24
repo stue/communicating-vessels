@@ -64,10 +64,12 @@ export const PAGE_URL = {
   googleModel: (id) => `https://aistudio.google.com/docs/models/${id}`,
   deepseekUpdates: 'https://api-docs.deepseek.com/updates',
   /**
-   * 0.4.4 (R6): the address is /news, and the page it serves is titled "Your First API Call" — DeepSeek's quick-start
-   * page, which carries the sentence two rows quote and /updates does not (read 2026-11-17T23:17:08Z). Named by its title.
+   * 0.4.4 (R6): the page titled "Your First API Call" — DeepSeek's quick-start page, which carries the sentence two rows
+   * quote and /updates does not (read 2026-11-17T23:17:08Z). Named by its title.
+   * 0.4.6 (R1): read at the address that serves it, the docs' root. On 2026-11-24 /news and /news/ answered 404 ("Page Not
+   * Found | DeepSeek API Docs") and the root answered 200 with this page (until 0.4.5: https://api-docs.deepseek.com/news).
    */
-  deepseekFirstApiCall: 'https://api-docs.deepseek.com/news',
+  deepseekFirstApiCall: 'https://api-docs.deepseek.com/',
 };
 
 /** The saved file name for a source URL, or undefined for a URL the generator does not read. */
@@ -146,6 +148,134 @@ export function googleTableRows(dep) {
     else if (cur.length) cur[cur.length - 1] += ' ' + ln;
   }
   return tableRows;
+}
+
+// ── 0.4.6 (R6): the generator's table parsers, exported ─────────────────
+// scripts/build-ledger.mjs reads every table row through these (until 0.4.6 the same loops were inline in it), and
+// scripts/table-sweep.mjs reads the ids of each provider's tables through them, never through the ledger.
+
+/** Anthropic's "## Model status" table, row by row, as the generator reads it: { id, state, dep, ret, line }. */
+export function anthropicStatusRows(text) {
+  const out = [];
+  let inTable = false;
+  for (const ln of text.split('\n')) {
+    if (ln.startsWith('## Model status')) inTable = true;
+    else if (ln.startsWith('## ') && inTable) inTable = false;
+    if (!inTable) continue;
+    const m = /^\|\s*(claude-[a-z0-9.-]+)\s*\|\s*([A-Za-z]+)\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*$/.exec(ln);
+    if (!m) continue;
+    out.push({ id: m[1], state: m[2], dep: m[3], ret: m[4], line: ln.trim() });
+  }
+  return out;
+}
+
+/**
+ * Anthropic's "## Deprecation history" tables, row by row in page order, as the generator reads them:
+ * { id, retirementText, replacement, note, section, line } — `section` the "### " heading above the row, `note` the
+ * "This model was / These models were retired <date>." sentence under that heading, when there is one.
+ */
+export function anthropicHistoryRows(text) {
+  const out = [];
+  let section = null;
+  let note = null;
+  let inHistory = false;
+  for (const ln of text.split('\n')) {
+    if (ln.startsWith('## Deprecation history')) inHistory = true;
+    else if (ln.startsWith('## ') && inHistory) inHistory = false;
+    if (!inHistory) continue;
+    if (ln.startsWith('### ')) {
+      section = ln.slice(4).trim();
+      note = null;
+      continue;
+    }
+    const nm = /(This model was|These models were) retired ([A-Z][a-z]+ \d{1,2}, \d{4})\./.exec(ln);
+    if (nm) note = nm[0];
+    const rm = /^\|\s*([^|]+?)\s*\|\s*`([^`]+)`\s*\|\s*`([^`]+)`\s*\|\s*$/.exec(ln);
+    if (rm) out.push({ id: rm[2], retirementText: rm[1], replacement: rm[3], note, section, line: ln.trim() });
+  }
+  return out;
+}
+
+/**
+ * OpenAI's deprecations tables (under "## Upcoming deprecations" and "## Past deprecations"), each data row as the
+ * generator reads it: { part, section, header, cells, line } — `header` the table's column names in lower case,
+ * `section` the "###"/"####" heading above the table, if any.
+ */
+export function openaiTableRows(text) {
+  const out = [];
+  let part = null;
+  let section = null;
+  let header = null;
+  for (const ln of text.split('\n')) {
+    if (ln.startsWith('## Upcoming deprecations')) part = 'upcoming';
+    else if (ln.startsWith('## Past deprecations')) part = 'past';
+    else if (ln.startsWith('### Plain-text aliases')) part = null;
+    else if (ln.startsWith('## ') && !/deprecations/i.test(ln)) part = null;
+    if (!part) continue;
+    if (ln.startsWith('### ') || ln.startsWith('#### ')) {
+      section = ln.replace(/^#+\s*/, '').trim();
+      header = null;
+      continue;
+    }
+    if (!ln.startsWith('|')) {
+      header = null;
+      continue;
+    }
+    const cells = ln.split(/(?<!\\)\|/).slice(1, -1).map((c) => c.replace(/\\\|/g, '|').trim());
+    if (cells.every((c) => /^-+$/.test(c))) continue;
+    if (!header) {
+      header = cells.map((c) => c.toLowerCase());
+      continue;
+    }
+    out.push({ part, section, header, cells, line: ln.trim() });
+  }
+  return out;
+}
+
+/** The columns of an OpenAI deprecations table the generator reads, by index (-1 when the table has none). */
+export function openaiColumns(header) {
+  return {
+    date: header.findIndex((h) => h.includes('shutdown date')),
+    model: header.findIndex((h) => /model|system/.test(h) && !/price|replacement|substitute/.test(h)),
+    replacement: header.findIndex((h) => /replacement|substitute/.test(h)),
+    notice: header.findIndex((h) => h.includes('notice date')),
+    status: header.findIndex((h) => h === 'status'),
+  };
+}
+
+/** A model id as the generator accepts one from a table cell's code marks. */
+export const TABLE_ID = /^[a-z0-9][a-z0-9.:-]*$/i;
+
+/**
+ * Every model id on a provider's deprecation tables, row by row, read by the parsers above (never from the ledger):
+ * { id, table, line, kind } — `table` the table in words; `kind` 'model' for a model cell the generator writes rows
+ * from, 'feature' for an id inside an OpenAI cell the generator skips as not a model ("New fine-tuning training on
+ * `babbage-002`"). Pages with no tables (the release notes, DeepSeek's pages, the model pages) give none.
+ * @param {string} file the saved file name  @param {string} text the page's text, as pageTextOf gives it
+ */
+export function tableIds(file, text) {
+  const out = [];
+  if (file === 'anthropic-deprecations.md') {
+    for (const r of anthropicStatusRows(text)) out.push({ id: r.id, table: '## Model status', line: r.line, kind: 'model' });
+    for (const r of anthropicHistoryRows(text)) out.push({ id: r.id, table: `## Deprecation history${r.section ? ` › ${r.section}` : ''}`, line: r.line, kind: 'model' });
+  } else if (file === 'openai-deprecations.md') {
+    for (const r of openaiTableRows(text)) {
+      const c = openaiColumns(r.header);
+      if (c.date === -1 || c.model === -1) continue;
+      const cell = r.cells[c.model] ?? '';
+      const model = cell.startsWith('`') || /^([A-Z][A-Za-z0-9.\- ]*?) \(`/.test(cell);
+      const ids = [...cell.matchAll(/`([^`]+)`/g)].map((m) => m[1]).filter((id) => TABLE_ID.test(id));
+      const table = `${r.part === 'upcoming' ? '## Upcoming deprecations' : '## Past deprecations'}${r.section ? ` › ${r.section}` : ''}`;
+      for (const id of ids) out.push({ id, table, line: r.line, kind: model ? 'model' : 'feature' });
+    }
+  } else if (file === 'google-deprecations.html') {
+    for (const r of googleTableRows(text)) {
+      const ids = [...(r.cells[0] ?? '').matchAll(/`([^`]+)`/g)].map((m) => m[1]);
+      const table = `## ${r.h2 ?? ''}${r.h3 ? ` › ${r.h3}` : ''}`;
+      for (const id of ids) out.push({ id, table, line: googleRowCells(r).join(' | '), kind: 'model' });
+    }
+  }
+  return out;
 }
 
 /** The four cells of a Google table row that a ledger row quotes, in order (model, the second column, shutdown, replacement). */
@@ -362,7 +492,7 @@ export const PAGE_SHAPES = {
     },
   },
   'deepseek-first-api-call.html': {
-    expects: ['the title "Your First API Call | DeepSeek API Docs" (its <title>; the page served at /news)', 'the parameter table\'s "base_url (OpenAI)" row'],
+    expects: ['the title "Your First API Call | DeepSeek API Docs" (its <title>; the page served at https://api-docs.deepseek.com/)', 'the parameter table\'s "base_url (OpenAI)" row'],
     title: firstLine,
     expectedTitle: () => 'Your First API Call | DeepSeek API Docs',
     name: (t) => `“${t.replace(DEEPSEEK_SUFFIX, '')}” page`,

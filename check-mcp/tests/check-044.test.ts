@@ -196,10 +196,11 @@ describe('R3 — the header: what each number counts, in sentences, plurals writ
   const line3 = (e: Extract, pages: PageRead = READ) => runCheck(e, { pages }).card.split('\n')[2];
 
   it('the fixture: how many ids are flagged and by whom, then where the flagged ids are written', () => {
+    // 0.4.6 (R8): the counts in the order the rule sentence names — runs, not stated, tests, examples, docs (until 0.4.6: "3 are in code that runs, 1 in tests, 1 in docs, 1 in examples and 2 where the extract does not say.")
     expect(line3(F)).toBe(
       '0 AI call sites and 8 model ids: `gpt-4o-realtime-preview`, `claude-3-5-sonnet-20241022`, `gpt-4-turbo-2024-04-09`, `claude-sonnet-4-20250514`, `gpt-4o`, `gemini-2.5-flash`, `claude-opus-4-1`, `gemini-pro`. ' +
         "7 are flagged by their providers, and 1 by this check's reading of Google's release notes page. " +
-        'Of the 8 flagged ids, 3 are in code that runs, 1 in tests, 1 in docs, 1 in examples and 2 where the extract does not say.',
+        'Of the 8 flagged ids, 3 are in code that runs, 2 where the extract does not say, 1 in tests, 1 in examples and 1 in docs.',
     );
   });
 
@@ -229,12 +230,12 @@ describe('R3 — the header: what each number counts, in sentences, plurals writ
 });
 
 // ── R4 — the sentence names the page that was not read ────────────────────
-// 0.4.5: the ledger re-read on 2026-11-20 at 05:02 UTC; each day below moved by the two days the read moved (until 0.4.5: 2026-11-18 18:23 and 2026-11-19)
+// 0.4.6: the ledger re-read on 2026-11-24 at 09:37 UTC; each day below moved by the four days the read moved (until 0.4.6: 2026-11-20 05:02 and 2026-11-21; until 0.4.5: 2026-11-18 18:23 and 2026-11-19)
 describe('R4 — a row on two pages, one read and one not, names which', () => {
   const MINI = 'https://developers.openai.com/api/docs/models/gpt-4o-mini.md';
   const DEP = 'https://developers.openai.com/api/docs/deprecations.md';
   const site = { model: 'gpt-4o-mini', platform: 'provider-api' as const, context: 'runs' as const };
-  const lineOf = (pages: PageRead) => runCheck(ex([site]), { pages, today: '2026-11-21' }).findings.find((f) => f.title.includes('gpt-4o-mini'))!;
+  const lineOf = (pages: PageRead) => runCheck(ex([site]), { pages, today: '2026-11-25' }).findings.find((f) => f.title.includes('gpt-4o-mini'))!;
   /** The release's record with one page's outcome replaced. */
   const withPage = (url: string, outcome: { ok: false; reason: string }) => fromRecord({ ...JSON.parse(JSON.stringify({ how: 'record', changedRows: [], changedDefinitions: [] })), pages: READ.pages.map((p) => (p.url === url ? { url, ...outcome } : p)) });
 
@@ -242,20 +243,20 @@ describe('R4 — a row on two pages, one read and one not, names which', () => {
     const f = lineOf(withPage(MINI, { ok: false, reason: 'not the page this version reads' }));
     expect(f.confidence).toBe('likely');
     expect(f.detail).toContain(
-      "In this run OpenAI's deprecations page was read (2026-11-20 05:02 UTC) and still says this, and OpenAI's model page for GPT-4o mini was not read (not the page this version reads); for that page, this is what this version of the check read on 2026-11-20, 1 day before this run.",
+      "In this run OpenAI's deprecations page was read (2026-11-24 09:37 UTC) and still says this, and OpenAI's model page for GPT-4o mini was not read (not the page this version reads); for that page, this is what this version of the check read on 2026-11-24, 1 day before this run.",
     );
     expect(f.detail).not.toContain('was not read in this run (not the page this version reads)');
-    expect(f.basis).toBe(`OpenAI's deprecations page, read in this run (2026-11-20 05:02 UTC): ${DEP}; OpenAI's model page for GPT-4o mini, not read in this run, as read 2026-11-20: ${MINI}`);
+    expect(f.basis).toBe(`OpenAI's deprecations page, read in this run (2026-11-24 09:37 UTC): ${DEP}; OpenAI's model page for GPT-4o mini, not read in this run, as read 2026-11-24: ${MINI}`);
     // --model-facts says the same of its source line
-    expect(renderModelFacts('gpt-4o-mini', { pages: withPage(MINI, { ok: false, reason: 'not the page this version reads' }), today: '2026-11-21' })).toContain(
-      `- source: ${DEP} (read in this run, 2026-11-20 05:02 UTC; OpenAI's model page for GPT-4o mini not read in this run (not the page this version reads), as read 2026-11-20, 1 day before this lookup)`,
+    expect(renderModelFacts('gpt-4o-mini', { pages: withPage(MINI, { ok: false, reason: 'not the page this version reads' }), today: '2026-11-25' })).toContain(
+      `- source: ${DEP} (read in this run, 2026-11-24 09:37 UTC; OpenAI's model page for GPT-4o mini not read in this run (not the page this version reads), as read 2026-11-24, 1 day before this lookup)`,
     );
   });
 
   it('the deprecations page not read, the model page read: the other way round', () => {
     const f = lineOf(withPage(DEP, { ok: false, reason: 'HTTP 503' }));
-    expect(f.detail).toContain("In this run OpenAI's model page for GPT-4o mini was read (2026-11-20 05:02 UTC) and still says this, and OpenAI's deprecations page was not read (HTTP 503);");
-    expect(f.basis).toBe(`OpenAI's model page for GPT-4o mini, read in this run (2026-11-20 05:02 UTC): ${MINI}; OpenAI's deprecations page, not read in this run, as read 2026-11-20: ${DEP}`);
+    expect(f.detail).toContain("In this run OpenAI's model page for GPT-4o mini was read (2026-11-24 09:37 UTC) and still says this, and OpenAI's deprecations page was not read (HTTP 503);");
+    expect(f.basis).toBe(`OpenAI's model page for GPT-4o mini, read in this run (2026-11-24 09:37 UTC): ${MINI}; OpenAI's deprecations page, not read in this run, as read 2026-11-24: ${DEP}`);
   });
 
   it('neither read, for two reasons: both pages named, each with its reason', () => {
@@ -263,7 +264,7 @@ describe('R4 — a row on two pages, one read and one not, names which', () => {
     rows.set('gpt-4o-mini', { state: 'unread', reason: 'HTTP 503', notRead: [{ url: DEP, reason: 'HTTP 503' }, { url: MINI, reason: 'timed out' }], read: [] });
     const f = lineOf({ ...READ, rows });
     expect(f.detail).toContain(
-      "This is OpenAI's deprecations page and its model page for GPT-4o mini as this version of the check read them on 2026-11-20, 1 day before this run; they were not read in this run (OpenAI's deprecations page: HTTP 503; OpenAI's model page for GPT-4o mini: timed out).",
+      "This is OpenAI's deprecations page and its model page for GPT-4o mini as this version of the check read them on 2026-11-24, 1 day before this run; they were not read in this run (OpenAI's deprecations page: HTTP 503; OpenAI's model page for GPT-4o mini: timed out).",
     );
   });
 
@@ -329,11 +330,12 @@ describe('R6 — each page by its own title', () => {
     expect(sources.map((s) => [pageFileOf(s.url), s.title])).toEqual(sources.map((s) => [pageFileOf(s.url), TITLES[pageFileOf(s.url)!]]));
   });
 
-  it('the request list follows from the source list: ten pages, the /news address kept for the sentence only it carries', () => {
+  // 0.4.6 (R1): the page is read at the address that serves it, the docs' root (until 0.4.5: /news, which answered 404 on 2026-11-24)
+  it('the request list follows from the source list: ten pages, the first-call page kept for the sentence only it carries', () => {
     expect(REQUEST_URLS).toHaveLength(LEDGER_SOURCES.length);
-    expect(REQUEST_URLS).toContain('https://api-docs.deepseek.com/news');
-    expect(pageFileOf('https://api-docs.deepseek.com/news')).toBe('deepseek-first-api-call.html');
-    const rows = LEDGER.filter((r) => r.alsoUrl === 'https://api-docs.deepseek.com/news');
+    expect(REQUEST_URLS).toContain('https://api-docs.deepseek.com/');
+    expect(pageFileOf('https://api-docs.deepseek.com/')).toBe('deepseek-first-api-call.html');
+    const rows = LEDGER.filter((r) => r.alsoUrl === 'https://api-docs.deepseek.com/');
     expect(rows.map((r) => r.id)).toEqual(['deepseek-v4-flash', 'deepseek-v4-flash-vision-exp']);
     // its sentence is quoted from that page, and /updates (the row's own page) does not carry it: the fixtures hold the pages' own words
     const upd = pageTextOf('deepseek-updates.html', readFileSync(join(MIN, 'deepseek-updates.html'), 'utf8'));

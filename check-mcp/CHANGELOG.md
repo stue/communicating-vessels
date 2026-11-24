@@ -1,5 +1,21 @@
 # @warmdrift/kgauto-check — changelog
 
+## 0.4.6 — 2026-11-24
+
+**The providers' pages as they read on 2026-11-24: DeepSeek's first-call page at the address that serves it, `claude-opus-4-5-20251101` deprecated, and `genie-4` as Google writes it.** On 0.4.5 every card said it read 9 of 10 provider pages, because DeepSeek's `/news` address answers 404, and `claude-opus-4-5-20251101` printed as *Active* the day after Anthropic's page marked it *Deprecated*.
+
+Requires `@warmdrift/kgauto-compiler@2.0.0-alpha.134`, exactly (unchanged).
+
+- **DeepSeek's *Your First API Call* page is read at `https://api-docs.deepseek.com/`.** The address the check used, `/news`, answers 404; the page itself, with the same title and the same sentence about two retired ids, is served at the docs' root. On 0.4.5 the two `deepseek-v4-flash` lines that rest on it dropped from *Certain* to *Likely*.
+- **The ledger is re-read** (2026-11-24, 09:37 UTC; 326 rows). `claude-opus-4-5-20251101` is *Deprecated* (November 23, 2026) and retires on January 22, 2027, with `claude-opus-5-5` as its replacement: the card says so and counts it as flagged. Google's page writes `genie-4` without its `models/` prefix; the row is now `genie-4`, and `models/genie-4` still finds it. 34 of Anthropic's lines changed only in their spacing.
+- **An id is matched without regard to case** before the card calls it *not recognised*: `GPT-4o` gets the line `gpt-4o` gets, under the same heading, shown as *`GPT-4o` (looked up as `gpt-4o`)*.
+- **Every id on a provider's deprecation tables gets a line.** An id Anthropic's status table lists as *Active*, with its retirement date more than 60 days away and a catalog entry that calls it active too, got no line on 0.4.5; it now gets one.
+- **An Active row's line gives the date as the page writes it**, near or far: *"is Active, with a tentative retirement date of “Not sooner than September 22, 2027”, 302 days after this run"* (a run on 2026-11-24). On 0.4.5 a line far from its date gave no date, and a line near it began by saying the page announced no retirement; no line now says what a page does not say. A cell with no date is quoted as it is.
+- **The footer counts what it names.** When a page did not answer, it says whether a line on the card rests on it: *"1 did not answer; its line says so."*, *"its lines say so"*, or *"no line on this card rests on it"* (0.4.5 said *"their lines say so"* whatever the count). A replacement the page names as a list prints each id in its own code span: *`gpt-live-transcribe` or `gpt-transcribe`*.
+- **The header lists its counts in one order**, the order its counting rule names: code that runs, where the extract does not say, tests, examples, docs.
+- **`--model-facts`** no longer prints the catalog's notes, which were written for the catalog's own records. A measured limit is printed from its record (the point tested, the outcome, the number of trials, the day, the route), without the sentence and run number that came with it. A provider line's second page (`also:`) says when it was read, as the first page does, and why it was not read in this run when it did not answer.
+- **In the repository, not the package:** `scripts/table-sweep.mjs` runs the check on every id of each provider's deprecation tables, read from saved pages by the ledger generator's own parsers, and names any id that gets no line or is not recognised; `scripts/ledger-drift.mjs` names each page it could not save, with its status, and prints every line of the page that carries a moved id, the table row first; the stdio smoke checks the card's tiers on saved pages and prints how many provider pages answered, naming each that did not.
+
 ## 0.4.5 — 2026-11-20
 
 **An id on a provider's page is never *not recognised*, a date is printed beside the id it belongs to, and the first instruction names a page that exists.** On 0.4.4 the card called `claude-opus-4-5-20251101` *not recognised*, under *Certain*, while Anthropic's deprecations page lists it by name.

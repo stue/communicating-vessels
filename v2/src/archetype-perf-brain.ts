@@ -183,6 +183,12 @@ export interface MeasuredPerfEntry {
   source: string;
   incumbentModel?: string;
   incumbentScore?: number;
+  /**
+   * The ruler's own provenance (column `incumbent_grounding`, written by the golden-eval writer
+   * filing's Amendment B3): `'judgment'` when the incumbent's score was a curated value, `'measured'`
+   * when it came from a measured row. Absent until the writer writes the column.
+   */
+  incumbentGrounding?: 'measured' | 'judgment';
 }
 
 /** app_id → model_id → archetype → the measured row. */
@@ -200,6 +206,7 @@ function mapRowsToMeasuredMap(rows: unknown[]): ArchetypePerfMeasuredMap {
     // alpha.128 — the ruler the score is anchored on (079: incumbent_model / incumbent_score, NOT NULL there).
     if (typeof r.incumbent_model === 'string') entry.incumbentModel = r.incumbent_model;
     if (typeof r.incumbent_score === 'number') entry.incumbentScore = r.incumbent_score;
+    if (r.incumbent_grounding === 'measured' || r.incumbent_grounding === 'judgment') entry.incumbentGrounding = r.incumbent_grounding;
     byArch[r.archetype as IntentArchetypeName] = entry;
     byModel.set(r.model_id, byArch);
     out.set(r.app_id, byModel);
@@ -273,6 +280,8 @@ export interface ArchetypePerfScoreResult {
   incumbentModel?: string;
   /** alpha.128 — the ruler's score at write time (source `'measured'` only, when the row carries it). */
   incumbentScore?: number;
+  /** The ruler's own provenance (source `'measured'` only, when the row carries `incumbent_grounding`). */
+  incumbentGrounding?: 'measured' | 'judgment';
   /** alpha.128 — the row's `evidence_source` (e.g. `golden-eval:47`), when it carries one. */
   evidenceSource?: string;
   /** alpha.128 — the app whose measured row this is (source `'measured'` only). */
@@ -313,6 +322,7 @@ export function getArchetypePerfScore(
       const out: ArchetypePerfScoreResult = { score: own.score, n: own.n, grounding: 'measured', source: 'measured', appId };
       if (own.incumbentModel !== undefined) out.incumbentModel = own.incumbentModel;
       if (own.incumbentScore !== undefined) out.incumbentScore = own.incumbentScore;
+      if (own.incumbentGrounding !== undefined) out.incumbentGrounding = own.incumbentGrounding;
       if (own.source) out.evidenceSource = own.source;
       return out;
     }

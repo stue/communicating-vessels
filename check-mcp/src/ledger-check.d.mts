@@ -18,6 +18,14 @@ export declare function googleTableRows(dep: string): { h2: string | null; h3: s
 export declare function googleRowCells(r: { cells: string[] }): string[];
 export declare function pageTextOf(file: string, raw: string): string;
 
+/** 0.4.6 (R6): the generator's table parsers, exported. */
+export declare function anthropicStatusRows(text: string): { id: string; state: string; dep: string; ret: string; line: string }[];
+export declare function anthropicHistoryRows(text: string): { id: string; retirementText: string; replacement: string; note: string | null; section: string | null; line: string }[];
+export declare function openaiTableRows(text: string): { part: 'upcoming' | 'past'; section: string | null; header: string[]; cells: string[]; line: string }[];
+export declare function openaiColumns(header: string[]): { date: number; model: number; replacement: number; notice: number; status: number };
+export declare const TABLE_ID: RegExp;
+export declare function tableIds(file: string, text: string): { id: string; table: string; line: string; kind: 'model' | 'feature' }[];
+
 export interface PageShape {
   expects: string[];
   misses(text: string, file?: string): string[];

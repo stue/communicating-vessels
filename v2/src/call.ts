@@ -41,6 +41,7 @@ import {
   recordShadowProbe,
   isBrainSync,
   peekRegisteredShapeKey,
+  effortSetOfRequest,
 } from './brain.js';
 import {
   resolveGoldenCaptureRate,
@@ -754,6 +755,10 @@ export async function call(ir: PromptIR, opts: CallOptions = {}): Promise<CallRe
           targetModel !== initial.target
             ? servedMutations.map((m) => m.id)
             : undefined,
+        // alpha.135 (migration 104) — on a fallback row the effort on the wire is the SERVING
+        // compile's, not the initial one's (null = that request set none; the key is omitted).
+        // The row's `selection` stays the initial compile's: it says why that model was picked.
+        effortSet: fellOver ? (effortSetOfRequest(activeCompile.request) ?? null) : undefined,
         promptPreview: extractPromptPreview(ir),
         responsePreview: validated.response.text.slice(0, 200),
         cacheReadInputTokens: validated.response.tokens.cached,
@@ -2159,7 +2164,13 @@ export function buildCallSummary(x: CallSummaryInput): string {
     changes.push('kept the thinking on; set effort low for the AI SDK (the installed SDK decides what reaches the wire; it cannot send between_tools)');
   } else if (offSet.length > 0) {
     nameAll((m) => m.id === 'cliff-thinking-zero');
-    changes.push('set thinking: disabled and effort low for the AI SDK (the installed SDK decides what reaches the wire)');
+    // 2026-11-27 filing, R9 (Amendment A2) — the line that sends it (compile-aisdk.ts AISDK_ANTHROPIC_OFF_SWITCH_LINE).
+    // (was: "set thinking: disabled and effort low for the AI SDK (the installed SDK decides what reaches the wire)", until R9;
+    // then "… @ai-sdk/anthropic 4.0 and later sends the switch; 3.x validates it and does not, and the model may still think
+    // at effort low …", until fix pass 2.)
+    changes.push(
+      'set thinking: disabled and effort low for the AI SDK — @ai-sdk/anthropic 4.0.107 sends the switch; 3.0.79 validates it and does not, and Claude Haiku 5.5 may still think at effort low (2 of 12 reads on 2026-11-23)',
+    );
   } else if (effortLow.length > 0) {
     changes.push('set effort low for the AI SDK');
   }

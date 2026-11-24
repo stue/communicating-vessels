@@ -709,6 +709,39 @@ export interface TargetScore {
   measuredFit?: boolean;
 }
 
+/**
+ * alpha.135 (filing 2026-12-06, Amendment B3) — two ranks closer than this are the same rank.
+ * The rank carries `(n − index) · 0.1` for caller order, so two candidates whose terms are equal
+ * in decimals can differ in the last float bit, and which bit depends on how many candidates the
+ * caller passed (tt-intelligence's `generate`: claude-haiku-4-5 and gemini-3.7-flash both read
+ * 1.2000000000000002 at the default depth, 1.3999999999999999 against 1.4000000000000001 at
+ * depth 20). The smallest step kgauto sets on purpose is MEASURED_FIT_ORDINAL_STEP (0.01); a
+ * difference under 1e-9 is the arithmetic, not the scorer's opinion.
+ */
+export const RANK_TIE_EPSILON = 1e-9;
+
+/**
+ * alpha.135 (B3) — the one order of scored candidates: higher rank first; ranks within
+ * `RANK_TIE_EPSILON` are equal, and then the earlier position in the caller's list wins (the
+ * first occurrence of an id; an id the list does not hold sorts after every id it does). Used by
+ * the pick, the fallback chain and `diagnostics.targetScores`, so the three never disagree about
+ * a tie, and the pick does not move with the depth the caller asks for.
+ */
+export function compareByRankThenCallerOrder(
+  callerOrder: readonly unknown[],
+): (a: Pick<TargetScore, 'modelId' | 'rank'>, b: Pick<TargetScore, 'modelId' | 'rank'>) => number {
+  const position = new Map<string, number>();
+  callerOrder.forEach((m, i) => {
+    if (typeof m === 'string' && !position.has(m)) position.set(m, i);
+  });
+  const pos = (id: string) => position.get(id) ?? Number.MAX_SAFE_INTEGER;
+  return (a, b) => {
+    const d = b.rank - a.rank;
+    if (Math.abs(d) > RANK_TIE_EPSILON) return d;
+    return pos(a.modelId) - pos(b.modelId);
+  };
+}
+
 export interface ScoreTargetsOptions {
   estimatedInputTokens: number;
   profilesById: (id: string) => ModelProfile;
@@ -1464,13 +1497,15 @@ export function passScoreTargets(
     // cheaper measured-fit candidate — "pins and promotions keep their standing as today".
     const boost = (s: TargetScore) => standingBoost.get(s.modelId) ?? 0;
     const top = Math.max(...measuredFit.map((s) => s.rank - boost(s)));
-    const byRankBefore = [...measuredFit].sort((a, b) => b.rank - a.rank).map((s) => s.modelId);
+    // alpha.135 (B3) — the leaders this mutation names are read with the pick's own order.
+    const byRank = compareByRankThenCallerOrder(modelIds);
+    const byRankBefore = [...measuredFit].sort(byRank).map((s) => s.modelId);
     const nOf = (id: string) => measuredN.get(id);
     const nText = (id: string) => (nOf(id) !== undefined ? `, n=${nOf(id)}` : '');
     ordered.forEach((s, i) => {
       s.rank = top - i * MEASURED_FIT_ORDINAL_STEP + boost(s);
     });
-    const leaderAfter = [...measuredFit].sort((a, b) => b.rank - a.rank)[0]!;
+    const leaderAfter = [...measuredFit].sort(byRank)[0]!;
     const prevLeaderId = byRankBefore[0] ?? leaderAfter.modelId;
     if (leaderAfter.modelId !== prevLeaderId) {
       const prev = scores.find((x) => x.modelId === prevLeaderId);

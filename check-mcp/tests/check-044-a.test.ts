@@ -112,10 +112,11 @@ describe('A3 — the header states the count-once rule only when a flagged id is
   const RULE = /counted once/;
 
   it('no flagged id in two kinds of place (the fixture): the header is as built, with no rule sentence', () => {
+    // 0.4.6 (R8): the counts in the order the rule sentence names — runs, not stated, tests, examples, docs (until 0.4.6: "3 are in code that runs, 1 in tests, 1 in docs, 1 in examples and 2 where the extract does not say.")
     expect(line3(F)).toBe(
       '0 AI call sites and 8 model ids: `gpt-4o-realtime-preview`, `claude-3-5-sonnet-20241022`, `gpt-4-turbo-2024-04-09`, `claude-sonnet-4-20250514`, `gpt-4o`, `gemini-2.5-flash`, `claude-opus-4-1`, `gemini-pro`. ' +
         "7 are flagged by their providers, and 1 by this check's reading of Google's release notes page. " +
-        'Of the 8 flagged ids, 3 are in code that runs, 1 in tests, 1 in docs, 1 in examples and 2 where the extract does not say.',
+        'Of the 8 flagged ids, 3 are in code that runs, 2 where the extract does not say, 1 in tests, 1 in examples and 1 in docs.',
     );
   });
 

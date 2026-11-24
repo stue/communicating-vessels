@@ -113,8 +113,9 @@ describe('A2 — a replacement that is not a model id is not printed as one', ()
 
   it('a plain id, or ids joined by "or", still reads "its page names"', () => {
     expect(lineFor(runCheck(ex(['gpt-5'])), 'gpt-5')[0]!.title).toContain('its page names `gpt-6.1-sol`');
+    // 0.4.6 Amendment B5: one id, one code span (until 0.4.6 fix pass 1: `gpt-live-transcribe or gpt-transcribe`, one span)
     expect(lineFor(runCheck(ex(['gpt-4o-transcribe'])), 'gpt-4o-transcribe')[0]!.title).toContain(
-      'its page names `gpt-live-transcribe or gpt-transcribe`',
+      'its page names `gpt-live-transcribe` or `gpt-transcribe`',
     );
   });
 

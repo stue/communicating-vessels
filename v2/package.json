@@ -1,6 +1,6 @@
 {
   "name": "@warmdrift/kgauto-compiler",
-  "version": "2.0.0-alpha.134",
+  "version": "2.0.0-alpha.135",
   "description": "Prompt compiler with executable provider knowledge for multi-model AI apps: normalized multi-provider transport with fallback chains, compile-time cliff guards, a curated model registry, and a telemetry flight recorder. Swap models without rewriting prompts.",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",

@@ -155,16 +155,32 @@ export const switchName = (surface: 'cli' | 'mcp') => (surface === 'mcp' ? 'the 
  * of the same public pages it read; `--offline` says it made no request; a caller that passed no read says
  * it read none. A card that will be shared ends on the share sentence.
  */
-export function destinationSentence(read: PageRead, share = false, surface: 'cli' | 'mcp' = 'cli'): string {
+export function destinationSentence(
+  read: PageRead,
+  share = false,
+  surface: 'cli' | 'mcp' = 'cli',
+  /** 0.4.6 Amendment B4: how many of the card's lines say a page was not read in this run. */
+  saying?: number,
+): string {
   const last = share ? (surface === 'mcp' ? SHARE_SENTENCE_MCP : SHARE_SENTENCE) : undefined;
   if (readInThisRun(read)) {
     const { read: n, requested: m } = pagesCount(read);
     const missed = read.pages.filter((p) => !p.ok) as { reason: string }[];
     const other = missed.filter((p) => p.reason === NOT_THE_PAGE).length;
-    const missedSentence =
-      n < m
-        ? `${m - n} ${other === 0 ? 'did not answer' : other === missed.length ? 'answered with a page this version does not read' : 'did not answer or answered with a page this version does not read'}; their lines say so.`
-        : '';
+    const k = m - n;
+    const what = other === 0 ? 'did not answer' : other === missed.length ? 'answered with a page this version does not read' : 'did not answer or answered with a page this version does not read';
+    // 0.4.6 Amendment B4: one page, one line — the clause counts the pages and the card's lines that say so (until fix
+    // pass 1: "; their lines say so." for any count of either); a caller that gives no count of lines gets the pages only
+    const them = k === 1 ? 'it' : 'them';
+    const linesClause =
+      saying === undefined
+        ? ''
+        : saying === 0
+          ? `; no line on this card rests on ${them}`
+          : saying === 1
+            ? k === 1 ? '; its line says so' : '; the one line that rests on them says so'
+            : k === 1 ? '; its lines say so' : '; their lines say so';
+    const missedSentence = n < m ? `${k} ${what}${linesClause}.` : '';
     const head = `This check ran on your machine. It read ${n} of ${m} provider pages in this run — the same ${m} public pages whatever your project holds.`;
     return last
       ? [head, missedSentence, last].filter(Boolean).join(' ')
@@ -330,6 +346,20 @@ function stateWords(
   };
 }
 
+/** 0.4.6 Amendment B4: the words stateWords gives a line that rests on a page not read in this run. */
+const NOT_READ_SAID = /\bnot read in this run\b|\b(?:was|were) not read \(/;
+
+/**
+ * 0.4.6 Amendment B5: a plain list of ids the page names, each id in its own code span, the page's commas and "or" kept
+ * (`a` or `b`; `a`, `b`, or `c`). Until fix pass 1 the whole list was one span: `a or b`.
+ */
+export function idSpans(list: string): string {
+  return list
+    .split(/(,\s*(?:or|and)\s+|\s+(?:or|and)\s+|,\s*)/)
+    .map((p, i) => (i % 2 === 1 ? p : p ? `\`${p}\`` : p))
+    .join('');
+}
+
 /** 0.4.3 (R6): a changelog row that names the model in words — never Certain, said in one sentence. */
 function changelogLine(a: { shown: string; row: LedgerRow; checksSkip: boolean; state: RowState; today: string }): Line {
   const { row, shown } = a;
@@ -433,7 +463,7 @@ function displayNameLine(a: {
   const repl = row.replacement
     ? row.replacementForm
       ? `, and for ${their} replacement says “${row.replacement}”`
-      : `, with \`${row.replacement}\` as ${their} replacement`
+      : `, with ${idSpans(row.replacement)} as ${their} replacement`
     : '';
   const w = stateWords(row, a.state, a.today);
   const parts = [
@@ -527,7 +557,8 @@ function ledgerLine(a: {
   }
   const repl = row.replacement && row.replacement !== row.routesTo ? row.replacement : undefined;
   // 0.4.2 Amendment A2: a replacement cell that is not a plain list of model ids is quoted in the page's words, never named.
-  if (repl) title += row.replacementForm ? `; for its replacement the page says “${repl}”` : `; its page names \`${repl}\``;
+  // 0.4.6 Amendment B5: each id in its own code span
+  if (repl) title += row.replacementForm ? `; for its replacement the page says “${repl}”` : `; its page names ${idSpans(repl)}`;
 
   const parts: string[] = [];
   if (a.via) parts.push(`The page lists the dated snapshot \`${a.via}\`.`);
@@ -573,7 +604,7 @@ function providerLifecycleLine(shown: string, p: ModelProfile): Line | undefined
   return {
     severity: pl.status === 'retired' ? 'red' : 'yellow',
     confidence: 'likely',
-    title: `On ${P}'s own API, ${shown} is ${capital(pl.status)}: its model page says so (read ${pl.readOn})${floor}${pl.replacement ? `; it names \`${pl.replacement}\`` : ''}`,
+    title: `On ${P}'s own API, ${shown} is ${capital(pl.status)}: its model page says so (read ${pl.readOn})${floor}${pl.replacement ? `; it names ${idSpans(pl.replacement)}` : ''}`,
     detail:
       pl.status === 'legacy'
         ? `${P}'s word for a model that no longer receives updates and may be deprecated later.`
@@ -619,9 +650,12 @@ function noticeQuote(provider: LedgerRow['provider'], pages: PageRead | undefine
  *    with the day the catalog read it, the floor the deprecations page's with that page's own read state; Likely, as
  *    every catalog word is. Two floors that differ both print, each beside its page.
  *  - (b) else, a floor that has passed or lies within the notice period: one ℹ️ line with the state, the page's date
- *    text in quotes and the distance in days, saying no retirement is announced.
- *  - (d) else, no catalog entry: one ℹ️ line saying the page lists it Active and what was not checked.
- *  - else (the catalog has the model and calls it active too, the floor further out): nothing.
+ *    text in quotes and the distance in days, and the page's notice sentence.
+ *  - (d) else, no catalog entry: one ℹ️ line in (b)'s form, without the notice sentence, and what was not checked.
+ *  - else (the catalog has the model and calls it active too, the floor further out): the same ℹ️ line (0.4.6, R6:
+ *    every id on a provider's table gets a line; until 0.4.6: nothing).
+ * 0.4.6 Amendment B1–B2: every one of these lines carries the row's cell as the page writes it, and none says what the
+ * page lacks (until fix pass 1, (b), (d) and (e) each said that the page announces no retirement for the id).
  * (c) The two ℹ️ lines are Certain only when the page was read in this run and the row stands (placeLine lowers them
  * off the provider's own API).
  */
@@ -642,7 +676,10 @@ function activeLines(a: {
   const notice = noticeQuote(row.provider, a.pages);
   const viaSentence = a.via ? `The page lists the dated snapshot \`${a.via}\`.` : undefined;
   const floor = row.shutdownFloor;
+  // 0.4.6 Amendment B1: every Active line carries the row's cell as the page writes it, far floor or near; a cell with no
+  // date is quoted as it is (no distance), and a row with no cell has the page's line quoted in its detail
   const dateWords = row.dateText ? `, with a tentative retirement date of “${row.dateText}”${floor ? `, ${distanceWords(today, floor)}` : ''}` : '';
+  const lineQuote = row.dateText ? undefined : `The page's line: “${pageLineQuote(row)}”.`;
   const pl = a.profile?.providerLifecycle;
 
   if (a.profile && pl && pl.status !== 'active') {
@@ -651,11 +688,14 @@ function activeLines(a: {
     const changed = a.state.state === 'changed' ? `, as read on ${row.readOn} (the page has changed since),` : '';
     let title = `${on} is ${capital(pl.status)}: its model page says so (read ${pl.readOn}); ${dep}${changed} lists it as Active${dateWords}`;
     if (pl.retirementFloor && pl.retirementFloor !== floor) title += `; its model page gave a retirement floor of ${pl.retirementFloor} (read ${pl.readOn})`;
-    if (pl.replacement) title += `; its model page names \`${pl.replacement}\``;
+    if (pl.replacement) title += `; its model page names ${idSpans(pl.replacement)}`;
     const parts = [
       viaSentence,
       pl.status === 'legacy' ? `${PP}'s word for a model that no longer receives updates and may be deprecated later.` : `${PP}'s word, read on the model's own page.`,
-      notice ? `No retirement is announced for it on ${dep}, which says “${notice}”` : `No retirement is announced for it on ${dep}.`,
+      // Amendment B2: the title carries the row's cell, so no clause says what the page lacks (until fix pass 1 this
+      // sentence opened by saying the page announces no retirement for the id, then quoted the notice sentence)
+      lineQuote,
+      notice ? `${dep} says “${notice}”` : undefined,
       a.state.state === 'confirmed'
         ? `That page was read in this run (${minuteOf(a.state.at)} UTC); the model page was not, and its word is as the catalog read it on ${pl.readOn}.`
         : w.tail,
@@ -676,21 +716,23 @@ function activeLines(a: {
   const confidence: Confidence = a.state.state === 'confirmed' ? 'certain' : 'likely';
   const noEntry = a.profile ? undefined : 'The catalog has no entry for it, so its limits and price were not checked.';
   if (floorInWindow(today, floor)) {
-    // (b) the date line: ℹ️, the state, the page's date text and the distance; nothing is announced
+    // (b) the date line: ℹ️, the state, the page's date text and the distance, and the page's notice sentence
+    // (Amendment B2: until fix pass 1 the detail opened by saying the page announces no retirement for the id)
     const parts = [
       viaSentence,
-      notice ? `No retirement is announced for it: ${dep} lists it as Active, and says “${notice}”` : `No retirement is announced for it: ${dep} lists it as Active.`,
+      notice ? `${dep} lists it as Active, and says “${notice}”` : `${dep} lists it as Active.`,
       noEntry,
       w.tail || undefined,
     ].filter((x): x is string => !!x);
     return [{ severity: 'info', confidence, title: `${w.titlePrefix}${on} is Active${dateWords}`, detail: parts.join(' '), basis: w.basis }];
   }
-  if (!a.profile) {
-    // (d) no id in an extract goes unmentioned
-    const parts = [viaSentence, noEntry, w.tail || undefined].filter((x): x is string => !!x);
-    return [{ severity: 'info', confidence, title: `${w.titlePrefix}${on} is Active on ${dep}`, detail: parts.join(' '), basis: w.basis }];
-  }
-  return [];
+  // (d) no id in an extract goes unmentioned: no catalog entry, or (0.4.6, R6) a catalog entry that calls it active too
+  // (until 0.4.6 that second case printed nothing, and the card named the id only in its header). Amendment B1: the
+  // title is (b)'s, the row's cell with its distance, without the notice sentence, which is the window's (until fix
+  // pass 1: "is Active on <page>", no date, and a detail saying the page announces no retirement for the id)
+  const parts = [viaSentence, lineQuote ?? `${dep} lists it as Active.`, noEntry, w.tail || undefined].filter((x): x is string => !!x);
+  const title = dateWords ? `${on} is Active${dateWords}` : `${on} is Active on ${dep}`;
+  return [{ severity: 'info', confidence, title: `${w.titlePrefix}${title}`, detail: parts.join(' '), basis: w.basis }];
 }
 
 // ── 0.4.1 (R1): a cliff line is worded from the cliff ───────────────────
@@ -898,6 +940,7 @@ function analyseFineTune(
   base: string,
   opts: EngineOptions,
   site: { id?: string; where?: string; notes?: string; platform?: string },
+  asWritten?: string,
 ): ModelAnalysis {
   const resolveCat = opts.resolve ?? defaultResolve;
   const bres: Resolution = { ...res, base };
@@ -905,7 +948,8 @@ function analyseFineTune(
   const hit = lookupLedger(bres);
   const baseProfile = catalogProfile(hit.catalogId, (id) => resolveCat(id).profile).profile;
   const today = opts.today ?? machineToday();
-  const shown = `\`${configured}\``;
+  // 0.4.6 (R9): an id matched only in lower case is shown as written, with the id it was read as
+  const shown = asWritten ? `\`${asWritten}\` (looked up as \`${configured}\`)` : `\`${configured}\``;
   const named = `\`${base}\``;
   const link = `The link from ${shown} to \`${base}\` is this check's reading of the id, so this line is Likely whatever the page says.`;
   const notChecked = 'Its limits and price were not checked: the check does not look a fine-tune up in the catalog.';
@@ -966,7 +1010,8 @@ function analyseFineTune(
     const on = `On ${providerWord(provider!)}'s own API, `;
     const at = line.title.indexOf(on);
     const baseTitle = (at === -1 ? line.title : line.title.slice(at + on.length)).replace(
-      /; its page names (`[^`]+`)$/,
+      // Amendment B5: one span per id, so the list runs from the first span to the last
+      /; its page names (`.+`)$/,
       "; the page names $1 as the base's replacement",
     );
     title = at === -1 ? `${isA}: ${baseTitle}` : `${line.title.slice(0, at)}${on}${isA}, and for the base, ${baseTitle}`;
@@ -981,16 +1026,25 @@ function analyseFineTune(
   return out([provider ? placeLine(fineLine, provider, st) : fineLine]);
 }
 
+/**
+ * 0.4.6 (R9): the step said when an id is matched only in lower case. Amendment B3: said as what was looked up, not as
+ * an act (until fix pass 1: "wrote the id in lower case", which read as if the reader had written it so).
+ */
+export const LOWER_CASE_STEP = 'the lower-case form of the id as written';
+
 export function analyseModel(
   configured: string,
   opts: EngineOptions = {},
   site: { id?: string; where?: string; notes?: string; platform?: string } = {},
+  /** 0.4.6 (R9): the id as the extract wrote it, when `configured` is that id in lower case. */
+  asWritten?: string,
 ): ModelAnalysis {
   const resolveCat = opts.resolve ?? defaultResolve;
   const roster = opts.roster ?? allProfiles;
   const res = resolveId(configured);
+  if (asWritten) res.steps.push(LOWER_CASE_STEP);
   const ft = FINE_TUNE.exec(res.base);
-  if (ft) return analyseFineTune(configured, res, ft[1]!, opts, site);
+  if (ft) return analyseFineTune(configured, res, ft[1]!, opts, site, asWritten);
   const st = siteState(site, res);
   const partner = st.partner;
   const hit = lookupLedger(res);
@@ -998,7 +1052,10 @@ export function analyseModel(
   const cat = catalogProfile(hit.catalogId, (id) => resolveCat(id).profile);
   let profile = cat.profile;
   const canonical = profile ? resolveCat(cat.id).canonical : cat.id;
-  const shownId = (cat.profile && cat.id !== res.base) || looked ? `\`${configured}\` (looked up as \`${cat.profile ? cat.id : res.base}\`)` : `\`${configured}\``;
+  const shownId =
+    (cat.profile && cat.id !== res.base) || looked || asWritten
+      ? `\`${asWritten ?? configured}\` (looked up as \`${cat.profile ? cat.id : res.base}\`)`
+      : `\`${configured}\``;
 
   const row = hit.row;
   // 0.4.2 Amendment A1: a `listed` row says only that the page lists the id; the catalog's checks and its own
@@ -1042,6 +1099,13 @@ export function analyseModel(
     const pl = providerLifecycleLine(shownId, profile);
     if (pl) lines.push(placeLine(pl, profile.provider, st));
   } else {
+    // 0.4.6 (R9): an id is matched without regard to case before it is called not recognised — `GPT-4o` prints the
+    // line `gpt-4o` prints, under the same heading (until 0.4.6 it was "not recognised", under Certain)
+    const lower = configured.toLowerCase();
+    if (!asWritten && lower !== configured) {
+      const a = analyseModel(lower, opts, site, configured);
+      if (a.row || a.profile || a.baseProfile) return a;
+    }
     // Amendment B, ruling 2: an id the check cannot resolve is "not recognised" — never "no page lists it".
     const fam = newerThanFamily(res.base, roster);
     lines.push({
@@ -1345,7 +1409,12 @@ export function contextRank(f: Pick<Finding, 'contexts' | 'callSites'>): number 
   return 2;
 }
 
-/** 0.4.3 (R4): the order a model's sites are counted under — the first of these any of its sites carries. */
+/**
+ * 0.4.3 (R4): the order a model's sites are counted under — the first of these any of its sites carries.
+ * 0.4.6 (R8): the one order the header uses — it decides where an id is counted, it is the order the counts are listed
+ * in, and it is the order the rule sentence names (until 0.4.6 the counts were listed in an order of their own: runs,
+ * tests, docs, examples, not stated).
+ */
 const CONTEXT_ORDER: (SiteContext | undefined)[] = ['runs', undefined, 'test', 'example', 'docs'];
 const CONTEXT_WORDS: Record<string, (n: number) => string> = {
   runs: (n) => `${n} in code that runs`,
@@ -1362,8 +1431,6 @@ const CONTEXT_PLACE: Record<string, string> = {
   example: 'examples',
   docs: 'docs',
 };
-/** The header's order (R4's sentence): runs, tests, docs, examples, not stated. */
-const HEADER_ORDER = ['runs', 'test', 'docs', 'example', 'unstated'];
 
 const TIER_ORDER: Confidence[] = ['certain', 'likely', 'measurable-only'];
 const TIER_HEADING: Record<Confidence, string> = {
@@ -1477,7 +1544,7 @@ export function renderCard(
             : `No provider flags the other ${models.length - unknown}.`,
       );
     if (stated && flagged > 0) {
-      const ks = HEADER_ORDER.filter((k) => (byCtx.get(k) ?? 0) > 0);
+      const ks = CONTEXT_ORDER.map((o) => o ?? 'unstated').filter((k) => (byCtx.get(k) ?? 0) > 0);
       if (flagged === 1) {
         const k = ks[0]!;
         sentences.push(k === 'unstated' ? 'The extract does not say where the flagged id is written.' : `The flagged id is ${CONTEXT_WORDS[k]!(1).replace(/^1 /, '')}.`);
@@ -1535,7 +1602,9 @@ export function renderCard(
   lines.push('');
   lines.push('---');
   if (saysCatalog) lines.push(`*${CATALOG_SENTENCE}*`);
-  lines.push(`*${destinationSentence(read, share, extra.surface ?? 'cli')}*`);
+  // 0.4.6 Amendment B4: the footer counts the lines that say a page was not read in this run (stateWords' sentences)
+  const saying = findings.filter((f) => NOT_READ_SAID.test(`${f.detail} ${f.basis}`)).length;
+  lines.push(`*${destinationSentence(read, share, extra.surface ?? 'cli', saying)}*`);
   // 0.4.3 (R2): the age sentence only when a provider line on the card is not from a page read in this run.
   const notConfirmed = [...analyses.values()].some((a) => a.row && rowStateIn(read, a.row.id).state !== 'confirmed');
   const age = notConfirmed ? ageSentence(today) : undefined;

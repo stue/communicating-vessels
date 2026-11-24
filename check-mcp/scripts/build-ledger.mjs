@@ -15,8 +15,9 @@
  *   google-deprecations.html    https://aistudio.google.com/docs/deprecations
  *   google-changelog.html       https://aistudio.google.com/docs/changelog
  *   deepseek-updates.html       https://api-docs.deepseek.com/updates
- *   deepseek-first-api-call.html https://api-docs.deepseek.com/news   (0.4.4, R6: the page that address serves is titled
- *                               "Your First API Call"; until 0.4.3 the file was named deepseek-news.html)
+ *   deepseek-first-api-call.html https://api-docs.deepseek.com/   (0.4.4, R6: the page titled "Your First API Call"; until
+ *                               0.4.3 the file was named deepseek-news.html; 0.4.6, R1: read at the docs' root, which
+ *                               serves it, since /news answered 404 on 2026-11-24 — until 0.4.5 the address was /news)
  *   read-times.json            { "<file>": "<ISO UTC time of the curl>" }
  *   google-model-pages.json     0.4.3 (R6): { "<id>": { "status": <HTTP status>, "at": "<ISO UTC time>" } } for each
  *                               changelog row's id — Google's model page https://aistudio.google.com/docs/models/<id>.
@@ -51,6 +52,10 @@ import {
   googlePageRows,
   googleTableRows,
   googleRowCells,
+  anthropicStatusRows,
+  anthropicHistoryRows,
+  openaiTableRows,
+  openaiColumns,
   pageTextOf,
   pageShapeMisses,
   pageTitleOf,
@@ -145,39 +150,17 @@ const unbacktick = (s) =>
   const f = 'anthropic-deprecations.md';
   const text = page(f);
   const readOn = readOnOf(f);
-  const lines = text.split('\n');
   // Deprecation history first: id → { retirementText, replacement, note, line }
+  // 0.4.6 (R6): the page's rows through the exported parser (src/ledger-check.mjs), the first row for an id kept, as before
   const hist = new Map();
-  let section = null;
-  let note = null;
-  let inHistory = false;
-  for (const ln of lines) {
-    if (ln.startsWith('## Deprecation history')) inHistory = true;
-    else if (ln.startsWith('## ') && inHistory) inHistory = false;
-    if (!inHistory) continue;
-    if (ln.startsWith('### ')) {
-      section = ln.slice(4).trim();
-      note = null;
-      continue;
-    }
-    const nm = /(This model was|These models were) retired ([A-Z][a-z]+ \d{1,2}, \d{4})\./.exec(ln);
-    if (nm) note = nm[0];
-    const rm = /^\|\s*([^|]+?)\s*\|\s*`([^`]+)`\s*\|\s*`([^`]+)`\s*\|\s*$/.exec(ln);
-    if (rm && !hist.has(rm[2])) hist.set(rm[2], { retirementText: rm[1], replacement: rm[3], note, section, line: ln.trim() });
-  }
+  for (const h of anthropicHistoryRows(text)) if (!hist.has(h.id)) hist.set(h.id, h);
   // Model status table.
   // 0.4.5 (R3): every row of it is written, Active ones included (until 0.4.4: "Active: no flag", skipped). A state
   // word this version does not read stops the generator, so a row is never dropped without a word.
   const STATE_WORDS = { deprecated: 'deprecated', retired: 'retired', legacy: 'legacy', active: 'active' };
   const inStatus = new Set();
-  let inTable = false;
-  for (const ln of lines) {
-    if (ln.startsWith('## Model status')) inTable = true;
-    else if (ln.startsWith('## ') && inTable) inTable = false;
-    if (!inTable) continue;
-    const m = /^\|\s*(claude-[a-z0-9.-]+)\s*\|\s*([A-Za-z]+)\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*$/.exec(ln);
-    if (!m) continue;
-    const [, id, state, dep, ret] = m;
+  // 0.4.6 (R6): the table's rows through the exported parser
+  for (const { id, state, dep, ret, line } of anthropicStatusRows(text)) {
     inStatus.add(id);
     const word = STATE_WORDS[state.toLowerCase()];
     if (!word) {
@@ -197,7 +180,7 @@ const unbacktick = (s) =>
       replacement: h ? h.replacement : undefined,
       url: URL.anthropic,
       readOn,
-      quote: ln.trim(),
+      quote: line,
       _file: f,
       _text: text,
     });
@@ -229,41 +212,11 @@ const unbacktick = (s) =>
   const f = 'openai-deprecations.md';
   const text = page(f);
   const readOn = readOnOf(f);
-  const lines = text.split('\n');
-  let part = null;
-  let section = null;
-  let header = null;
-  for (let i = 0; i < lines.length; i++) {
-    const ln = lines[i];
-    if (ln.startsWith('## Upcoming deprecations')) part = 'upcoming';
-    else if (ln.startsWith('## Past deprecations')) part = 'past';
-    else if (ln.startsWith('### Plain-text aliases')) part = null;
-    else if (ln.startsWith('## ') && !/deprecations/i.test(ln)) part = null;
-    if (!part) continue;
-    if (ln.startsWith('### ') || ln.startsWith('#### ')) {
-      section = ln.replace(/^#+\s*/, '').trim();
-      header = null;
-      continue;
-    }
-    if (!ln.startsWith('|')) {
-      header = null;
-      continue;
-    }
-    const cells = ln.split(/(?<!\\)\|/).slice(1, -1).map((c) => c.replace(/\\\|/g, '|').trim());
-    if (cells.every((c) => /^-+$/.test(c))) continue;
-    if (!header) {
-      header = cells.map((c) => c.toLowerCase());
-      continue;
-    }
-    const iDate = header.findIndex((h) => h.includes('shutdown date'));
-    const iModel = header.findIndex(
-      (h) => /model|system/.test(h) && !/price|replacement|substitute/.test(h),
-    );
-    const iRepl = header.findIndex((h) => /replacement|substitute/.test(h));
+  // 0.4.6 (R6): the tables' rows through the exported parser (src/ledger-check.mjs), and their columns by name
+  for (const { part, section, header, cells, line: ln } of openaiTableRows(text)) {
     // 0.4.2: OpenAI's page of 2026-11-14 is two tables (upcoming, past) with no dated section headings;
     // each row carries its own "Notice date" and, upcoming, its "Status".
-    const iNotice = header.findIndex((h) => h.includes('notice date'));
-    const iStatus = header.findIndex((h) => h === 'status');
+    const { date: iDate, model: iModel, replacement: iRepl, notice: iNotice, status: iStatus } = openaiColumns(header);
     if (iDate === -1 || iModel === -1) continue;
     const cell = cells[iModel];
     const display = /^([A-Z][A-Za-z0-9.\- ]*?) \(`/.exec(cell);
@@ -622,7 +575,7 @@ const unbacktick = (s) =>
 // ── DeepSeek (prose pages: each row names its sentence) ─────────────────
 {
   const fu = 'deepseek-updates.html';
-  // 0.4.4 (R6): the page served at /news is titled "Your First API Call" (DeepSeek's quick-start page)
+  // 0.4.4 (R6): the page titled "Your First API Call" (DeepSeek's quick-start page); 0.4.6 (R1): served at the docs' root
   const fn = 'deepseek-first-api-call.html';
   const upd = htmlToText(page(fu));
   const firstCall = htmlToText(page(fn));

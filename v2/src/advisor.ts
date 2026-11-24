@@ -39,11 +39,12 @@ import type { IntentArchetypeName } from './dialect.js';
 import { getArchetypePerfScore } from './archetype-perf-brain.js';
 import { getEffectivePrice, type EffectivePriceRow } from './effective-price-brain.js';
 import { isBrainQueryActiveFor } from './brain-query.js';
-import { getModelCompatibility } from './compatibility.js';
+import { getModelCompatibility, ARCHETYPE_FLOOR_DEFAULT } from './compatibility.js';
 import {
   getDefaultFallbackChain,
   getStarterChain,
   estimateChainCostUsd,
+  perfGroundingWord,
 } from './fallback.js';
 import { getMeasuredFailureVerdict } from './measured-failure-brain.js';
 import { getRecentRollback } from './promotions-brain.js';
@@ -128,6 +129,10 @@ function blendedAt(ir: PromptIR, phase2: RunAdvisorPhase2Context | undefined, p:
  */
 function perfPhrase(id: string, s: ReturnType<typeof getArchetypePerfScore>): string {
   if (s.source === 'measured') {
+    // 2026-11-27 filing, R8 — a ruler that was itself a judgment is said as one.
+    if (s.incumbentGrounding === 'judgment' && s.incumbentModel !== undefined) {
+      return `${id} ${s.score} measured (against ${s.incumbentModel}, a judgment ${s.incumbentScore ?? 'of unknown score'}) on ${s.appId ?? 'this app'}, run ${s.evidenceSource ?? 'unknown'}, n=${s.n}`;
+    }
     const against =
       s.incumbentModel !== undefined
         ? ` against ${s.incumbentModel}${s.incumbentScore !== undefined ? ` (${s.incumbentScore})` : ''}`
@@ -350,7 +355,7 @@ export function runAdvisor(
   // the cliff advisory. The rewrite + advisory together contradict each
   // other ("cliff cleared structurally" vs "cliff unaddressed").
   if (!translatorClearedToolCallCliff(phase2)) {
-    out.push(...detectArchetypePerfFloorBreach(ir, profile));
+    out.push(...detectArchetypePerfFloorBreach(ir, profile, phase2));
   }
   // alpha.38 — stale-exclusion compile-time advisor. Reads the per-tenant
   // exclusion_findings cache (alpha.37 substrate) and surfaces an `info`-
@@ -945,7 +950,10 @@ function openPostureCostWarningClause(
   // clause's own band — and "roughly 1.0x the cost" is not a warning.
   if (ratio < 1.1) return '';
 
-  return ` Do NOT reach for \`posture = 'open'\` as a cost fix here: the library chain is ordered by archetype performance, not cost, and would select \`${openPrimaryId}\` — roughly ${ratio.toFixed(1)}x the cost of \`${recommended.id}\`. Pass \`getDefaultFallbackChain({ archetype: '${archetype}', posture: 'open', optimizeFor: 'cost' })\` if you want a library-picked chain that is actually cost-ordered.`;
+  // 2026-11-27 filing, fix pass 2 — the cost chain is three classes (Amendment B1) and reads the app's own
+  // rows only with an appId (Amendment C1). (was: "… if you want a library-picked chain that is actually
+  // cost-ordered.", until fix pass 2.)
+  return ` Do NOT reach for \`posture = 'open'\` as a cost fix here: the library chain is ordered by archetype performance, not cost, and would select \`${openPrimaryId}\` — roughly ${ratio.toFixed(1)}x the cost of \`${recommended.id}\`. Pass \`getDefaultFallbackChain({ archetype: '${archetype}', posture: 'open', optimizeFor: 'cost' })\` for a library-picked chain ordered for cost: the candidates measured and not below their incumbent first, then the judgments, then the candidates measured below their incumbent, cheapest first within each. It reads your app's own measured rows only when you also pass \`appId\`; with none, it is in price order alone.`;
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -1292,20 +1300,44 @@ function detectTierDown(
 function detectArchetypePerfFloorBreach(
   ir: PromptIR,
   profile: ModelProfile,
+  phase2?: RunAdvisorPhase2Context,
 ): BestPracticeAdvisory[] {
+  const archetype = ir.intent.archetype;
   const compat = getModelCompatibility(profile.id, {
-    archetype: ir.intent.archetype,
+    archetype,
     toolOrchestration: ir.constraints?.toolOrchestration,
   });
 
-  if (compat.status === 'compatible') return [];
+  // 2026-11-27 filing, R4 — the score the SCORER used for this pick. compile() ranks on
+  // `getArchetypePerfScore(id, archetype, ir.appId, route)` when its grounding is
+  // `measured` (compile.ts archetypePerfOf), else on the profile's own judgment, which is
+  // exactly the score `getModelCompatibility` reads (passes.ts: measured ?? profile ?? floor).
+  // Through alpha.135 this rule read the profile's judgment only, so it told tt-intelligence
+  // that claude-haiku-5-5 sat below the classify floor at 5 while the scorer, reading the
+  // app's own measured 6 (run #54), had just admitted it.
+  const scored = getArchetypePerfScore(profile.id, archetype, ir.appId, phase2?.route);
+  let score: number;
+  let said: string;
+  if (scored.grounding === 'measured') {
+    if (scored.score >= ARCHETYPE_FLOOR_DEFAULT) return [];
+    // Below on the measurement, but the caller already passed the adapter that silences the
+    // cliff (compatibility case 2: compatible while the raw score sits under the floor).
+    if (compat.status === 'compatible' && compat.archetypePerf < ARCHETYPE_FLOOR_DEFAULT) return [];
+    score = scored.score;
+    said = perfGroundingWord(scored);
+  } else {
+    if (compat.status === 'compatible') return [];
+    score = compat.archetypePerf;
+    said = 'judgment';
+  }
+  const scorePhrase = `score ${score}/10, ${said}; floor ${ARCHETYPE_FLOOR_DEFAULT}`;
 
   if (compat.status === 'requires-adapter') {
     return [
       {
         level: 'warn',
         code: 'archetype-perf-floor-breach',
-        message: `${profile.id} sits below the archetype floor for ${ir.intent.archetype} (score ${compat.archetypePerf}/10, floor ${6}). A known adapter would lift it: ${compat.adapter.parameter}=${compat.adapter.value}. ${compat.adapter.consequence}`,
+        message: `${profile.id} sits below the archetype floor for ${ir.intent.archetype} (${scorePhrase}). A known adapter would lift it: ${compat.adapter.parameter}=${compat.adapter.value}. ${compat.adapter.consequence}`,
         suggestion: `Pass \`ir.constraints.${compat.adapter.parameter} = '${compat.adapter.value}'\` for this call, OR pick a model whose archetypePerf for ${ir.intent.archetype} already clears the floor (call \`getModelCompatibility(modelId, { archetype: '${ir.intent.archetype}' })\` to check). Estimated post-adapter score: ${compat.archetypePerfWithAdapter}/10.`,
         recommendationType: 'prompt-fix',
         suggestedAdaptation: compat.adapter,
@@ -1315,12 +1347,17 @@ function detectArchetypePerfFloorBreach(
     ];
   }
 
-  // status === 'reject'
+  // status === 'reject' — or 'compatible' on the profile's judgment while the measurement the
+  // scorer ranked on sits below the floor (passes.ts docks such a candidate's rank).
+  const why =
+    compat.status === 'reject'
+      ? compat.reason
+      : `The curated score (${compat.archetypePerf}) clears the floor; the measurement does not, and the scorer ranks on the measurement.`;
   return [
     {
       level: 'critical',
       code: 'archetype-perf-floor-breach',
-      message: `${profile.id} sits below the archetype floor for ${ir.intent.archetype} (score ${compat.archetypePerf}/10, floor ${6}) and no known adapter would lift it. ${compat.reason}`,
+      message: `${profile.id} sits below the archetype floor for ${ir.intent.archetype} (${scorePhrase}) and no known adapter would lift it. ${why}`,
       // alpha.80: this rule's advice is correct on the QUALITY axis and was
       // silent on cost, so a consumer reading it as a general "let the
       // library pick" endorsement could land on a materially pricier
@@ -1337,7 +1374,9 @@ function detectArchetypePerfFloorBreach(
       // ~2.1K tokens_in, while `claude-opus-5` served the same archetype at
       // ~22K the same day — cc read the evidence set as self-contradictory
       // precisely because the text did not say which call it described.
-      suggestion: `This fired for \`${profile.id}\`, the model selected for THIS call — selection is input-size dependent, so other calls on \`${ir.intent.archetype}\` may pick a different model that clears the floor. Swap to a model whose archetypePerf for ${ir.intent.archetype} clears the floor. Use \`getModelCompatibility(candidateId, { archetype: '${ir.intent.archetype}' })\` to vet candidates, or \`getDefaultFallbackChain({ archetype: '${ir.intent.archetype}', posture: 'open' })\` for a library-picked chain that respects the floor by construction — note that chain is ordered by archetype performance, NOT cost, so it may select a pricier primary than you run today. Add \`optimizeFor: 'cost'\` for a chain that clears the same floor cheapest-first. To stop this model being selected at all, pass \`policy.blockedModels: ['${profile.id}']\`.`,
+      // 2026-11-27 filing, fix pass 2 — the cost chain's order said as built (Amendments B1, C1). (was: "Add
+      // `optimizeFor: 'cost'` for a chain that clears the same floor cheapest-first.", until fix pass 2.)
+      suggestion: `This fired for \`${profile.id}\`, the model selected for THIS call — selection is input-size dependent, so other calls on \`${ir.intent.archetype}\` may pick a different model that clears the floor. Swap to a model whose archetypePerf for ${ir.intent.archetype} clears the floor. Use \`getModelCompatibility(candidateId, { archetype: '${ir.intent.archetype}' })\` to vet candidates, or \`getDefaultFallbackChain({ archetype: '${ir.intent.archetype}', posture: 'open' })\` for a library-picked chain that respects the floor by construction — note that chain is ordered by archetype performance, NOT cost, so it may select a pricier primary than you run today. Add \`optimizeFor: 'cost'\` for a chain that clears the same floor ordered for cost: measured and not below its incumbent first, then judgment, then measured below its incumbent, cheapest first within each; add \`appId\` too to have your app's own measured rows read (with none, the chain is in price order alone). To stop this model being selected at all, pass \`policy.blockedModels: ['${profile.id}']\`.`,
       recommendationType: 'model-swap',
       docsUrl:
         'https://github.com/stue/communicating-vessels/blob/main/v2/README.md#structured-advisories-api-alpha29',

@@ -1,13 +1,45 @@
 import { LIBRARY_VERSION } from '@warmdrift/kgauto-compiler';
 import { retirementFloorClause } from '@warmdrift/kgauto-compiler/profiles';
-import { analyseModel, rowStateIn, daysSinceRead, pageLineQuote } from './engine.js';
+import { analyseModel, rowStateIn, daysSinceRead, pageLineQuote, idSpans, LOWER_CASE_STEP } from './engine.js';
 import { PROVIDER_NAME, LEDGER_READ_ON, PARTNER_NAME, GATEWAYS, partnerPage, pageName, pagesName } from './lifecycle.js';
-import { unreadAll, NOT_READ_BY_CALLER, readInThisRun, pagesCount, lastReadAt, minuteOf, type PageRead } from './pages.js';
+import { unreadAll, NOT_READ_BY_CALLER, readInThisRun, pagesCount, lastReadAt, minuteOf, type PageRead, type RowState } from './pages.js';
 
 /** Amendment B4: "n days before this lookup", said as the card says it — "the day of this lookup" at 0, "1 day" at 1. */
 function daysBeforeLookup(today: string, readOn: string): string {
   const n = daysSinceRead(today, readOn);
   return n <= 0 ? 'the day of this lookup' : `${n} day${n === 1 ? '' : 's'} before this lookup`;
+}
+
+/** 0.4.6 (R7): a probed limit's route in words: `direct`, or a gateway with the provider it was served by (`openrouter:baidu`). */
+function routeWords(route: string): string {
+  if (route === 'direct') return "on the provider's own API";
+  const [gw, by] = route.split(':');
+  const name = gw === 'openrouter' ? 'OpenRouter' : gw;
+  return by ? `through ${name}, served by ${by}` : `through ${name}`;
+}
+
+/**
+ * 0.4.6 (R7): when a row's second page was read, in the words of the source line: in this run (and whether it still
+ * carries the line), or the day this version read it and why it was not read in this run.
+ */
+function alsoWhen(st: RowState, url: string, readOn: string, today: string): string {
+  const read = st.read?.find((x) => x.url === url);
+  if (read)
+    return read.stands
+      ? `read in this run, ${minuteOf(read.at)} UTC`
+      : `read ${readOn}; the page has changed since — it no longer carries this line as it was read, so read the page before acting on it`;
+  const notRead = st.state === 'unread' ? (st.notRead?.find((x) => x.url === url)?.reason ?? st.reason) : undefined;
+  return notRead ? `read ${readOn}, ${daysBeforeLookup(today, readOn)}; not read in this run (${notRead})` : `read ${readOn}`;
+}
+
+/**
+ * 0.4.6 Amendment B3: how the id was looked up, after "(looked up as `x`". Matched only in lower case: ", the lower-case
+ * form of the id as written"; with other steps too, those steps are said as worked on that form.
+ */
+function lookupHow(steps: readonly string[]): string {
+  const others = steps.filter((s) => s !== LOWER_CASE_STEP);
+  if (others.length === steps.length) return steps.length ? `: ${steps.join(', ')}` : '';
+  return others.length ? `: in ${LOWER_CASE_STEP}, ${others.join(', ')}` : `, ${LOWER_CASE_STEP}`;
 }
 
 /** 0.4.3 (R1/R2): the lookup's last line — the catalog, and the pages as this run read them (or did not). */
@@ -38,7 +70,7 @@ export function renderModelFacts(model: string, opts: { pages?: PageRead; surfac
   const a = analyseModel(model, { pages: read, today });
   const out: string[] = [];
   const looked = a.res.base !== model || (a.profile && a.canonical !== model) ? a.profile ? a.canonical : a.res.base : undefined;
-  out.push(`# ${model}${looked ? ` (looked up as \`${looked}\`${a.res.steps.length ? `: ${a.res.steps.join(', ')}` : ''})` : ''}`);
+  out.push(`# ${model}${looked ? ` (looked up as \`${looked}\`${lookupHow(a.res.steps)})` : ''}`);
   out.push('');
   // 0.4.5 (R5): a fine-tune is looked up by its base, for lifecycle only; the card's own line says it the same way
   if (a.fineTuneOf) {
@@ -66,7 +98,7 @@ export function renderModelFacts(model: string, opts: { pages?: PageRead; surfac
     const repl = r.replacement
       ? r.replacementForm
         ? ` · replacement, in the page’s words: “${r.replacement}”`
-        : ` · replacement the page names: \`${r.replacement}\``
+        : ` · replacement the page names: ${idSpans(r.replacement)}` // Amendment B5: one span per id
       : '';
     out.push(
       r.namedAs
@@ -92,7 +124,12 @@ export function renderModelFacts(model: string, opts: { pages?: PageRead; surfac
             : `read ${r.readOn}, ${daysBeforeLookup(today, r.readOn)}; not read in this run (${st.reason})`;
     // 0.4.4 (R2): the quote as the card prints it — never cut inside a word or an id (until 0.4.3: `.slice(0, 300)`)
     out.push(`- source: ${r.url} (${when}) — “${pageLineQuote(r)}”`);
-    if (r.alsoUrl) out.push(`- also: ${r.alsoUrl}${r.alsoHeading ? ` (${r.alsoHeading})` : ` (read ${r.alsoReadOn})`} — “${r.alsoQuote}”`);
+    // 0.4.6 (R7): a second page says when it was read, as the source line does — in this run, or the day it was read and
+    // why it was not read now (until 0.4.6: "(read <day>)" whatever this run read, so a page that answered 404 was not said)
+    if (r.alsoUrl) {
+      const also = r.alsoUrl !== r.url ? alsoWhen(st, r.alsoUrl, r.alsoReadOn ?? r.readOn, today) : undefined;
+      out.push(`- also: ${r.alsoUrl}${r.alsoHeading ? ` (${r.alsoHeading})` : ` (${also ?? `read ${r.alsoReadOn}`})`} — “${r.alsoQuote}”`);
+    }
     if (r.modelPage?.status === 404) out.push(`- ${P}'s model page for this id answered 404 on ${r.modelPage.at.slice(0, 10)} (${r.modelPage.url})`);
     if (a.via) out.push(`- matched the dated snapshot \`${a.via}\` the page lists`);
     if (a.partner) {
@@ -127,7 +164,7 @@ export function renderModelFacts(model: string, opts: { pages?: PageRead; surfac
   if (!a.row || a.row.word === 'listed' || a.row.word === 'active') {
     out.push(
       pl
-        ? `- ${PROVIDER_NAME[p.provider as keyof typeof PROVIDER_NAME] ?? p.provider}'s word: **${pl.status}** (model page, read ${pl.readOn})${retirementFloorClause({ retirementFloor: pl.retirementFloor, readOn: pl.readOn })}${pl.replacement ? ` · names \`${pl.replacement}\`` : ''} — ${pl.url}`
+        ? `- ${PROVIDER_NAME[p.provider as keyof typeof PROVIDER_NAME] ?? p.provider}'s word: **${pl.status}** (model page, read ${pl.readOn})${retirementFloorClause({ retirementFloor: pl.retirementFloor, readOn: pl.readOn })}${pl.replacement ? ` · names ${idSpans(pl.replacement)}` : ''} — ${pl.url}`
         : `- provider's word: no lifecycle page read for this model in this catalog`,
     );
   }
@@ -159,17 +196,21 @@ export function renderModelFacts(model: string, opts: { pages?: PageRead; surfac
   );
   // alpha.95 — measured NEGATIVES: a probed limit is the one claim here that a
   // general-purpose model cannot produce: it required running the call.
+  // 0.4.6 (R7): printed from its fields — the point tested, the outcome, the trials, the day, the route. Until 0.4.6 each
+  // also printed its `claim` sentence and its run number, both written for this project's own records (one claim named
+  // the tool that ran it, "release watcher").
   if (p.probedLimits?.length) {
     out.push(
       `- probed limits (we ran the call; ${p.probedLimits.length === 1 ? 'this is a measurement' : 'these are measurements'}, not a spec sheet):\n${p.probedLimits
         .map(
           (l) =>
-            `  - ${l.metric.replaceAll('_', ' ')} @ ${l.testedAt.toLocaleString()} → **${l.outcome}**. ${l.claim}${l.probeRunId ? ` (run ${l.probeRunId})` : ''}`,
+            `  - ${l.metric.replaceAll('_', ' ')} @ ${l.testedAt.toLocaleString()} → **${l.outcome}** (${l.trials} ${l.trials === 1 ? 'trial' : 'trials'}, last run ${l.lastProbed}${l.route ? `, ${routeWords(l.route)}` : ''})`,
         )
         .join('\n')}`,
     );
   }
-  if (p.notes) out.push(`- notes: ${p.notes}`);
+  // 0.4.6 (R7): the catalog's `notes` are not printed — they are written for this project's own records ("archetypePerf
+  // is JUDGMENT, 0 brain rows"); until 0.4.6 they printed raw as "- notes: …".
   out.push('');
   out.push(factsFooter(read, surface));
   return out.join('\n');

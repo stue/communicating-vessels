@@ -47,7 +47,7 @@ telemetry).
   (2026-11-12; 1 skipped). CI has the current count.
 - **Brain:** live multi-tenant Supabase substrate (telemetry + curated
   config tables), with two of the author's own apps active in the last 30 days (read 2026-11-12).
-- **Learning engine:** not shipped. See "What's next."
+- **Learning engine:** not shipped, and archived on 2026-11-24. Automatic promotion from outcomes reopens when a promote-ready verdict on a live surface clears the promotion guard's own floor, a saving of $5.00 a month. What runs today is measured evidence per surface: a golden set, a judge, a verdict, and a head moved by a release. See "What's next."
 
 ## Quickstart
 

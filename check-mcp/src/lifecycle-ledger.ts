@@ -13,70 +13,70 @@ export const LEDGER_SOURCES: readonly LedgerSource[] = [
   {
     "provider": "anthropic",
     "url": "https://platform.claude.com/docs/en/about-claude/model-deprecations.md",
-    "readAt": "2026-11-20T05:02:18Z",
-    "sha256": "83b08416da9fbbcbd9ca771e881eca703839588e3385dd3fe5cb6c028471a2e8",
+    "readAt": "2026-11-24T09:37:37Z",
+    "sha256": "035274dd190aeed4914c26cf72b5d17cfcb7ea81138c6c63e5b1b7c0372d217e",
     "title": "Model deprecations"
   },
   {
     "provider": "openai",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readAt": "2026-11-20T05:02:18Z",
+    "readAt": "2026-11-24T09:37:38Z",
     "sha256": "947f740cdc922910da6ffed196ace5ba88befeae4889acf3e37e92fac112850e",
     "title": "Deprecations"
   },
   {
     "provider": "google",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readAt": "2026-11-20T05:02:18Z",
-    "sha256": "dc8ba8a7ba89b444cac491f7e3d7ae94fa474f6864bf7560d5953149b0e258bc",
+    "readAt": "2026-11-24T09:37:38Z",
+    "sha256": "4518e0d1fefb59579a3737135fe76ec7d337202df86a0fc73964977fa9a5c88d",
     "title": "Gemini deprecations"
   },
   {
     "provider": "google",
     "url": "https://aistudio.google.com/docs/changelog",
-    "readAt": "2026-11-20T05:02:18Z",
-    "sha256": "b8d5e2c35aa54dabd2a7cd64188393b32db748580df73540260b04d7c8ec472c",
+    "readAt": "2026-11-24T09:37:39Z",
+    "sha256": "1a5a548dd7f02a1b019e70939f3d42c99451d53f23e32de6b4178e6e2522b66a",
     "title": "Release notes"
   },
   {
     "provider": "deepseek",
     "url": "https://api-docs.deepseek.com/updates",
-    "readAt": "2026-11-20T05:02:19Z",
-    "sha256": "85682bba7335b1cb8cda6d27c7da81f4331a8b8d5f98ead3363a78e10f36111f",
+    "readAt": "2026-11-24T09:37:39Z",
+    "sha256": "7b7acad9580f3c8ffc3789ca81936b0071576d6dd564a5c3ba9c7eeed9790044",
     "title": "Change Log | DeepSeek API Docs"
   },
   {
     "provider": "deepseek",
-    "url": "https://api-docs.deepseek.com/news",
-    "readAt": "2026-11-20T05:02:20Z",
-    "sha256": "3a60b7de38312544e4178fed68c3dc62bb5bf2b300a06d325b523eeadaf08a7a",
+    "url": "https://api-docs.deepseek.com/",
+    "readAt": "2026-11-24T09:37:40Z",
+    "sha256": "98e45c15b16b5ae99e19b30c4a5353d49fc44a138c9815ac72a145ac5c450a1a",
     "title": "Your First API Call | DeepSeek API Docs"
   },
   {
     "provider": "openai",
     "url": "https://developers.openai.com/api/docs/models/gpt-4o.md",
-    "readAt": "2026-11-20T05:02:20Z",
+    "readAt": "2026-11-24T09:37:38Z",
     "sha256": "c98d07da49edad494c7c945dbd70666f151d6acda57671802118c8515f3c0986",
     "title": "GPT-4o"
   },
   {
     "provider": "openai",
     "url": "https://developers.openai.com/api/docs/models/gpt-4o-mini.md",
-    "readAt": "2026-11-20T05:02:20Z",
+    "readAt": "2026-11-24T09:37:38Z",
     "sha256": "2077c6c1e3fc9a0d44d972c56596301ab2dfe8210cd41dc8ff610e69903d169d",
     "title": "GPT-4o mini"
   },
   {
     "provider": "openai",
     "url": "https://developers.openai.com/api/docs/models/gpt-4.1.md",
-    "readAt": "2026-11-20T05:02:21Z",
+    "readAt": "2026-11-24T09:37:38Z",
     "sha256": "baa0f3aa720c9ab9faf3d060d56549ecc6273dd366336d7269c92bebe95b3389",
     "title": "GPT-4.1"
   },
   {
     "provider": "openai",
     "url": "https://developers.openai.com/api/docs/models/gpt-4.1-mini.md",
-    "readAt": "2026-11-20T05:02:21Z",
+    "readAt": "2026-11-24T09:37:38Z",
     "sha256": "c04810187c24bc24b5b9c97ce92eb0b565eabb84c0c31b05fbf458174919cf9a",
     "title": "GPT-4.1 mini"
   }
@@ -125,8 +125,8 @@ export const LEDGER: readonly LedgerRow[] = [
     "shutdownFloor": "2027-11-09",
     "dateText": "Not sooner than November 9, 2027",
     "url": "https://platform.claude.com/docs/en/about-claude/model-deprecations.md",
-    "readOn": "2026-11-20",
-    "quote": "| claude-fable-5-2           | Active        | N/A                | Not sooner than November 9, 2027   |"
+    "readOn": "2026-11-24",
+    "quote": "| claude-fable-5-2 | Active | N/A | Not sooner than November 9, 2027 |"
   },
   {
     "id": "claude-mythos-5-2",
@@ -136,8 +136,8 @@ export const LEDGER: readonly LedgerRow[] = [
     "shutdownFloor": "2027-11-09",
     "dateText": "Not sooner than November 9, 2027",
     "url": "https://platform.claude.com/docs/en/about-claude/model-deprecations.md",
-    "readOn": "2026-11-20",
-    "quote": "| claude-mythos-5-2          | Active        | N/A                | Not sooner than November 9, 2027   |"
+    "readOn": "2026-11-24",
+    "quote": "| claude-mythos-5-2 | Active | N/A | Not sooner than November 9, 2027 |"
   },
   {
     "id": "claude-fable-5-1",
@@ -147,8 +147,8 @@ export const LEDGER: readonly LedgerRow[] = [
     "shutdownFloor": "2027-09-01",
     "dateText": "Not sooner than September 1, 2027",
     "url": "https://platform.claude.com/docs/en/about-claude/model-deprecations.md",
-    "readOn": "2026-11-20",
-    "quote": "| claude-fable-5-1           | Active        | N/A                | Not sooner than September 1, 2027  |"
+    "readOn": "2026-11-24",
+    "quote": "| claude-fable-5-1 | Active | N/A | Not sooner than September 1, 2027 |"
   },
   {
     "id": "claude-mythos-5-1",
@@ -158,8 +158,8 @@ export const LEDGER: readonly LedgerRow[] = [
     "shutdownFloor": "2027-09-01",
     "dateText": "Not sooner than September 1, 2027",
     "url": "https://platform.claude.com/docs/en/about-claude/model-deprecations.md",
-    "readOn": "2026-11-20",
-    "quote": "| claude-mythos-5-1          | Active        | N/A                | Not sooner than September 1, 2027  |"
+    "readOn": "2026-11-24",
+    "quote": "| claude-mythos-5-1 | Active | N/A | Not sooner than September 1, 2027 |"
   },
   {
     "id": "claude-fable-5",
@@ -169,8 +169,8 @@ export const LEDGER: readonly LedgerRow[] = [
     "shutdownFloor": "2027-06-09",
     "dateText": "Not sooner than June 9, 2027",
     "url": "https://platform.claude.com/docs/en/about-claude/model-deprecations.md",
-    "readOn": "2026-11-20",
-    "quote": "| claude-fable-5             | Active        | N/A                | Not sooner than June 9, 2027       |"
+    "readOn": "2026-11-24",
+    "quote": "| claude-fable-5 | Active | N/A | Not sooner than June 9, 2027 |"
   },
   {
     "id": "claude-mythos-5",
@@ -180,8 +180,8 @@ export const LEDGER: readonly LedgerRow[] = [
     "shutdownFloor": "2027-06-09",
     "dateText": "Not sooner than June 9, 2027",
     "url": "https://platform.claude.com/docs/en/about-claude/model-deprecations.md",
-    "readOn": "2026-11-20",
-    "quote": "| claude-mythos-5            | Active        | N/A                | Not sooner than June 9, 2027       |"
+    "readOn": "2026-11-24",
+    "quote": "| claude-mythos-5 | Active | N/A | Not sooner than June 9, 2027 |"
   },
   {
     "id": "claude-mythos-preview",
@@ -191,8 +191,8 @@ export const LEDGER: readonly LedgerRow[] = [
     "announced": "2026-06-09",
     "dateText": "To be announced",
     "url": "https://platform.claude.com/docs/en/about-claude/model-deprecations.md",
-    "readOn": "2026-11-20",
-    "quote": "| claude-mythos-preview      | Deprecated    | June 9, 2026       | To be announced                    |"
+    "readOn": "2026-11-24",
+    "quote": "| claude-mythos-preview | Deprecated | June 9, 2026 | To be announced |"
   },
   {
     "id": "claude-opus-5-5",
@@ -202,8 +202,8 @@ export const LEDGER: readonly LedgerRow[] = [
     "shutdownFloor": "2027-09-22",
     "dateText": "Not sooner than September 22, 2027",
     "url": "https://platform.claude.com/docs/en/about-claude/model-deprecations.md",
-    "readOn": "2026-11-20",
-    "quote": "| claude-opus-5-5            | Active        | N/A                | Not sooner than September 22, 2027 |"
+    "readOn": "2026-11-24",
+    "quote": "| claude-opus-5-5 | Active | N/A | Not sooner than September 22, 2027 |"
   },
   {
     "id": "claude-opus-5",
@@ -213,8 +213,8 @@ export const LEDGER: readonly LedgerRow[] = [
     "shutdownFloor": "2027-07-24",
     "dateText": "Not sooner than July 24, 2027",
     "url": "https://platform.claude.com/docs/en/about-claude/model-deprecations.md",
-    "readOn": "2026-11-20",
-    "quote": "| claude-opus-5              | Active        | N/A                | Not sooner than July 24, 2027      |"
+    "readOn": "2026-11-24",
+    "quote": "| claude-opus-5 | Active | N/A | Not sooner than July 24, 2027 |"
   },
   {
     "id": "claude-opus-4-8",
@@ -224,8 +224,8 @@ export const LEDGER: readonly LedgerRow[] = [
     "shutdownFloor": "2027-05-28",
     "dateText": "Not sooner than May 28, 2027",
     "url": "https://platform.claude.com/docs/en/about-claude/model-deprecations.md",
-    "readOn": "2026-11-20",
-    "quote": "| claude-opus-4-8            | Active        | N/A                | Not sooner than May 28, 2027       |"
+    "readOn": "2026-11-24",
+    "quote": "| claude-opus-4-8 | Active | N/A | Not sooner than May 28, 2027 |"
   },
   {
     "id": "claude-opus-4-7",
@@ -235,8 +235,8 @@ export const LEDGER: readonly LedgerRow[] = [
     "shutdownFloor": "2027-04-16",
     "dateText": "Not sooner than April 16, 2027",
     "url": "https://platform.claude.com/docs/en/about-claude/model-deprecations.md",
-    "readOn": "2026-11-20",
-    "quote": "| claude-opus-4-7            | Active        | N/A                | Not sooner than April 16, 2027     |"
+    "readOn": "2026-11-24",
+    "quote": "| claude-opus-4-7 | Active | N/A | Not sooner than April 16, 2027 |"
   },
   {
     "id": "claude-opus-4-6",
@@ -246,19 +246,21 @@ export const LEDGER: readonly LedgerRow[] = [
     "shutdownFloor": "2027-02-05",
     "dateText": "Not sooner than February 5, 2027",
     "url": "https://platform.claude.com/docs/en/about-claude/model-deprecations.md",
-    "readOn": "2026-11-20",
-    "quote": "| claude-opus-4-6            | Active        | N/A                | Not sooner than February 5, 2027   |"
+    "readOn": "2026-11-24",
+    "quote": "| claude-opus-4-6 | Active | N/A | Not sooner than February 5, 2027 |"
   },
   {
     "id": "claude-opus-4-5-20251101",
     "provider": "anthropic",
-    "word": "active",
-    "pageWord": "Active",
-    "shutdownFloor": "2026-11-24",
-    "dateText": "Not sooner than November 24, 2026",
+    "word": "deprecated",
+    "pageWord": "Deprecated",
+    "announced": "2026-11-23",
+    "shutdown": "2027-01-22",
+    "dateText": "January 22, 2027",
+    "replacement": "claude-opus-5-5",
     "url": "https://platform.claude.com/docs/en/about-claude/model-deprecations.md",
-    "readOn": "2026-11-20",
-    "quote": "| claude-opus-4-5-20251101   | Active        | N/A                | Not sooner than November 24, 2026  |"
+    "readOn": "2026-11-24",
+    "quote": "| claude-opus-4-5-20251101 | Deprecated | November 23, 2026 | January 22, 2027 |"
   },
   {
     "id": "claude-opus-4-1-20250805",
@@ -270,8 +272,8 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "August 5, 2026",
     "replacement": "claude-opus-4-8",
     "url": "https://platform.claude.com/docs/en/about-claude/model-deprecations.md",
-    "readOn": "2026-11-20",
-    "quote": "| claude-opus-4-1-20250805   | Retired       | June 5, 2026       | August 5, 2026                     |"
+    "readOn": "2026-11-24",
+    "quote": "| claude-opus-4-1-20250805 | Retired | June 5, 2026 | August 5, 2026 |"
   },
   {
     "id": "claude-opus-4-20250514",
@@ -283,8 +285,8 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "June 15, 2026",
     "replacement": "claude-opus-4-8",
     "url": "https://platform.claude.com/docs/en/about-claude/model-deprecations.md",
-    "readOn": "2026-11-20",
-    "quote": "| claude-opus-4-20250514     | Retired       | April 14, 2026     | June 15, 2026                      |"
+    "readOn": "2026-11-24",
+    "quote": "| claude-opus-4-20250514 | Retired | April 14, 2026 | June 15, 2026 |"
   },
   {
     "id": "claude-sonnet-5-5",
@@ -294,8 +296,8 @@ export const LEDGER: readonly LedgerRow[] = [
     "shutdownFloor": "2027-09-28",
     "dateText": "Not sooner than September 28, 2027",
     "url": "https://platform.claude.com/docs/en/about-claude/model-deprecations.md",
-    "readOn": "2026-11-20",
-    "quote": "| claude-sonnet-5-5          | Active        | N/A                | Not sooner than September 28, 2027 |"
+    "readOn": "2026-11-24",
+    "quote": "| claude-sonnet-5-5 | Active | N/A | Not sooner than September 28, 2027 |"
   },
   {
     "id": "claude-sonnet-5",
@@ -305,8 +307,8 @@ export const LEDGER: readonly LedgerRow[] = [
     "shutdownFloor": "2027-06-30",
     "dateText": "Not sooner than June 30, 2027",
     "url": "https://platform.claude.com/docs/en/about-claude/model-deprecations.md",
-    "readOn": "2026-11-20",
-    "quote": "| claude-sonnet-5            | Active        | N/A                | Not sooner than June 30, 2027      |"
+    "readOn": "2026-11-24",
+    "quote": "| claude-sonnet-5 | Active | N/A | Not sooner than June 30, 2027 |"
   },
   {
     "id": "claude-sonnet-4-6",
@@ -316,8 +318,8 @@ export const LEDGER: readonly LedgerRow[] = [
     "shutdownFloor": "2027-02-17",
     "dateText": "Not sooner than February 17, 2027",
     "url": "https://platform.claude.com/docs/en/about-claude/model-deprecations.md",
-    "readOn": "2026-11-20",
-    "quote": "| claude-sonnet-4-6          | Active        | N/A                | Not sooner than February 17, 2027  |"
+    "readOn": "2026-11-24",
+    "quote": "| claude-sonnet-4-6 | Active | N/A | Not sooner than February 17, 2027 |"
   },
   {
     "id": "claude-sonnet-4-5-20250929",
@@ -329,8 +331,8 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "November 30, 2026",
     "replacement": "claude-sonnet-5-5",
     "url": "https://platform.claude.com/docs/en/about-claude/model-deprecations.md",
-    "readOn": "2026-11-20",
-    "quote": "| claude-sonnet-4-5-20250929 | Deprecated    | September 30, 2026 | November 30, 2026                  |"
+    "readOn": "2026-11-24",
+    "quote": "| claude-sonnet-4-5-20250929 | Deprecated | September 30, 2026 | November 30, 2026 |"
   },
   {
     "id": "claude-sonnet-4-20250514",
@@ -342,8 +344,8 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "June 15, 2026",
     "replacement": "claude-sonnet-5-5",
     "url": "https://platform.claude.com/docs/en/about-claude/model-deprecations.md",
-    "readOn": "2026-11-20",
-    "quote": "| claude-sonnet-4-20250514   | Retired       | April 14, 2026     | June 15, 2026                      |"
+    "readOn": "2026-11-24",
+    "quote": "| claude-sonnet-4-20250514 | Retired | April 14, 2026 | June 15, 2026 |"
   },
   {
     "id": "claude-3-7-sonnet-20250219",
@@ -355,8 +357,8 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "February 19, 2026",
     "replacement": "claude-sonnet-5-5",
     "url": "https://platform.claude.com/docs/en/about-claude/model-deprecations.md",
-    "readOn": "2026-11-20",
-    "quote": "| claude-3-7-sonnet-20250219 | Retired       | October 28, 2025   | February 19, 2026                  |"
+    "readOn": "2026-11-24",
+    "quote": "| claude-3-7-sonnet-20250219 | Retired | October 28, 2025 | February 19, 2026 |"
   },
   {
     "id": "claude-haiku-5-5",
@@ -366,8 +368,8 @@ export const LEDGER: readonly LedgerRow[] = [
     "shutdownFloor": "2027-10-07",
     "dateText": "Not sooner than October 7, 2027",
     "url": "https://platform.claude.com/docs/en/about-claude/model-deprecations.md",
-    "readOn": "2026-11-20",
-    "quote": "| claude-haiku-5-5           | Active        | N/A                | Not sooner than October 7, 2027    |"
+    "readOn": "2026-11-24",
+    "quote": "| claude-haiku-5-5 | Active | N/A | Not sooner than October 7, 2027 |"
   },
   {
     "id": "claude-haiku-4-5-20251001",
@@ -377,8 +379,8 @@ export const LEDGER: readonly LedgerRow[] = [
     "shutdownFloor": "2026-10-15",
     "dateText": "Not sooner than October 15, 2026",
     "url": "https://platform.claude.com/docs/en/about-claude/model-deprecations.md",
-    "readOn": "2026-11-20",
-    "quote": "| claude-haiku-4-5-20251001  | Active        | N/A                | Not sooner than October 15, 2026   |"
+    "readOn": "2026-11-24",
+    "quote": "| claude-haiku-4-5-20251001 | Active | N/A | Not sooner than October 15, 2026 |"
   },
   {
     "id": "claude-3-5-haiku-20241022",
@@ -390,8 +392,8 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "February 19, 2026",
     "replacement": "claude-haiku-4-5-20251001",
     "url": "https://platform.claude.com/docs/en/about-claude/model-deprecations.md",
-    "readOn": "2026-11-20",
-    "quote": "| claude-3-5-haiku-20241022  | Retired       | December 19, 2025  | February 19, 2026                  |"
+    "readOn": "2026-11-24",
+    "quote": "| claude-3-5-haiku-20241022 | Retired | December 19, 2025 | February 19, 2026 |"
   },
   {
     "id": "claude-3-haiku-20240307",
@@ -403,8 +405,8 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "April 20, 2026",
     "replacement": "claude-haiku-4-5-20251001",
     "url": "https://platform.claude.com/docs/en/about-claude/model-deprecations.md",
-    "readOn": "2026-11-20",
-    "quote": "| claude-3-haiku-20240307    | Retired       | February 19, 2026  | April 20, 2026                     |"
+    "readOn": "2026-11-24",
+    "quote": "| claude-3-haiku-20240307 | Retired | February 19, 2026 | April 20, 2026 |"
   },
   {
     "id": "claude-3-5-sonnet-20240620",
@@ -416,8 +418,8 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "October 28, 2025",
     "replacement": "claude-sonnet-5-5",
     "url": "https://platform.claude.com/docs/en/about-claude/model-deprecations.md",
-    "readOn": "2026-11-20",
-    "quote": "| October 28, 2025 | `claude-3-5-sonnet-20240620` | `claude-sonnet-5-5`     |"
+    "readOn": "2026-11-24",
+    "quote": "| October 28, 2025 | `claude-3-5-sonnet-20240620` | `claude-sonnet-5-5` |"
   },
   {
     "id": "claude-3-5-sonnet-20241022",
@@ -429,8 +431,8 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "October 28, 2025",
     "replacement": "claude-sonnet-5-5",
     "url": "https://platform.claude.com/docs/en/about-claude/model-deprecations.md",
-    "readOn": "2026-11-20",
-    "quote": "| October 28, 2025 | `claude-3-5-sonnet-20241022` | `claude-sonnet-5-5`     |"
+    "readOn": "2026-11-24",
+    "quote": "| October 28, 2025 | `claude-3-5-sonnet-20241022` | `claude-sonnet-5-5` |"
   },
   {
     "id": "claude-3-opus-20240229",
@@ -442,8 +444,8 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "January 5, 2026",
     "replacement": "claude-opus-4-8",
     "url": "https://platform.claude.com/docs/en/about-claude/model-deprecations.md",
-    "readOn": "2026-11-20",
-    "quote": "| January 5, 2026 | `claude-3-opus-20240229` | `claude-opus-4-8`       |"
+    "readOn": "2026-11-24",
+    "quote": "| January 5, 2026 | `claude-3-opus-20240229` | `claude-opus-4-8` |"
   },
   {
     "id": "claude-2.0",
@@ -455,8 +457,8 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "July 21, 2025",
     "replacement": "claude-opus-4-8",
     "url": "https://platform.claude.com/docs/en/about-claude/model-deprecations.md",
-    "readOn": "2026-11-20",
-    "quote": "| July 21, 2025   | `claude-2.0`               | `claude-opus-4-8`       |"
+    "readOn": "2026-11-24",
+    "quote": "| July 21, 2025 | `claude-2.0` | `claude-opus-4-8` |"
   },
   {
     "id": "claude-2.1",
@@ -468,8 +470,8 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "July 21, 2025",
     "replacement": "claude-opus-4-8",
     "url": "https://platform.claude.com/docs/en/about-claude/model-deprecations.md",
-    "readOn": "2026-11-20",
-    "quote": "| July 21, 2025   | `claude-2.1`               | `claude-opus-4-8`       |"
+    "readOn": "2026-11-24",
+    "quote": "| July 21, 2025 | `claude-2.1` | `claude-opus-4-8` |"
   },
   {
     "id": "claude-3-sonnet-20240229",
@@ -481,8 +483,8 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "July 21, 2025",
     "replacement": "claude-sonnet-5-5",
     "url": "https://platform.claude.com/docs/en/about-claude/model-deprecations.md",
-    "readOn": "2026-11-20",
-    "quote": "| July 21, 2025   | `claude-3-sonnet-20240229` | `claude-sonnet-5-5`     |"
+    "readOn": "2026-11-24",
+    "quote": "| July 21, 2025 | `claude-3-sonnet-20240229` | `claude-sonnet-5-5` |"
   },
   {
     "id": "claude-1.0",
@@ -494,8 +496,8 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "November 6, 2024",
     "replacement": "claude-haiku-4-5-20251001",
     "url": "https://platform.claude.com/docs/en/about-claude/model-deprecations.md",
-    "readOn": "2026-11-20",
-    "quote": "| November 6, 2024 | `claude-1.0`         | `claude-haiku-4-5-20251001` |"
+    "readOn": "2026-11-24",
+    "quote": "| November 6, 2024 | `claude-1.0` | `claude-haiku-4-5-20251001` |"
   },
   {
     "id": "claude-1.1",
@@ -507,8 +509,8 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "November 6, 2024",
     "replacement": "claude-haiku-4-5-20251001",
     "url": "https://platform.claude.com/docs/en/about-claude/model-deprecations.md",
-    "readOn": "2026-11-20",
-    "quote": "| November 6, 2024 | `claude-1.1`         | `claude-haiku-4-5-20251001` |"
+    "readOn": "2026-11-24",
+    "quote": "| November 6, 2024 | `claude-1.1` | `claude-haiku-4-5-20251001` |"
   },
   {
     "id": "claude-1.2",
@@ -520,8 +522,8 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "November 6, 2024",
     "replacement": "claude-haiku-4-5-20251001",
     "url": "https://platform.claude.com/docs/en/about-claude/model-deprecations.md",
-    "readOn": "2026-11-20",
-    "quote": "| November 6, 2024 | `claude-1.2`         | `claude-haiku-4-5-20251001` |"
+    "readOn": "2026-11-24",
+    "quote": "| November 6, 2024 | `claude-1.2` | `claude-haiku-4-5-20251001` |"
   },
   {
     "id": "claude-1.3",
@@ -533,8 +535,8 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "November 6, 2024",
     "replacement": "claude-haiku-4-5-20251001",
     "url": "https://platform.claude.com/docs/en/about-claude/model-deprecations.md",
-    "readOn": "2026-11-20",
-    "quote": "| November 6, 2024 | `claude-1.3`         | `claude-haiku-4-5-20251001` |"
+    "readOn": "2026-11-24",
+    "quote": "| November 6, 2024 | `claude-1.3` | `claude-haiku-4-5-20251001` |"
   },
   {
     "id": "claude-instant-1.0",
@@ -546,7 +548,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "November 6, 2024",
     "replacement": "claude-haiku-4-5-20251001",
     "url": "https://platform.claude.com/docs/en/about-claude/model-deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| November 6, 2024 | `claude-instant-1.0` | `claude-haiku-4-5-20251001` |"
   },
   {
@@ -559,7 +561,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "November 6, 2024",
     "replacement": "claude-haiku-4-5-20251001",
     "url": "https://platform.claude.com/docs/en/about-claude/model-deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| November 6, 2024 | `claude-instant-1.1` | `claude-haiku-4-5-20251001` |"
   },
   {
@@ -572,7 +574,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "November 6, 2024",
     "replacement": "claude-haiku-4-5-20251001",
     "url": "https://platform.claude.com/docs/en/about-claude/model-deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| November 6, 2024 | `claude-instant-1.2` | `claude-haiku-4-5-20251001` |"
   },
   {
@@ -585,7 +587,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Dec 1, 2026",
     "replacement": "gpt-image-2.6-sunburst or gpt-image-2.6-flare",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Dec 1, 2026**  | `gpt-image-1-mini`                                          | Deprecated | `gpt-image-2.6-sunburst` or `gpt-image-2.6-flare`          | Jun 2, 2026  |"
   },
   {
@@ -598,7 +600,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Dec 1, 2026",
     "replacement": "gpt-image-2.6-sunburst or gpt-image-2.6-flare",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Dec 1, 2026**  | `gpt-image-1.5`, `gpt-image-1.5-2025-12-16`                                                                           | Deprecated | `gpt-image-2.6-sunburst` or `gpt-image-2.6-flare`          | Jun 2, 2026  |"
   },
   {
@@ -611,7 +613,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Dec 1, 2026",
     "replacement": "gpt-image-2.6-sunburst or gpt-image-2.6-flare",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Dec 1, 2026**  | `gpt-image-1.5`, `gpt-image-1.5-2025-12-16`                                                                           | Deprecated | `gpt-image-2.6-sunburst` or `gpt-image-2.6-flare`          | Jun 2, 2026  |"
   },
   {
@@ -624,7 +626,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Dec 1, 2026",
     "replacement": "gpt-image-2.6-sunburst or gpt-image-2.6-flare",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Dec 1, 2026**  | `chatgpt-image-latest`                                                                                                | Deprecated | `gpt-image-2.6-sunburst` or `gpt-image-2.6-flare`          | Jun 2, 2026  |"
   },
   {
@@ -637,7 +639,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Dec 11, 2026",
     "replacement": "gpt-6.1-sol",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Dec 11, 2026** | `gpt-5`, `gpt-5-2025-08-07`                              | Deprecated | `gpt-6.1-sol`                                              | Jun 11, 2026 |"
   },
   {
@@ -650,7 +652,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Dec 11, 2026",
     "replacement": "gpt-6.1-sol",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Dec 11, 2026** | `gpt-5`, `gpt-5-2025-08-07`                              | Deprecated | `gpt-6.1-sol`                                              | Jun 11, 2026 |"
   },
   {
@@ -663,7 +665,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Dec 11, 2026",
     "replacement": "gpt-6.1-terra",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Dec 11, 2026** | `gpt-5-mini`, `gpt-5-mini-2025-08-07`                                                                                 | Deprecated | `gpt-6.1-terra`                                            | Jun 11, 2026 |"
   },
   {
@@ -676,7 +678,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Dec 11, 2026",
     "replacement": "gpt-6.1-terra",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Dec 11, 2026** | `gpt-5-mini`, `gpt-5-mini-2025-08-07`                                                                                 | Deprecated | `gpt-6.1-terra`                                            | Jun 11, 2026 |"
   },
   {
@@ -689,7 +691,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Dec 11, 2026",
     "replacement": "gpt-6-luna",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Dec 11, 2026** | `gpt-5-nano`, `gpt-5-nano-2025-08-07`                                                                                 | Deprecated | `gpt-6-luna`                                               | Jun 11, 2026 |"
   },
   {
@@ -702,7 +704,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Dec 11, 2026",
     "replacement": "gpt-6-luna",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Dec 11, 2026** | `gpt-5-nano`, `gpt-5-nano-2025-08-07`                                                                                 | Deprecated | `gpt-6-luna`                                               | Jun 11, 2026 |"
   },
   {
@@ -716,7 +718,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "replacement": "gpt-6.1-sol (reasoning.mode: pro) in the Responses API",
     "replacementForm": "ids-in-text",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Dec 11, 2026** | `gpt-5-pro`, `gpt-5-pro-2025-10-06`                                                                                   | Deprecated | `gpt-6.1-sol` (`reasoning.mode: pro`) in the Responses API | Jun 11, 2026 |"
   },
   {
@@ -730,7 +732,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "replacement": "gpt-6.1-sol (reasoning.mode: pro) in the Responses API",
     "replacementForm": "ids-in-text",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Dec 11, 2026** | `gpt-5-pro`, `gpt-5-pro-2025-10-06`                                                                                   | Deprecated | `gpt-6.1-sol` (`reasoning.mode: pro`) in the Responses API | Jun 11, 2026 |"
   },
   {
@@ -743,7 +745,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Dec 11, 2026",
     "replacement": "gpt-6.1-sol",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Dec 11, 2026** | `o3`, `o3-2025-04-16`                                                                                                 | Deprecated | `gpt-6.1-sol`                                              | Jun 11, 2026 |"
   },
   {
@@ -756,7 +758,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Dec 11, 2026",
     "replacement": "gpt-6.1-sol",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Dec 11, 2026** | `o3`, `o3-2025-04-16`                                                                                                 | Deprecated | `gpt-6.1-sol`                                              | Jun 11, 2026 |"
   },
   {
@@ -770,7 +772,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "replacement": "gpt-6.1-sol (reasoning.mode: pro) in the Responses API",
     "replacementForm": "ids-in-text",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Dec 11, 2026** | `o3-pro`, `o3-pro-2025-06-10`                                                                                         | Deprecated | `gpt-6.1-sol` (`reasoning.mode: pro`) in the Responses API | Jun 11, 2026 |"
   },
   {
@@ -784,7 +786,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "replacement": "gpt-6.1-sol (reasoning.mode: pro) in the Responses API",
     "replacementForm": "ids-in-text",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Dec 11, 2026** | `o3-pro`, `o3-pro-2025-06-10`                                                                                         | Deprecated | `gpt-6.1-sol` (`reasoning.mode: pro`) in the Responses API | Jun 11, 2026 |"
   },
   {
@@ -797,7 +799,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 6, 2027",
     "replacement": "gpt-realtime-2.1-mini",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 6, 2027**  | `tts-1`                                                            | Deprecated | `gpt-realtime-2.1-mini`                                    | Oct 1, 2026  |"
   },
   {
@@ -810,7 +812,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 6, 2027",
     "replacement": "gpt-realtime-2.1-mini",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 6, 2027**  | `tts-1-hd`                                                                                                            | Deprecated | `gpt-realtime-2.1-mini`                                    | Oct 1, 2026  |"
   },
   {
@@ -823,7 +825,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 6, 2027",
     "replacement": "gpt-realtime-2.1-mini",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 6, 2027**  | `gpt-4o-mini-tts`, `gpt-4o-mini-tts-2025-03-20`, `gpt-4o-mini-tts-2025-12-15`                                         | Deprecated | `gpt-realtime-2.1-mini`                                    | Oct 1, 2026  |"
   },
   {
@@ -836,7 +838,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 6, 2027",
     "replacement": "gpt-realtime-2.1-mini",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 6, 2027**  | `gpt-4o-mini-tts`, `gpt-4o-mini-tts-2025-03-20`, `gpt-4o-mini-tts-2025-12-15`                                         | Deprecated | `gpt-realtime-2.1-mini`                                    | Oct 1, 2026  |"
   },
   {
@@ -849,7 +851,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 6, 2027",
     "replacement": "gpt-realtime-2.1-mini",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 6, 2027**  | `gpt-4o-mini-tts`, `gpt-4o-mini-tts-2025-03-20`, `gpt-4o-mini-tts-2025-12-15`                                         | Deprecated | `gpt-realtime-2.1-mini`                                    | Oct 1, 2026  |"
   },
   {
@@ -862,7 +864,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 14, 2027",
     "replacement": "gpt-6-luna",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 14, 2027** | GPT-4o (`gpt-4o-2024-08-06`, `gpt-4o-2024-11-20`)        | Deprecated | `gpt-6-luna`                                               | Oct 14, 2026 |"
   },
   {
@@ -875,7 +877,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 14, 2027",
     "replacement": "gpt-6-luna",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 14, 2027** | GPT-4o (`gpt-4o-2024-08-06`, `gpt-4o-2024-11-20`)        | Deprecated | `gpt-6-luna`                                               | Oct 14, 2026 |"
   },
   {
@@ -888,12 +890,12 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 14, 2027",
     "replacement": "gpt-6-luna",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 14, 2027** | GPT-4o (`gpt-4o-2024-08-06`, `gpt-4o-2024-11-20`)        | Deprecated | `gpt-6-luna`                                               | Oct 14, 2026 |",
     "matchedBy": "display-name",
     "alsoUrl": "https://developers.openai.com/api/docs/models/gpt-4o.md",
     "alsoQuote": "Status: Deprecated",
-    "alsoReadOn": "2026-11-20"
+    "alsoReadOn": "2026-11-24"
   },
   {
     "id": "gpt-4o-mini-2024-07-18",
@@ -905,7 +907,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 14, 2027",
     "replacement": "gpt-6-luna",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 14, 2027** | GPT-4o mini (`gpt-4o-mini-2024-07-18`)                                                                                | Deprecated | `gpt-6-luna`                                               | Oct 14, 2026 |"
   },
   {
@@ -918,12 +920,12 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 14, 2027",
     "replacement": "gpt-6-luna",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 14, 2027** | GPT-4o mini (`gpt-4o-mini-2024-07-18`)                                                                                | Deprecated | `gpt-6-luna`                                               | Oct 14, 2026 |",
     "matchedBy": "display-name",
     "alsoUrl": "https://developers.openai.com/api/docs/models/gpt-4o-mini.md",
     "alsoQuote": "Status: Deprecated",
-    "alsoReadOn": "2026-11-20"
+    "alsoReadOn": "2026-11-24"
   },
   {
     "id": "gpt-4.1-2025-04-14",
@@ -935,7 +937,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 14, 2027",
     "replacement": "gpt-6-luna",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 14, 2027** | GPT-4.1 (`gpt-4.1-2025-04-14`)                                                                                        | Deprecated | `gpt-6-luna`                                               | Oct 14, 2026 |"
   },
   {
@@ -948,12 +950,12 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 14, 2027",
     "replacement": "gpt-6-luna",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 14, 2027** | GPT-4.1 (`gpt-4.1-2025-04-14`)                                                                                        | Deprecated | `gpt-6-luna`                                               | Oct 14, 2026 |",
     "matchedBy": "display-name",
     "alsoUrl": "https://developers.openai.com/api/docs/models/gpt-4.1.md",
     "alsoQuote": "Status: Deprecated",
-    "alsoReadOn": "2026-11-20"
+    "alsoReadOn": "2026-11-24"
   },
   {
     "id": "gpt-4.1-mini-2025-04-14",
@@ -965,7 +967,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 14, 2027",
     "replacement": "gpt-6-luna",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 14, 2027** | GPT-4.1 mini (`gpt-4.1-mini-2025-04-14`)                                                                              | Deprecated | `gpt-6-luna`                                               | Oct 14, 2026 |"
   },
   {
@@ -978,12 +980,12 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 14, 2027",
     "replacement": "gpt-6-luna",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 14, 2027** | GPT-4.1 mini (`gpt-4.1-mini-2025-04-14`)                                                                              | Deprecated | `gpt-6-luna`                                               | Oct 14, 2026 |",
     "matchedBy": "display-name",
     "alsoUrl": "https://developers.openai.com/api/docs/models/gpt-4.1-mini.md",
     "alsoQuote": "Status: Deprecated",
-    "alsoReadOn": "2026-11-20"
+    "alsoReadOn": "2026-11-24"
   },
   {
     "id": "gpt-realtime",
@@ -995,7 +997,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 20, 2027",
     "replacement": "gpt-realtime-2.1",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 20, 2027** | `gpt-realtime`, `gpt-realtime-2025-08-28` | Deprecated | `gpt-realtime-2.1`                                         | Jul 20, 2026 |"
   },
   {
@@ -1008,7 +1010,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 20, 2027",
     "replacement": "gpt-realtime-2.1",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 20, 2027** | `gpt-realtime`, `gpt-realtime-2025-08-28` | Deprecated | `gpt-realtime-2.1`                                         | Jul 20, 2026 |"
   },
   {
@@ -1021,7 +1023,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 20, 2027",
     "replacement": "gpt-audio-1.5",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 20, 2027** | `gpt-audio`, `gpt-audio-2025-08-28`                                                                                   | Deprecated | `gpt-audio-1.5`                                            | Jul 20, 2026 |"
   },
   {
@@ -1034,7 +1036,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 20, 2027",
     "replacement": "gpt-audio-1.5",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 20, 2027** | `gpt-audio`, `gpt-audio-2025-08-28`                                                                                   | Deprecated | `gpt-audio-1.5`                                            | Jul 20, 2026 |"
   },
   {
@@ -1047,7 +1049,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 20, 2027",
     "replacement": "gpt-audio-1.5",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 20, 2027** | `gpt-4o-audio`                                                                                                        | Deprecated | `gpt-audio-1.5`                                            | Jul 20, 2026 |"
   },
   {
@@ -1060,7 +1062,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 20, 2027",
     "replacement": "gpt-realtime-2.1",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 20, 2027** | `gpt-4o-realtime`                                                                                                     | Deprecated | `gpt-realtime-2.1`                                         | Jul 20, 2026 |"
   },
   {
@@ -1073,7 +1075,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 20, 2027",
     "replacement": "gpt-realtime-2.1-mini",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 20, 2027** | `gpt-realtime-mini`, `gpt-realtime-mini-2025-12-15`                                                                   | Deprecated | `gpt-realtime-2.1-mini`                                    | Jul 20, 2026 |"
   },
   {
@@ -1086,7 +1088,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 20, 2027",
     "replacement": "gpt-realtime-2.1-mini",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 20, 2027** | `gpt-realtime-mini`, `gpt-realtime-mini-2025-12-15`                                                                   | Deprecated | `gpt-realtime-2.1-mini`                                    | Jul 20, 2026 |"
   },
   {
@@ -1099,7 +1101,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 20, 2027",
     "replacement": "gpt-audio-1.5",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 20, 2027** | `gpt-audio-mini`, `gpt-audio-mini-2025-12-15`                                                                         | Deprecated | `gpt-audio-1.5`                                            | Jul 20, 2026 |"
   },
   {
@@ -1112,7 +1114,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 20, 2027",
     "replacement": "gpt-audio-1.5",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 20, 2027** | `gpt-audio-mini`, `gpt-audio-mini-2025-12-15`                                                                         | Deprecated | `gpt-audio-1.5`                                            | Jul 20, 2026 |"
   },
   {
@@ -1125,7 +1127,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 20, 2027",
     "replacement": "gpt-realtime-2.1-mini",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 20, 2027** | `gpt-4o-mini-realtime`                                                                                                | Deprecated | `gpt-realtime-2.1-mini`                                    | Jul 20, 2026 |"
   },
   {
@@ -1138,7 +1140,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 20, 2027",
     "replacement": "gpt-audio-1.5",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 20, 2027** | `gpt-4o-mini-audio`                                                                                                   | Deprecated | `gpt-audio-1.5`                                            | Jul 20, 2026 |"
   },
   {
@@ -1151,7 +1153,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 20, 2027",
     "replacement": "gpt-4o-mini-transcribe-2025-12-15",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 20, 2027** | `gpt-4o-mini-transcribe-2025-03-20`                                                                                   | Deprecated | `gpt-4o-mini-transcribe-2025-12-15`                        | Jul 20, 2026 |"
   },
   {
@@ -1165,7 +1167,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "replacement": "The most capable cyber model available to you.",
     "replacementForm": "text",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Feb 1, 2027**  | `gpt-5.5-cyber-preview`                                                     | Deprecated | The most capable cyber model available to you.             | Nov 5, 2026  |"
   },
   {
@@ -1178,7 +1180,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Feb 10, 2027",
     "replacement": "gpt-image-2.6-sunburst or gpt-image-2.6-flare",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Feb 10, 2027** | `gpt-image-2`, `gpt-image-2-2026-04-21`                                      | Deprecated | `gpt-image-2.6-sunburst` or `gpt-image-2.6-flare`          | Nov 10, 2026 |"
   },
   {
@@ -1191,7 +1193,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Feb 10, 2027",
     "replacement": "gpt-image-2.6-sunburst or gpt-image-2.6-flare",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Feb 10, 2027** | `gpt-image-2`, `gpt-image-2-2026-04-21`                                      | Deprecated | `gpt-image-2.6-sunburst` or `gpt-image-2.6-flare`          | Nov 10, 2026 |"
   },
   {
@@ -1204,7 +1206,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Feb 26, 2027",
     "replacement": "gpt-live-transcribe or gpt-transcribe",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Feb 26, 2027** | `whisper-1`                                                         | Deprecated | `gpt-live-transcribe` or `gpt-transcribe`                  | Aug 26, 2026 |"
   },
   {
@@ -1217,7 +1219,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Feb 26, 2027",
     "replacement": "gpt-live-transcribe or gpt-transcribe",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Feb 26, 2027** | `gpt-4o-transcribe`                                                                                                   | Deprecated | `gpt-live-transcribe` or `gpt-transcribe`                  | Aug 26, 2026 |"
   },
   {
@@ -1230,7 +1232,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Feb 26, 2027",
     "replacement": "gpt-live-transcribe or gpt-transcribe",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Feb 26, 2027** | `gpt-4o-mini-transcribe`, `gpt-4o-mini-transcribe-2025-12-15`                                                         | Deprecated | `gpt-live-transcribe` or `gpt-transcribe`                  | Aug 26, 2026 |"
   },
   {
@@ -1243,7 +1245,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Feb 26, 2027",
     "replacement": "gpt-live-transcribe or gpt-transcribe",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Feb 26, 2027** | `gpt-4o-mini-transcribe`, `gpt-4o-mini-transcribe-2025-12-15`                                                         | Deprecated | `gpt-live-transcribe` or `gpt-transcribe`                  | Aug 26, 2026 |"
   },
   {
@@ -1256,7 +1258,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Feb 26, 2027",
     "replacement": "gpt-live-transcribe or gpt-transcribe",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Feb 26, 2027** | `gpt-4o-transcribe-diarize`                                                                                           | Deprecated | `gpt-live-transcribe` or `gpt-transcribe`                  | Aug 26, 2026 |"
   },
   {
@@ -1269,7 +1271,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Apr 1, 2027",
     "replacement": "gpt-6-sol",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Apr 1, 2027**  | `gpt-5.3-codex`                                          | Deprecated | `gpt-6-sol`                                                | Oct 1, 2026  |"
   },
   {
@@ -1282,7 +1284,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Apr 1, 2027",
     "replacement": "gpt-6-luna",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Apr 1, 2027**  | `gpt-5.4-nano`, `gpt-5.4-nano-2026-03-17`                                                                             | Deprecated | `gpt-6-luna`                                               | Oct 1, 2026  |"
   },
   {
@@ -1295,7 +1297,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Apr 1, 2027",
     "replacement": "gpt-6-luna",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Apr 1, 2027**  | `gpt-5.4-nano`, `gpt-5.4-nano-2026-03-17`                                                                             | Deprecated | `gpt-6-luna`                                               | Oct 1, 2026  |"
   },
   {
@@ -1308,7 +1310,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Apr 1, 2027",
     "replacement": "gpt-6-sol",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Apr 1, 2027**  | `gpt-5.1`, `gpt-5.1-2025-11-13`                                                                                       | Deprecated | `gpt-6-sol`                                                | Oct 1, 2026  |"
   },
   {
@@ -1321,7 +1323,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Apr 1, 2027",
     "replacement": "gpt-6-sol",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Apr 1, 2027**  | `gpt-5.1`, `gpt-5.1-2025-11-13`                                                                                       | Deprecated | `gpt-6-sol`                                                | Oct 1, 2026  |"
   },
   {
@@ -1334,7 +1336,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Oct 23, 2026",
     "replacement": "gpt-5.6-terra",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Oct 23, 2026**                                                                             | `gpt-3.5-turbo-0125`, `gpt-3.5-turbo`, `gpt-3.5-turbo-completions`                                                                            | `gpt-5.6-terra`                                                                                       | Apr 22, 2026 |"
   },
   {
@@ -1347,7 +1349,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Oct 23, 2026",
     "replacement": "gpt-5.6-terra",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Oct 23, 2026**                                                                             | `gpt-3.5-turbo-0125`, `gpt-3.5-turbo`, `gpt-3.5-turbo-completions`                                                                            | `gpt-5.6-terra`                                                                                       | Apr 22, 2026 |"
   },
   {
@@ -1360,7 +1362,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Oct 23, 2026",
     "replacement": "gpt-5.6-terra",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Oct 23, 2026**                                                                             | `gpt-3.5-turbo-0125`, `gpt-3.5-turbo`, `gpt-3.5-turbo-completions`                                                                            | `gpt-5.6-terra`                                                                                       | Apr 22, 2026 |"
   },
   {
@@ -1373,7 +1375,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Oct 23, 2026",
     "replacement": "gpt-5.6-sol",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Oct 23, 2026**                                                                             | `gpt-4-0613`, `gpt-4`, `gpt-4-0613-completions`, `gpt-4-completions`                                                                                                                                  | `gpt-5.6-sol`                                                                                         | Apr 22, 2026 |"
   },
   {
@@ -1386,7 +1388,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Oct 23, 2026",
     "replacement": "gpt-5.6-sol",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Oct 23, 2026**                                                                             | `gpt-4-0613`, `gpt-4`, `gpt-4-0613-completions`, `gpt-4-completions`                                                                                                                                  | `gpt-5.6-sol`                                                                                         | Apr 22, 2026 |"
   },
   {
@@ -1399,7 +1401,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Oct 23, 2026",
     "replacement": "gpt-5.6-sol",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Oct 23, 2026**                                                                             | `gpt-4-0613`, `gpt-4`, `gpt-4-0613-completions`, `gpt-4-completions`                                                                                                                                  | `gpt-5.6-sol`                                                                                         | Apr 22, 2026 |"
   },
   {
@@ -1412,7 +1414,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Oct 23, 2026",
     "replacement": "gpt-5.6-sol",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Oct 23, 2026**                                                                             | `gpt-4-0613`, `gpt-4`, `gpt-4-0613-completions`, `gpt-4-completions`                                                                                                                                  | `gpt-5.6-sol`                                                                                         | Apr 22, 2026 |"
   },
   {
@@ -1425,7 +1427,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Oct 23, 2026",
     "replacement": "gpt-5.6-sol",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Oct 23, 2026**                                                                             | `gpt-4-1106-preview`                                                                                                                                                                                  | `gpt-5.6-sol`                                                                                         | Apr 22, 2026 |"
   },
   {
@@ -1438,7 +1440,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Oct 23, 2026",
     "replacement": "gpt-5.6-sol",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Oct 23, 2026**                                                                             | `gpt-4-turbo`, `gpt-4-turbo-2024-04-09`, `gpt-4-turbo-completions`                                                                                                                                    | `gpt-5.6-sol`                                                                                         | Apr 22, 2026 |"
   },
   {
@@ -1451,7 +1453,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Oct 23, 2026",
     "replacement": "gpt-5.6-sol",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Oct 23, 2026**                                                                             | `gpt-4-turbo`, `gpt-4-turbo-2024-04-09`, `gpt-4-turbo-completions`                                                                                                                                    | `gpt-5.6-sol`                                                                                         | Apr 22, 2026 |"
   },
   {
@@ -1464,7 +1466,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Oct 23, 2026",
     "replacement": "gpt-5.6-sol",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Oct 23, 2026**                                                                             | `gpt-4-turbo`, `gpt-4-turbo-2024-04-09`, `gpt-4-turbo-completions`                                                                                                                                    | `gpt-5.6-sol`                                                                                         | Apr 22, 2026 |"
   },
   {
@@ -1477,7 +1479,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Oct 23, 2026",
     "replacement": "gpt-5.6-luna",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Oct 23, 2026**                                                                             | `gpt-4.1-nano`, `gpt-4.1-nano-2025-04-14`                                                                                                                                                             | `gpt-5.6-luna`                                                                                        | Apr 22, 2026 |"
   },
   {
@@ -1490,7 +1492,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Oct 23, 2026",
     "replacement": "gpt-5.6-luna",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Oct 23, 2026**                                                                             | `gpt-4.1-nano`, `gpt-4.1-nano-2025-04-14`                                                                                                                                                             | `gpt-5.6-luna`                                                                                        | Apr 22, 2026 |"
   },
   {
@@ -1503,7 +1505,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Oct 23, 2026",
     "replacement": "gpt-5.6-sol",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Oct 23, 2026**                                                                             | `gpt-4o-2024-05-13`                                                                                                                                                                                   | `gpt-5.6-sol`                                                                                         | Apr 22, 2026 |"
   },
   {
@@ -1516,7 +1518,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Oct 23, 2026",
     "replacement": "gpt-image-2.5-sunburst or gpt-image-2.5-flare",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Oct 23, 2026**                                                                             | `gpt-image-1`                                                                                                                                                                                         | `gpt-image-2.5-sunburst` or `gpt-image-2.5-flare`                                                     | Apr 22, 2026 |"
   },
   {
@@ -1529,7 +1531,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Oct 23, 2026",
     "replacement": "gpt-5.6-sol",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Oct 23, 2026**                                                                             | `o1-2024-12-17`, `o1`                                                                                                                                                                                 | `gpt-5.6-sol`                                                                                         | Apr 22, 2026 |"
   },
   {
@@ -1542,7 +1544,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Oct 23, 2026",
     "replacement": "gpt-5.6-sol",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Oct 23, 2026**                                                                             | `o1-2024-12-17`, `o1`                                                                                                                                                                                 | `gpt-5.6-sol`                                                                                         | Apr 22, 2026 |"
   },
   {
@@ -1556,7 +1558,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "replacement": "gpt-5.6-sol (reasoning.mode: pro)",
     "replacementForm": "ids-in-text",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Oct 23, 2026**                                                                             | `o1-pro-2025-03-19`, `o1-pro`                                                                                                                                                                         | `gpt-5.6-sol` (`reasoning.mode: pro`)                                                                 | Apr 22, 2026 |"
   },
   {
@@ -1570,7 +1572,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "replacement": "gpt-5.6-sol (reasoning.mode: pro)",
     "replacementForm": "ids-in-text",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Oct 23, 2026**                                                                             | `o1-pro-2025-03-19`, `o1-pro`                                                                                                                                                                         | `gpt-5.6-sol` (`reasoning.mode: pro`)                                                                 | Apr 22, 2026 |"
   },
   {
@@ -1583,7 +1585,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Oct 23, 2026",
     "replacement": "gpt-5.6-sol",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Oct 23, 2026**                                                                             | `o3-mini-2025-01-31`, `o3-mini`                                                                                                                                                                       | `gpt-5.6-sol`                                                                                         | Apr 22, 2026 |"
   },
   {
@@ -1596,7 +1598,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Oct 23, 2026",
     "replacement": "gpt-5.6-sol",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Oct 23, 2026**                                                                             | `o3-mini-2025-01-31`, `o3-mini`                                                                                                                                                                       | `gpt-5.6-sol`                                                                                         | Apr 22, 2026 |"
   },
   {
@@ -1609,7 +1611,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Oct 23, 2026",
     "replacement": "gpt-5.6-terra",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Oct 23, 2026**                                                                             | `ft-o4-mini-2025-04-16`                                                                                                                                                                               | `gpt-5.6-terra`                                                                                       | Apr 22, 2026 |"
   },
   {
@@ -1622,7 +1624,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Oct 23, 2026",
     "replacement": "gpt-5.6-terra",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Oct 23, 2026**                                                                             | `o4-mini-2025-04-16`, `o4-mini`                                                                                                                                                                       | `gpt-5.6-terra`                                                                                       | Apr 22, 2026 |"
   },
   {
@@ -1635,7 +1637,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Oct 23, 2026",
     "replacement": "gpt-5.6-terra",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Oct 23, 2026**                                                                             | `o4-mini-2025-04-16`, `o4-mini`                                                                                                                                                                       | `gpt-5.6-terra`                                                                                       | Apr 22, 2026 |"
   },
   {
@@ -1649,7 +1651,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "replacement": "The most capable cyber model available to you.",
     "replacementForm": "text",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Oct 1, 2026**                                                                              | `gpt-5.4-cyber`                                                                                                                                             | The most capable cyber model available to you.                                                        | Sep 11, 2026 |"
   },
   {
@@ -1662,7 +1664,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Sep 28, 2026",
     "replacement": "gpt-5.6-terra",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Sep 28, 2026**                                                                             | `gpt-3.5-turbo-instruct`                                                                                                                      | `gpt-5.6-terra`                                                                                       | Sep 26, 2025 |"
   },
   {
@@ -1675,7 +1677,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Sep 28, 2026",
     "replacement": "gpt-5.6-terra",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Sep 28, 2026**                                                                             | `babbage-002`                                                                                                                                                                                         | `gpt-5.6-terra`                                                                                       | Sep 26, 2025 |"
   },
   {
@@ -1688,7 +1690,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Sep 28, 2026",
     "replacement": "gpt-5.6-terra",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Sep 28, 2026**                                                                             | `davinci-002`                                                                                                                                                                                         | `gpt-5.6-terra`                                                                                       | Sep 26, 2025 |"
   },
   {
@@ -1701,7 +1703,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Sep 28, 2026",
     "replacement": "gpt-5.6-terra",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Sep 28, 2026**                                                                             | `gpt-3.5-turbo-1106`                                                                                                                                                                                  | `gpt-5.6-terra`                                                                                       | Sep 26, 2025 |"
   },
   {
@@ -1713,7 +1715,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "shutdown": "2026-09-24",
     "dateText": "Sep 24, 2026",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Sep 24, 2026**                                                                             | `sora-2`                                                                                                                                                                                              | No one-to-one replacement                                                                             | Mar 24, 2026 |"
   },
   {
@@ -1725,7 +1727,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "shutdown": "2026-09-24",
     "dateText": "Sep 24, 2026",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Sep 24, 2026**                                                                             | `sora-2-pro`                                                                                                                                                                                          | No one-to-one replacement                                                                             | Mar 24, 2026 |"
   },
   {
@@ -1737,7 +1739,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "shutdown": "2026-09-24",
     "dateText": "Sep 24, 2026",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Sep 24, 2026**                                                                             | `sora-2-2025-10-06`                                                                                                                                                                                   | No one-to-one replacement                                                                             | Mar 24, 2026 |"
   },
   {
@@ -1749,7 +1751,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "shutdown": "2026-09-24",
     "dateText": "Sep 24, 2026",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Sep 24, 2026**                                                                             | `sora-2-2025-12-08`                                                                                                                                                                                   | No one-to-one replacement                                                                             | Mar 24, 2026 |"
   },
   {
@@ -1761,7 +1763,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "shutdown": "2026-09-24",
     "dateText": "Sep 24, 2026",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Sep 24, 2026**                                                                             | `sora-2-pro-2025-10-06`                                                                                                                                                                               | No one-to-one replacement                                                                             | Mar 24, 2026 |"
   },
   {
@@ -1774,7 +1776,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Aug 10, 2026",
     "replacement": "gpt-5.6-sol",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Aug 10, 2026**                                                                             | `gpt-5.2-chat-latest`                                                                                          | `gpt-5.6-sol`                                                                                         | May 8, 2026  |"
   },
   {
@@ -1787,7 +1789,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Aug 10, 2026",
     "replacement": "gpt-5.6-sol",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Aug 10, 2026**                                                                             | `gpt-5.3-chat-latest`                                                                                                                                                                                 | `gpt-5.6-sol`                                                                                         | May 8, 2026  |"
   },
   {
@@ -1800,7 +1802,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jul 23, 2026",
     "replacement": "gpt-5.6-terra",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jul 23, 2026**                                                                             | `computer-use-preview-2025-03-11`, `computer-use-preview`                                                                  | `gpt-5.6-terra`                                                                                       | Apr 22, 2026 |"
   },
   {
@@ -1813,7 +1815,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jul 23, 2026",
     "replacement": "gpt-5.6-terra",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jul 23, 2026**                                                                             | `computer-use-preview-2025-03-11`, `computer-use-preview`                                                                  | `gpt-5.6-terra`                                                                                       | Apr 22, 2026 |"
   },
   {
@@ -1826,7 +1828,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jul 23, 2026",
     "replacement": "gpt-5.6-terra",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jul 23, 2026**                                                                             | `gpt-4o-mini-search-preview-2025-03-11`                                                                                                                                                               | `gpt-5.6-terra`                                                                                       | Apr 22, 2026 |"
   },
   {
@@ -1839,7 +1841,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jul 23, 2026",
     "replacement": "gpt-5.6-terra",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jul 23, 2026**                                                                             | `gpt-4o-search-preview-2025-03-11`                                                                                                                                                                    | `gpt-5.6-terra`                                                                                       | Apr 22, 2026 |"
   },
   {
@@ -1852,7 +1854,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jul 23, 2026",
     "replacement": "gpt-5.6-sol",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jul 23, 2026**                                                                             | `gpt-5-chat-latest`                                                                                                                                                                                   | `gpt-5.6-sol`                                                                                         | Apr 22, 2026 |"
   },
   {
@@ -1865,7 +1867,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jul 23, 2026",
     "replacement": "gpt-5.6-sol",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jul 23, 2026**                                                                             | `gpt-5-codex`                                                                                                                                                                                         | `gpt-5.6-sol`                                                                                         | Apr 22, 2026 |"
   },
   {
@@ -1878,7 +1880,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jul 23, 2026",
     "replacement": "gpt-5.6-sol",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jul 23, 2026**                                                                             | `gpt-5.1-chat-latest`                                                                                                                                                                                 | `gpt-5.6-sol`                                                                                         | Apr 22, 2026 |"
   },
   {
@@ -1891,7 +1893,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jul 23, 2026",
     "replacement": "gpt-5.6-sol",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jul 23, 2026**                                                                             | `gpt-5.1-codex`                                                                                                                                                                                       | `gpt-5.6-sol`                                                                                         | Apr 22, 2026 |"
   },
   {
@@ -1904,7 +1906,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jul 23, 2026",
     "replacement": "gpt-5.6-sol",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jul 23, 2026**                                                                             | `gpt-5.1-codex-max`                                                                                                                                                                                   | `gpt-5.6-sol`                                                                                         | Apr 22, 2026 |"
   },
   {
@@ -1917,7 +1919,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jul 23, 2026",
     "replacement": "gpt-5.6-terra",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jul 23, 2026**                                                                             | `gpt-5.1-codex-mini`                                                                                                                                                                                  | `gpt-5.6-terra`                                                                                       | Apr 22, 2026 |"
   },
   {
@@ -1930,7 +1932,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jul 23, 2026",
     "replacement": "gpt-audio-1.5",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jul 23, 2026**                                                                             | `gpt-audio-mini-2025-10-06`                                                                                                                                                                           | `gpt-audio-1.5`                                                                                       | Apr 22, 2026 |"
   },
   {
@@ -1943,7 +1945,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jul 23, 2026",
     "replacement": "gpt-realtime-2.1-mini",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jul 23, 2026**                                                                             | `gpt-realtime-mini-2025-10-06`                                                                                                                                                                        | `gpt-realtime-2.1-mini`                                                                               | Apr 22, 2026 |"
   },
   {
@@ -1956,7 +1958,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jul 23, 2026",
     "replacement": "gpt-5.6-sol",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jul 23, 2026**                                                                             | `o3-deep-research-2025-06-26`, `o3-deep-research`                                                                                                                                                     | `gpt-5.6-sol`                                                                                         | Apr 22, 2026 |"
   },
   {
@@ -1969,7 +1971,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jul 23, 2026",
     "replacement": "gpt-5.6-sol",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jul 23, 2026**                                                                             | `o3-deep-research-2025-06-26`, `o3-deep-research`                                                                                                                                                     | `gpt-5.6-sol`                                                                                         | Apr 22, 2026 |"
   },
   {
@@ -1982,7 +1984,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jul 23, 2026",
     "replacement": "gpt-5.6-sol",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jul 23, 2026**                                                                             | `o4-mini-deep-research-2025-06-26`, `o4-mini-deep-research`                                                                                                                                           | `gpt-5.6-sol`                                                                                         | Apr 22, 2026 |"
   },
   {
@@ -1995,7 +1997,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jul 23, 2026",
     "replacement": "gpt-5.6-sol",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jul 23, 2026**                                                                             | `o4-mini-deep-research-2025-06-26`, `o4-mini-deep-research`                                                                                                                                           | `gpt-5.6-sol`                                                                                         | Apr 22, 2026 |"
   },
   {
@@ -2008,7 +2010,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jul 23, 2026",
     "replacement": "gpt-5.6-sol",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jul 23, 2026**                                                                             | `gpt-5.2-codex`                                                                                                                                                                                       | `gpt-5.6-sol`                                                                                         | Apr 22, 2026 |"
   },
   {
@@ -2021,7 +2023,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "May 12, 2026",
     "replacement": "gpt-image-2, gpt-image-1, or gpt-image-1-mini",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **May 12, 2026**                                                                             | `dall-e-2`                                                                                                                                         | `gpt-image-2`, `gpt-image-1`, or `gpt-image-1-mini`                                                   | Nov 14, 2025 |"
   },
   {
@@ -2034,7 +2036,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "May 12, 2026",
     "replacement": "gpt-image-2, gpt-image-1, or gpt-image-1-mini",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **May 12, 2026**                                                                             | `dall-e-3`                                                                                                                                                                                            | `gpt-image-2`, `gpt-image-1`, or `gpt-image-1-mini`                                                   | Nov 14, 2025 |"
   },
   {
@@ -2047,7 +2049,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "May 7, 2026",
     "replacement": "gpt-realtime-1.5",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **May 7, 2026**                                                                              | `gpt-4o-realtime-preview`                                                                                                                 | `gpt-realtime-1.5`                                                                                    | Sep 15, 2025 |"
   },
   {
@@ -2060,7 +2062,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "May 7, 2026",
     "replacement": "gpt-realtime-1.5",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **May 7, 2026**                                                                              | `gpt-4o-realtime-preview-2025-06-03`                                                                                                                                                                  | `gpt-realtime-1.5`                                                                                    | Sep 15, 2025 |"
   },
   {
@@ -2073,7 +2075,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "May 7, 2026",
     "replacement": "gpt-realtime-1.5",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **May 7, 2026**                                                                              | `gpt-4o-realtime-preview-2024-12-17`                                                                                                                                                                  | `gpt-realtime-1.5`                                                                                    | Sep 15, 2025 |"
   },
   {
@@ -2086,7 +2088,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "May 7, 2026",
     "replacement": "gpt-realtime-mini",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **May 7, 2026**                                                                              | `gpt-4o-mini-realtime-preview`                                                                                                                                                                        | `gpt-realtime-mini`                                                                                   | Sep 15, 2025 |"
   },
   {
@@ -2099,7 +2101,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "May 7, 2026",
     "replacement": "gpt-audio-1.5",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **May 7, 2026**                                                                              | `gpt-4o-audio-preview`                                                                                                                                                                                | `gpt-audio-1.5`                                                                                       | Sep 15, 2025 |"
   },
   {
@@ -2112,7 +2114,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "May 7, 2026",
     "replacement": "gpt-audio-mini",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **May 7, 2026**                                                                              | `gpt-4o-mini-audio-preview`                                                                                                                                                                           | `gpt-audio-mini`                                                                                      | Sep 15, 2025 |"
   },
   {
@@ -2126,7 +2128,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "replacement": "gpt-5, or gpt-4.1 for latency-sensitive tasks that don't require reasoning",
     "replacementForm": "ids-in-text",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Mar 26, 2026**                                                                             | `gpt-4-0314`                                                                                                              | `gpt-5`, or `gpt-4.1` for latency-sensitive tasks that don't require reasoning                        | Sep 26, 2025 |"
   },
   {
@@ -2140,7 +2142,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "replacement": "gpt-5, or gpt-4.1 for latency-sensitive tasks that don't require reasoning",
     "replacementForm": "ids-in-text",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Mar 26, 2026**                                                                             | `gpt-4-0125-preview` (including `gpt-4-turbo-preview` and `gpt-4-turbo-preview-completions`, which point to this snapshot)                                                                            | `gpt-5`, or `gpt-4.1` for latency-sensitive tasks that don't require reasoning                        | Sep 26, 2025 |"
   },
   {
@@ -2154,7 +2156,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "replacement": "gpt-5, or gpt-4.1 for latency-sensitive tasks that don't require reasoning",
     "replacementForm": "ids-in-text",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Mar 26, 2026**                                                                             | `gpt-4-0125-preview` (including `gpt-4-turbo-preview` and `gpt-4-turbo-preview-completions`, which point to this snapshot)                                                                            | `gpt-5`, or `gpt-4.1` for latency-sensitive tasks that don't require reasoning                        | Sep 26, 2025 |"
   },
   {
@@ -2168,7 +2170,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "replacement": "gpt-5, or gpt-4.1 for latency-sensitive tasks that don't require reasoning",
     "replacementForm": "ids-in-text",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Mar 26, 2026**                                                                             | `gpt-4-0125-preview` (including `gpt-4-turbo-preview` and `gpt-4-turbo-preview-completions`, which point to this snapshot)                                                                            | `gpt-5`, or `gpt-4.1` for latency-sensitive tasks that don't require reasoning                        | Sep 26, 2025 |"
   },
   {
@@ -2181,7 +2183,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Feb 17, 2026",
     "replacement": "gpt-5.1-chat-latest",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Feb 17, 2026**                                                                             | `chatgpt-4o-latest`                                                                                                                           | `gpt-5.1-chat-latest`                                                                                 | Nov 18, 2025 |"
   },
   {
@@ -2194,7 +2196,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Feb 12, 2026",
     "replacement": "gpt-5-codex-mini",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Feb 12, 2026**                                                                             | `codex-mini-latest`                                                                                                                     | `gpt-5-codex-mini`                                                                                    | Nov 17, 2025 |"
   },
   {
@@ -2207,7 +2209,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Oct 27, 2025",
     "replacement": "omni-moderation",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Oct 27, 2025**                                                                             | `text-moderation-007`                                                                                                                                    | `omni-moderation`                                                                                     | Apr 28, 2025 |"
   },
   {
@@ -2220,7 +2222,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Oct 27, 2025",
     "replacement": "omni-moderation",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Oct 27, 2025**                                                                             | `text-moderation-stable`                                                                                                                                                                              | `omni-moderation`                                                                                     | Apr 28, 2025 |"
   },
   {
@@ -2233,7 +2235,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Oct 27, 2025",
     "replacement": "omni-moderation",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Oct 27, 2025**                                                                             | `text-moderation-latest`                                                                                                                                                                              | `omni-moderation`                                                                                     | Apr 28, 2025 |"
   },
   {
@@ -2246,7 +2248,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Oct 27, 2025",
     "replacement": "o4-mini",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Oct 27, 2025**                                                                             | `o1-mini`                                                                                                                                                                                             | `o4-mini`                                                                                             | Apr 28, 2025 |"
   },
   {
@@ -2259,7 +2261,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Oct 10, 2025",
     "replacement": "gpt-realtime-1.5",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Oct 10, 2025**                                                                             | `gpt-4o-realtime-preview-2024-10-01`                                                                                                  | `gpt-realtime-1.5`                                                                                    | Jun 10, 2025 |"
   },
   {
@@ -2272,7 +2274,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Oct 10, 2025",
     "replacement": "gpt-audio-1.5",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Oct 10, 2025**                                                                             | `gpt-4o-audio-preview-2024-10-01`                                                                                                        | `gpt-audio-1.5`                                                                                       | Jun 10, 2025 |"
   },
   {
@@ -2285,7 +2287,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jul 28, 2025",
     "replacement": "o3",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jul 28, 2025**                                                                             | `o1-preview`                                                                                                                                      | `o3`                                                                                                  | Apr 28, 2025 |"
   },
   {
@@ -2298,7 +2300,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jul 14, 2025",
     "replacement": "gpt-4.1",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jul 14, 2025**                                                                             | `gpt-4.5-preview`                                                                                                                                         | `gpt-4.1`                                                                                             | Apr 14, 2025 |"
   },
   {
@@ -2311,7 +2313,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jun 6, 2025",
     "replacement": "gpt-4o",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jun 6, 2025**                                                                              | `gpt-4-32k` Historical price $60.00 / 1M input tokens + $120 / 1M output tokens | `gpt-4o`                                                                                              | Jun 6, 2024  |"
   },
   {
@@ -2324,7 +2326,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jun 6, 2025",
     "replacement": "gpt-4o",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jun 6, 2025**                                                                              | `gpt-4-32k-0613` Historical price $60.00 / 1M input tokens + $120 / 1M output tokens                                                             | `gpt-4o`                                                                                              | Jun 6, 2024  |"
   },
   {
@@ -2337,7 +2339,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jun 6, 2025",
     "replacement": "gpt-4o",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jun 6, 2025**                                                                              | `gpt-4-32k-0314` Historical price $60.00 / 1M input tokens + $120 / 1M output tokens                                                             | `gpt-4o`                                                                                              | Jun 13, 2023 |"
   },
   {
@@ -2350,7 +2352,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Dec 6, 2024",
     "replacement": "gpt-4o",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Dec 6, 2024**                                                                              | `gpt-4-vision-preview` Historical price $10.00 / 1M input tokens + $30 / 1M output tokens                                                        | `gpt-4o`                                                                                              | Jun 6, 2024  |"
   },
   {
@@ -2363,7 +2365,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Dec 6, 2024",
     "replacement": "gpt-4o",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Dec 6, 2024**                                                                              | `gpt-4-1106-vision-preview` Historical price $10.00 / 1M input tokens + $30 / 1M output tokens                                                   | `gpt-4o`                                                                                              | Jun 6, 2024  |"
   },
   {
@@ -2376,7 +2378,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Sep 13, 2024",
     "replacement": "gpt-3.5-turbo",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Sep 13, 2024**                                                                             | `gpt-3.5-turbo-0613` Historical price $1.50 / 1M input tokens + $2.00 / 1M output tokens         | `gpt-3.5-turbo`                                                                                       | Nov 6, 2023  |"
   },
   {
@@ -2389,7 +2391,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Sep 13, 2024",
     "replacement": "gpt-3.5-turbo",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Sep 13, 2024**                                                                             | `gpt-3.5-turbo-16k-0613` Historical price $3.00 / 1M input tokens + $4.00 / 1M output tokens                                                     | `gpt-3.5-turbo`                                                                                       | Nov 6, 2023  |"
   },
   {
@@ -2402,7 +2404,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Sep 13, 2024",
     "replacement": "gpt-3.5-turbo",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Sep 13, 2024**                                                                             | `gpt-3.5-turbo-0301` Historical price $15.00 / 1M input tokens + $20.00 / 1M output tokens                                                       | `gpt-3.5-turbo`                                                                                       | Jun 13, 2023 |"
   },
   {
@@ -2415,7 +2417,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 4, 2024",
     "replacement": "gpt-3.5-turbo-instruct",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 4, 2024**                                                                              | `text-ada-001` Historical price $0.40 / 1M tokens           | `gpt-3.5-turbo-instruct`                                                                              | Jul 6, 2023  |"
   },
   {
@@ -2428,7 +2430,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 4, 2024",
     "replacement": "gpt-3.5-turbo-instruct",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 4, 2024**                                                                              | `text-babbage-001` Historical price $0.50 / 1M tokens                                                                                            | `gpt-3.5-turbo-instruct`                                                                              | Jul 6, 2023  |"
   },
   {
@@ -2441,7 +2443,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 4, 2024",
     "replacement": "gpt-3.5-turbo-instruct",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 4, 2024**                                                                              | `text-curie-001` Historical price $2.00 / 1M tokens                                                                                              | `gpt-3.5-turbo-instruct`                                                                              | Jul 6, 2023  |"
   },
   {
@@ -2454,7 +2456,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 4, 2024",
     "replacement": "gpt-3.5-turbo-instruct",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 4, 2024**                                                                              | `text-davinci-001` Historical price $20.00 / 1M tokens                                                                                           | `gpt-3.5-turbo-instruct`                                                                              | Jul 6, 2023  |"
   },
   {
@@ -2467,7 +2469,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 4, 2024",
     "replacement": "gpt-3.5-turbo-instruct",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 4, 2024**                                                                              | `text-davinci-002` Historical price $20.00 / 1M tokens                                                                                           | `gpt-3.5-turbo-instruct`                                                                              | Jul 6, 2023  |"
   },
   {
@@ -2480,7 +2482,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 4, 2024",
     "replacement": "gpt-3.5-turbo-instruct",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 4, 2024**                                                                              | `text-davinci-003` Historical price $20.00 / 1M tokens                                                                                           | `gpt-3.5-turbo-instruct`                                                                              | Jul 6, 2023  |"
   },
   {
@@ -2493,7 +2495,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 4, 2024",
     "replacement": "babbage-002",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 4, 2024**                                                                              | `ada` Historical price $0.40 / 1M tokens                                                                       | `babbage-002`                                                                                         | Jul 6, 2023  |"
   },
   {
@@ -2506,7 +2508,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 4, 2024",
     "replacement": "babbage-002",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 4, 2024**                                                                              | `babbage` Historical price $0.50 / 1M tokens                                                                                                     | `babbage-002`                                                                                         | Jul 6, 2023  |"
   },
   {
@@ -2519,7 +2521,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 4, 2024",
     "replacement": "davinci-002",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 4, 2024**                                                                              | `curie` Historical price $2.00 / 1M tokens                                                                                                       | `davinci-002`                                                                                         | Jul 6, 2023  |"
   },
   {
@@ -2532,7 +2534,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 4, 2024",
     "replacement": "davinci-002",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 4, 2024**                                                                              | `davinci` Historical price $20.00 / 1M tokens                                                                                                    | `davinci-002`                                                                                         | Jul 6, 2023  |"
   },
   {
@@ -2545,7 +2547,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 4, 2024",
     "replacement": "gpt-3.5-turbo-instruct",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 4, 2024**                                                                              | `code-davinci-002` (base GPT models)                                                                                                                                                                  | `gpt-3.5-turbo-instruct`                                                                              | Jul 6, 2023  |"
   },
   {
@@ -2558,7 +2560,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 4, 2024",
     "replacement": "gpt-4o",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 4, 2024**                                                                              | `text-davinci-edit-001`                                                                                                                                       | `gpt-4o`                                                                                              | Jul 6, 2023  |"
   },
   {
@@ -2571,7 +2573,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 4, 2024",
     "replacement": "gpt-4o",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 4, 2024**                                                                              | `code-davinci-edit-001`                                                                                                                                                                               | `gpt-4o`                                                                                              | Jul 6, 2023  |"
   },
   {
@@ -2584,7 +2586,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 4, 2024",
     "replacement": "text-embedding-3-small",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 4, 2024**                                                                              | `text-similarity-ada-001` Historical price $4.00 / 1M tokens                            | `text-embedding-3-small`                                                                              | Jul 6, 2023  |"
   },
   {
@@ -2597,7 +2599,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 4, 2024",
     "replacement": "text-embedding-3-small",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 4, 2024**                                                                              | `text-search-ada-doc-001` Historical price $4.00 / 1M tokens                                                                                     | `text-embedding-3-small`                                                                              | Jul 6, 2023  |"
   },
   {
@@ -2610,7 +2612,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 4, 2024",
     "replacement": "text-embedding-3-small",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 4, 2024**                                                                              | `text-search-ada-query-001` Historical price $4.00 / 1M tokens                                                                                   | `text-embedding-3-small`                                                                              | Jul 6, 2023  |"
   },
   {
@@ -2623,7 +2625,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 4, 2024",
     "replacement": "text-embedding-3-small",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 4, 2024**                                                                              | `code-search-ada-code-001` Historical price $4.00 / 1M tokens                                                                                    | `text-embedding-3-small`                                                                              | Jul 6, 2023  |"
   },
   {
@@ -2636,7 +2638,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 4, 2024",
     "replacement": "text-embedding-3-small",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 4, 2024**                                                                              | `code-search-ada-text-001` Historical price $4.00 / 1M tokens                                                                                    | `text-embedding-3-small`                                                                              | Jul 6, 2023  |"
   },
   {
@@ -2649,7 +2651,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 4, 2024",
     "replacement": "text-embedding-3-small",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 4, 2024**                                                                              | `text-similarity-babbage-001` Historical price $5.00 / 1M tokens                                                                                 | `text-embedding-3-small`                                                                              | Jul 6, 2023  |"
   },
   {
@@ -2662,7 +2664,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 4, 2024",
     "replacement": "text-embedding-3-small",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 4, 2024**                                                                              | `text-search-babbage-doc-001` Historical price $5.00 / 1M tokens                                                                                 | `text-embedding-3-small`                                                                              | Jul 6, 2023  |"
   },
   {
@@ -2675,7 +2677,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 4, 2024",
     "replacement": "text-embedding-3-small",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 4, 2024**                                                                              | `text-search-babbage-query-001` Historical price $5.00 / 1M tokens                                                                               | `text-embedding-3-small`                                                                              | Jul 6, 2023  |"
   },
   {
@@ -2688,7 +2690,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 4, 2024",
     "replacement": "text-embedding-3-small",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 4, 2024**                                                                              | `code-search-babbage-code-001` Historical price $5.00 / 1M tokens                                                                                | `text-embedding-3-small`                                                                              | Jul 6, 2023  |"
   },
   {
@@ -2701,7 +2703,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 4, 2024",
     "replacement": "text-embedding-3-small",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 4, 2024**                                                                              | `code-search-babbage-text-001` Historical price $5.00 / 1M tokens                                                                                | `text-embedding-3-small`                                                                              | Jul 6, 2023  |"
   },
   {
@@ -2714,7 +2716,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 4, 2024",
     "replacement": "text-embedding-3-small",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 4, 2024**                                                                              | `text-similarity-curie-001` Historical price $20.00 / 1M tokens                                                                                  | `text-embedding-3-small`                                                                              | Jul 6, 2023  |"
   },
   {
@@ -2727,7 +2729,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 4, 2024",
     "replacement": "text-embedding-3-small",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 4, 2024**                                                                              | `text-search-curie-doc-001` Historical price $20.00 / 1M tokens                                                                                  | `text-embedding-3-small`                                                                              | Jul 6, 2023  |"
   },
   {
@@ -2740,7 +2742,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 4, 2024",
     "replacement": "text-embedding-3-small",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 4, 2024**                                                                              | `text-search-curie-query-001` Historical price $20.00 / 1M tokens                                                                                | `text-embedding-3-small`                                                                              | Jul 6, 2023  |"
   },
   {
@@ -2753,7 +2755,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 4, 2024",
     "replacement": "text-embedding-3-small",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 4, 2024**                                                                              | `text-similarity-davinci-001` Historical price $200.00 / 1M tokens                                                                               | `text-embedding-3-small`                                                                              | Jul 6, 2023  |"
   },
   {
@@ -2766,7 +2768,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 4, 2024",
     "replacement": "text-embedding-3-small",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 4, 2024**                                                                              | `text-search-davinci-doc-001` Historical price $200.00 / 1M tokens                                                                               | `text-embedding-3-small`                                                                              | Jul 6, 2023  |"
   },
   {
@@ -2779,7 +2781,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Jan 4, 2024",
     "replacement": "text-embedding-3-small",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Jan 4, 2024**                                                                              | `text-search-davinci-query-001` Historical price $200.00 / 1M tokens                                                                             | `text-embedding-3-small`                                                                              | Jul 6, 2023  |"
   },
   {
@@ -2792,7 +2794,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Mar 23, 2023",
     "replacement": "gpt-4o",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Mar 23, 2023**                                                                             | `code-davinci-001`                                                                                                                                                                                    | `gpt-4o`                                                                                              | Mar 20, 2023 |"
   },
   {
@@ -2805,7 +2807,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Mar 23, 2023",
     "replacement": "gpt-4o",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Mar 23, 2023**                                                                             | `code-cushman-002`                                                                                                                                                                                    | `gpt-4o`                                                                                              | Mar 20, 2023 |"
   },
   {
@@ -2818,7 +2820,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "Mar 23, 2023",
     "replacement": "gpt-4o",
     "url": "https://developers.openai.com/api/docs/deprecations.md",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "| **Mar 23, 2023**                                                                             | `code-cushman-001`                                                                                                                                                                                    | `gpt-4o`                                                                                              | Mar 20, 2023 |"
   },
   {
@@ -2828,7 +2830,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "pageWord": "No shutdown date announced",
     "dateText": "No shutdown date announced",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Gemini 4 models",
     "quote": "`gemini-4-neon` | November 18, 2026 | No shutdown date announced | "
   },
@@ -2839,7 +2841,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "pageWord": "No shutdown date announced",
     "dateText": "No shutdown date announced",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Gemini 4 models",
     "quote": "`gemini-4-hydrogen` | November 12, 2026 | No shutdown date announced | "
   },
@@ -2850,7 +2852,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "pageWord": "No shutdown date announced",
     "dateText": "No shutdown date announced",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Gemini 4 models",
     "quote": "`gemini-4-carbon` | November 10, 2026 | No shutdown date announced | "
   },
@@ -2861,7 +2863,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "pageWord": "No shutdown date announced",
     "dateText": "No shutdown date announced",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Gemini 4 models",
     "quote": "`gemini-4-argon` | October 13, 2026 | No shutdown date announced | "
   },
@@ -2872,7 +2874,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "pageWord": "No shutdown date announced",
     "dateText": "No shutdown date announced",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Gemini 3 models",
     "quote": "`gemini-3.8-flash-tts` | September 22, 2026 | No shutdown date announced | "
   },
@@ -2883,7 +2885,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "pageWord": "No shutdown date announced",
     "dateText": "No shutdown date announced",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Gemini 3 models",
     "quote": "`gemini-3.8-flash-lite-tts` | September 22, 2026 | No shutdown date announced | "
   },
@@ -2894,7 +2896,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "pageWord": "No shutdown date announced",
     "dateText": "No shutdown date announced",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Gemini 3 models",
     "quote": "`gemini-3.8-live` | September 15, 2026 | No shutdown date announced | "
   },
@@ -2905,7 +2907,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "pageWord": "No shutdown date announced",
     "dateText": "No shutdown date announced",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Gemini 3 models",
     "quote": "`gemini-3.8-live-extended-thinking` | September 15, 2026 | No shutdown date announced | "
   },
@@ -2916,7 +2918,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "pageWord": "No shutdown date announced",
     "dateText": "No shutdown date announced",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Gemini 3 models",
     "quote": "`gemini-3.8-flash` | September 2, 2026 | No shutdown date announced | "
   },
@@ -2929,11 +2931,11 @@ export const LEDGER: readonly LedgerRow[] = [
     "replacement": "gemini-3.8-flash",
     "routesTo": "gemini-3.8-flash",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Gemini 3 models",
     "alsoUrl": "https://aistudio.google.com/docs/changelog",
     "alsoQuote": "`gemini-3.7-flash`](/docs/whats-new-gemini-3.7) is deprecated",
-    "alsoReadOn": "2026-11-20",
+    "alsoReadOn": "2026-11-24",
     "quote": "`gemini-3.7-flash` | August 13, 2026 | N/A | `gemini-3.8-flash` (`gemini-3.7-flash` is no longer available in Google AI Studio; the endpoint is not shutting down and automatically routes API requests to `gemini-3.8-flash`)"
   },
   {
@@ -2943,7 +2945,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "pageWord": "No shutdown date announced",
     "dateText": "No shutdown date announced",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Gemini 3 models",
     "quote": "`gemini-3.6-flash` | July 21, 2026 | No shutdown date announced | "
   },
@@ -2954,7 +2956,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "pageWord": "No shutdown date announced",
     "dateText": "No shutdown date announced",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Gemini 3 models",
     "quote": "`gemini-3.5-flash-lite` | July 21, 2026 | No shutdown date announced | "
   },
@@ -2967,11 +2969,11 @@ export const LEDGER: readonly LedgerRow[] = [
     "replacement": "gemini-3.6-flash",
     "routesTo": "gemini-3.6-flash",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Gemini 3 models",
     "alsoUrl": "https://aistudio.google.com/docs/changelog",
     "alsoQuote": "`gemini-3.5-flash`](/docs/whats-new-gemini-3.5) is deprecated",
-    "alsoReadOn": "2026-11-20",
+    "alsoReadOn": "2026-11-24",
     "quote": "`gemini-3.5-flash` | May 19, 2026 | N/A | `gemini-3.6-flash` (`gemini-3.5-flash` is no longer available in Google AI Studio; the endpoint is not shutting down and automatically routes API requests to `gemini-3.6-flash`)"
   },
   {
@@ -2983,7 +2985,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "May 7, 2027",
     "replacement": "gemini-3.5-flash-lite",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Gemini 3 models",
     "quote": "`gemini-3.1-flash-lite` | May 7, 2026 | May 7, 2027 | `gemini-3.5-flash-lite`"
   },
@@ -2996,7 +2998,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "December 18, 2026",
     "replacement": "gemini-3.8-flash-tts or gemini-3.8-flash-lite-tts",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Gemini 3 models › Preview models",
     "quote": "`gemini-3.1-flash-tts-preview` | February 26, 2026 | December 18, 2026 | `gemini-3.8-flash-tts` or `gemini-3.8-flash-lite-tts`"
   },
@@ -3007,7 +3009,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "pageWord": "No shutdown date announced",
     "dateText": "No shutdown date announced",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Gemini 3 models › Preview models",
     "quote": "`gemini-3.1-pro-preview` | February 19, 2026 | No shutdown date announced | "
   },
@@ -3019,7 +3021,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "No shutdown date announced",
     "replacement": "gemini-3.6-flash",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Gemini 3 models › Preview models",
     "quote": "`gemini-3-flash-preview` | December 17, 2025 | No shutdown date announced | `gemini-3.6-flash`"
   },
@@ -3032,7 +3034,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "March 9, 2026",
     "replacement": "gemini-3.1-pro-preview",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Gemini 3 models › Deprecated models",
     "quote": "`gemini-3-pro-preview` | November 18, 2025 | March 9, 2026 | `gemini-3.1-pro-preview`"
   },
@@ -3045,7 +3047,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "May 25, 2026",
     "replacement": "gemini-3.1-flash-lite",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Gemini 3 models › Deprecated models",
     "quote": "`gemini-3.1-flash-lite-preview` | March 3, 2026 | May 25, 2026 | `gemini-3.1-flash-lite`"
   },
@@ -3059,7 +3061,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "replacement": "gemini-3.8-flash",
     "routesTo": "gemini-3.8-flash",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Gemini 2.5 Pro models",
     "quote": "`gemini-2.5-pro` | June 17, 2025 | December 1, 2026 | `gemini-3.8-flash` (`gemini-2.5-pro` is no longer available in Google AI Studio; effective December 1, 2026, API requests to `gemini-2.5-pro` will automatically route to `gemini-3.8-flash`)"
   },
@@ -3072,7 +3074,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "July 28, 2026",
     "replacement": "gemini-3.8-flash",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Gemini 2.5 Pro models › Deprecated models",
     "quote": "`gemini-2.5-computer-use-preview-10-2025` | October 7, 2025 | July 28, 2026 | `gemini-3.8-flash`"
   },
@@ -3085,7 +3087,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "December 2, 2025",
     "replacement": "gemini-3.8-flash",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Gemini 2.5 Pro models › Deprecated models",
     "quote": "`gemini-2.5-pro-preview-03-25` | March 3, 2025 | December 2, 2025 | `gemini-3.8-flash`"
   },
@@ -3098,7 +3100,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "December 2, 2025",
     "replacement": "gemini-3.8-flash",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Gemini 2.5 Pro models › Deprecated models",
     "quote": "`gemini-2.5-pro-preview-05-06` | May 6, 2025 | December 2, 2025 | `gemini-3.8-flash`"
   },
@@ -3111,7 +3113,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "December 2, 2025",
     "replacement": "gemini-3.8-flash",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Gemini 2.5 Pro models › Deprecated models",
     "quote": "`gemini-2.5-pro-preview-06-05` | June 5, 2025 | December 2, 2025 | `gemini-3.8-flash`"
   },
@@ -3125,7 +3127,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "replacement": "gemini-3.5-flash-lite",
     "routesTo": "gemini-3.5-flash-lite",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Gemini 2.5 Flash models",
     "quote": "`gemini-2.5-flash` | June 17, 2025 | December 1, 2026 | `gemini-3.5-flash-lite` (`gemini-2.5-flash` is no longer available in Google AI Studio; effective December 1, 2026, API requests to `gemini-2.5-flash` will automatically route to `gemini-3.5-flash-lite`)"
   },
@@ -3136,7 +3138,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "pageWord": "No shutdown date announced",
     "dateText": "No shutdown date announced",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Gemini 2.5 Flash models",
     "quote": "`gemini-2.5-flash-lite` | July 22, 2025 | No shutdown date announced | "
   },
@@ -3149,7 +3151,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "March 31, 2026",
     "replacement": "gemini-3.1-flash-lite",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Gemini 2.5 Flash models › Deprecated models",
     "quote": "`gemini-2.5-flash-lite-preview-09-2025` | September 25, 2025 | March 31, 2026 | `gemini-3.1-flash-lite`"
   },
@@ -3162,7 +3164,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "November 18, 2025",
     "replacement": "gemini-3.6-flash",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Gemini 2.5 Flash models › Deprecated models",
     "quote": "`gemini-2.5-flash-preview-05-20` | May 20, 2025 | November 18, 2025 | `gemini-3.6-flash`"
   },
@@ -3175,7 +3177,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "February 17, 2026",
     "replacement": "gemini-3.6-flash",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Gemini 2.5 Flash models › Deprecated models",
     "quote": "`gemini-2.5-flash-preview-09-2025` | September 25, 2025 | February 17, 2026 | `gemini-3.6-flash`"
   },
@@ -3188,7 +3190,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "June 1, 2026",
     "replacement": "gemini-3.6-flash",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Gemini 2.0 models › Deprecated models",
     "quote": "`gemini-2.0-flash` | February 5, 2025 | June 1, 2026 | `gemini-3.6-flash`"
   },
@@ -3201,7 +3203,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "June 1, 2026",
     "replacement": "gemini-3.6-flash",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Gemini 2.0 models › Deprecated models",
     "quote": "`gemini-2.0-flash-001` | February 5, 2025 | June 1, 2026 | `gemini-3.6-flash`"
   },
@@ -3214,7 +3216,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "June 1, 2026",
     "replacement": "gemini-3.1-flash-lite",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Gemini 2.0 models › Deprecated models",
     "quote": "`gemini-2.0-flash-lite` | February 25, 2025 | June 1, 2026 | `gemini-3.1-flash-lite`"
   },
@@ -3227,7 +3229,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "June 1, 2026",
     "replacement": "gemini-3.1-flash-lite",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Gemini 2.0 models › Deprecated models",
     "quote": "`gemini-2.0-flash-lite-001` | February 25, 2025 | June 1, 2026 | `gemini-3.1-flash-lite`"
   },
@@ -3240,7 +3242,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "December 9, 2025",
     "replacement": "gemini-3.1-flash-lite",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Gemini 2.0 models › Deprecated models",
     "quote": "`gemini-2.0-flash-lite-preview` | February 5, 2025 | December 9, 2025 | `gemini-3.1-flash-lite`"
   },
@@ -3253,7 +3255,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "December 9, 2025",
     "replacement": "gemini-3.1-flash-lite",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Gemini 2.0 models › Deprecated models",
     "quote": "`gemini-2.0-flash-lite-preview-02-05` | February 5, 2025 | December 9, 2025 | `gemini-3.1-flash-lite`"
   },
@@ -3264,7 +3266,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "pageWord": "No shutdown date announced",
     "dateText": "No shutdown date announced",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Live API models",
     "quote": "`gemini-3.5-transcribe-live` | August 2026 | No shutdown date announced | "
   },
@@ -3275,7 +3277,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "pageWord": "No shutdown date announced",
     "dateText": "No shutdown date announced",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Live API models › Preview models",
     "quote": "`gemini-3.5-live-translate-preview` | June 2026 | No shutdown date announced | "
   },
@@ -3287,7 +3289,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "No shutdown date announced",
     "replacement": "gemini-3.8-live",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Live API models › Preview models",
     "quote": "`gemini-3.1-flash-live-preview` | March 11, 2026 | No shutdown date announced | `gemini-3.8-live`"
   },
@@ -3300,7 +3302,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "March 31, 2027",
     "replacement": "gemini-3.8-live",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Live API models › Preview models",
     "quote": "`gemini-2.5-flash-native-audio-preview-12-2025` | December 12, 2025 | March 31, 2027 | `gemini-3.8-live`"
   },
@@ -3313,7 +3315,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "December 9, 2025",
     "replacement": "gemini-3.8-live",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Live API models › Deprecated models",
     "quote": "`gemini-live-2.5-flash-preview` | June 17, 2025 | December 9, 2025 | `gemini-3.8-live`"
   },
@@ -3326,7 +3328,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "December 9, 2025",
     "replacement": "gemini-3.8-live",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Live API models › Deprecated models",
     "quote": "`gemini-2.0-flash-live-001` | April 9, 2025 | December 9, 2025 | `gemini-3.8-live`"
   },
@@ -3337,7 +3339,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "pageWord": "No shutdown date announced",
     "dateText": "No shutdown date announced",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Audio models",
     "quote": "`gemini-3.5-transcribe` | August 2026 | No shutdown date announced | "
   },
@@ -3350,7 +3352,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "December 18, 2026",
     "replacement": "gemini-3.8-flash-tts or gemini-3.8-flash-lite-tts",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Audio models › Preview models",
     "quote": "`gemini-2.5-flash-preview-tts` | May 20, 2025 | December 18, 2026 | `gemini-3.8-flash-tts` or `gemini-3.8-flash-lite-tts`"
   },
@@ -3363,7 +3365,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "December 18, 2026",
     "replacement": "gemini-3.8-flash-tts or gemini-3.8-flash-lite-tts",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Audio models › Preview models",
     "quote": "`gemini-2.5-pro-preview-tts` | May 20, 2025 | December 18, 2026 | `gemini-3.8-flash-tts` or `gemini-3.8-flash-lite-tts`"
   },
@@ -3374,7 +3376,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "pageWord": "No shutdown date announced",
     "dateText": "No shutdown date announced",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Embedding models",
     "quote": "`gemini-embedding-2` | April 22, 2026 | No shutdown date announced | "
   },
@@ -3387,7 +3389,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "May 14, 2028",
     "replacement": "gemini-embedding-2",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Embedding models",
     "quote": "`gemini-embedding-001` | July 14, 2025 | May 14, 2028 | `gemini-embedding-2`"
   },
@@ -3401,11 +3403,11 @@ export const LEDGER: readonly LedgerRow[] = [
     "replacement": "gemini-embedding-2",
     "routesTo": "gemini-embedding-2",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Embedding models › Deprecated models",
     "alsoUrl": "https://aistudio.google.com/docs/changelog",
     "alsoQuote": "`gemini-embedding-2-preview`](/docs/models/gemini-embedding-2-preview) is [deprecated](/docs/deprecations#embedding-deprecated-models)",
-    "alsoReadOn": "2026-11-20",
+    "alsoReadOn": "2026-11-24",
     "quote": "`gemini-embedding-2-preview` | March 10, 2026 | November 6, 2026 | `gemini-embedding-2` (effective November 6, 2026, API requests to `gemini-embedding-2-preview` route to `gemini-embedding-2`)"
   },
   {
@@ -3417,7 +3419,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "January 14, 2026",
     "replacement": "gemini-embedding-2",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Embedding models › Deprecated models",
     "quote": "`text-embedding-004` | April 9, 2024 | January 14, 2026 | `gemini-embedding-2`"
   },
@@ -3430,7 +3432,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "October 30, 2025",
     "replacement": "gemini-embedding-2",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Embedding models › Deprecated models",
     "quote": "`embedding-001` | April 9, 2024 | October 30, 2025 | `gemini-embedding-2`"
   },
@@ -3443,7 +3445,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "October 30, 2025",
     "replacement": "gemini-embedding-2",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Embedding models › Deprecated models",
     "quote": "`embedding-gecko-001` |  | October 30, 2025 | `gemini-embedding-2`"
   },
@@ -3456,7 +3458,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "October 30, 2025",
     "replacement": "gemini-embedding-2",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Embedding models › Deprecated models",
     "quote": "`gemini-embedding-exp` |  | October 30, 2025 | `gemini-embedding-2`"
   },
@@ -3469,7 +3471,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "October 30, 2025",
     "replacement": "gemini-embedding-2",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Embedding models › Deprecated models",
     "quote": "`gemini-embedding-exp-03-07` |  | October 30, 2025 | `gemini-embedding-2`"
   },
@@ -3480,7 +3482,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "pageWord": "No shutdown date announced",
     "dateText": "No shutdown date announced",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Nano Banana models",
     "quote": "`gemini-nano-banana-2.1` | October 6, 2026 | No shutdown date announced | "
   },
@@ -3491,7 +3493,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "pageWord": "No shutdown date announced",
     "dateText": "No shutdown date announced",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Nano Banana models",
     "quote": "`gemini-3.1-flash-lite-image` | June 30, 2026 | No shutdown date announced | "
   },
@@ -3503,11 +3505,11 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "No shutdown date announced",
     "replacement": "gemini-nano-banana-2.1",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Nano Banana models",
     "alsoUrl": "https://aistudio.google.com/docs/changelog",
     "alsoQuote": "`gemini-3.1-flash-image` model is deprecated",
-    "alsoReadOn": "2026-11-20",
+    "alsoReadOn": "2026-11-24",
     "quote": "`gemini-3.1-flash-image` | May 28, 2026 | No shutdown date announced | `gemini-nano-banana-2.1`"
   },
   {
@@ -3517,7 +3519,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "pageWord": "No shutdown date announced",
     "dateText": "No shutdown date announced",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Nano Banana models",
     "quote": "`gemini-3-pro-image` | May 28, 2026 | No shutdown date announced | "
   },
@@ -3530,7 +3532,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "March 15, 2027",
     "replacement": "gemini-3.1-flash-lite-image",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Nano Banana models",
     "quote": "`gemini-2.5-flash-image` | October 2, 2025 | March 15, 2027 | `gemini-3.1-flash-lite-image`"
   },
@@ -3543,11 +3545,11 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "June 25, 2026",
     "replacement": "gemini-nano-banana-2.1",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Nano Banana models › Deprecated models",
     "alsoUrl": "https://aistudio.google.com/docs/changelog",
     "alsoQuote": "The `gemini-3.1-flash-image-preview` and `gemini-3-pro-image-preview` models are deprecated",
-    "alsoReadOn": "2026-11-20",
+    "alsoReadOn": "2026-11-24",
     "quote": "`gemini-3.1-flash-image-preview` | February 26, 2026 | June 25, 2026 | `gemini-nano-banana-2.1`"
   },
   {
@@ -3559,11 +3561,11 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "June 25, 2026",
     "replacement": "gemini-3-pro-image",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Nano Banana models › Deprecated models",
     "alsoUrl": "https://aistudio.google.com/docs/changelog",
     "alsoQuote": "The `gemini-3.1-flash-image-preview` and `gemini-3-pro-image-preview` models are deprecated",
-    "alsoReadOn": "2026-11-20",
+    "alsoReadOn": "2026-11-24",
     "quote": "`gemini-3-pro-image-preview` | November 20, 2025 | June 25, 2026 | `gemini-3-pro-image`"
   },
   {
@@ -3575,7 +3577,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "January 15, 2026",
     "replacement": "gemini-nano-banana-2.1",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Nano Banana models › Deprecated models",
     "quote": "`gemini-2.5-flash-image-preview` | May 7, 2025 | January 15, 2026 | `gemini-nano-banana-2.1`"
   },
@@ -3588,7 +3590,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "November 14, 2025",
     "replacement": "gemini-nano-banana-2.1",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Nano Banana models › Deprecated models",
     "quote": "`gemini-2.0-flash-preview-image-generation` | May 7, 2025 | November 14, 2025 | `gemini-nano-banana-2.1`"
   },
@@ -3601,7 +3603,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "August 17, 2026",
     "replacement": "gemini-nano-banana-2.1",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Imagen models › Deprecated models",
     "quote": "`imagen-4.0-generate-001` | June 24, 2025 | August 17, 2026 | `gemini-nano-banana-2.1`"
   },
@@ -3614,7 +3616,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "August 17, 2026",
     "replacement": "gemini-nano-banana-2.1",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Imagen models › Deprecated models",
     "quote": "`imagen-4.0-ultra-generate-001` | June 24, 2025 | August 17, 2026 | `gemini-nano-banana-2.1`"
   },
@@ -3627,7 +3629,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "August 17, 2026",
     "replacement": "gemini-nano-banana-2.1",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Imagen models › Deprecated models",
     "quote": "`imagen-4.0-fast-generate-001` | June 24, 2025 | August 17, 2026 | `gemini-nano-banana-2.1`"
   },
@@ -3640,7 +3642,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "February 17, 2026",
     "replacement": "gemini-nano-banana-2.1",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Imagen models › Deprecated models",
     "quote": "`imagen-4.0-generate-preview-06-06` | June 24, 2025 | February 17, 2026 | `gemini-nano-banana-2.1`"
   },
@@ -3653,7 +3655,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "February 17, 2026",
     "replacement": "gemini-nano-banana-2.1",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Imagen models › Deprecated models",
     "quote": "`imagen-4.0-ultra-generate-preview-06-06` | June 24, 2025 | February 17, 2026 | `gemini-nano-banana-2.1`"
   },
@@ -3666,7 +3668,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "November 10, 2025",
     "replacement": "gemini-nano-banana-2.1",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Imagen models › Deprecated models",
     "quote": "`imagen-3.0-generate-002` | February 6, 2025 | November 10, 2025 | `gemini-nano-banana-2.1`"
   },
@@ -3679,7 +3681,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "October 22, 2026",
     "replacement": "gemini-omni-1.2-flash",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Veo models › Deprecated models",
     "quote": "`veo-3.1-lite-generate-preview` | March 31, 2026 | October 22, 2026 | `gemini-omni-1.2-flash`"
   },
@@ -3692,7 +3694,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "October 22, 2026",
     "replacement": "gemini-omni-1.2-flash",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Veo models › Deprecated models",
     "quote": "`veo-3.1-generate-preview` | October 15, 2025 | October 22, 2026 | `gemini-omni-1.2-flash`"
   },
@@ -3705,7 +3707,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "October 22, 2026",
     "replacement": "gemini-omni-1.2-flash",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Veo models › Deprecated models",
     "quote": "`veo-3.1-fast-generate-preview` | October 15, 2025 | October 22, 2026 | `gemini-omni-1.2-flash`"
   },
@@ -3719,7 +3721,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "replacement": "gemini-omni-1.2-flash or the GA models on the Gemini Enterprise Agent Platform",
     "replacementForm": "ids-in-text",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Veo models › Deprecated models",
     "quote": "`veo-3.0-generate-001` | September 9, 2025 | June 30, 2026 | `gemini-omni-1.2-flash` or the GA models on the [Gemini Enterprise Agent Platform](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/veo/3-1-generate)"
   },
@@ -3733,7 +3735,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "replacement": "gemini-omni-1.2-flash or the GA models on the Gemini Enterprise Agent Platform",
     "replacementForm": "ids-in-text",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Veo models › Deprecated models",
     "quote": "`veo-3.0-fast-generate-001` | September 9, 2025 | June 30, 2026 | `gemini-omni-1.2-flash` or the GA models on the [Gemini Enterprise Agent Platform](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/veo/3-1-generate)"
   },
@@ -3747,7 +3749,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "replacement": "gemini-omni-1.2-flash or the GA models on the Gemini Enterprise Agent Platform",
     "replacementForm": "ids-in-text",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Veo models › Deprecated models",
     "quote": "`veo-2.0-generate-001` | April 9, 2025 | June 30, 2026 | `gemini-omni-1.2-flash` or the GA models on the [Gemini Enterprise Agent Platform](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/veo/3-1-generate)"
   },
@@ -3760,7 +3762,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "November 12, 2025",
     "replacement": "gemini-omni-1.2-flash",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Veo models › Deprecated models",
     "quote": "`veo-3.0-generate-preview` | July 31, 2025 | November 12, 2025 | `gemini-omni-1.2-flash`"
   },
@@ -3773,7 +3775,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "November 12, 2025",
     "replacement": "gemini-omni-1.2-flash",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Veo models › Deprecated models",
     "quote": "`veo-3.0-fast-generate-preview` | July 31, 2025 | November 12, 2025 | `gemini-omni-1.2-flash`"
   },
@@ -3784,7 +3786,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "pageWord": "No shutdown date announced",
     "dateText": "No shutdown date announced",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Gemini Omni Flash models",
     "quote": "`gemini-omni-1.2-flash` | November 5, 2026 | No shutdown date announced | "
   },
@@ -3798,7 +3800,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "replacement": "gemini-omni-1.2-flash",
     "routesTo": "gemini-omni-1.2-flash",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Gemini Omni Flash models",
     "quote": "`gemini-omni-1.1-flash` | August 27, 2026 | December 3, 2026 | `gemini-omni-1.2-flash` (Effective December 3, 2026, the endpoint is automatically routing API requests to `gemini-omni-1.2-flash`)"
   },
@@ -3811,20 +3813,20 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "October 22, 2026",
     "replacement": "gemini-omni-1.2-flash",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Gemini Omni Flash models › Deprecated models",
     "quote": "`gemini-omni-flash-preview` | June 30, 2026 | October 22, 2026 | `gemini-omni-1.2-flash`"
   },
   {
-    "id": "models/genie-4",
+    "id": "genie-4",
     "provider": "google",
     "word": "listed",
     "pageWord": "No shutdown date announced",
     "dateText": "No shutdown date announced",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Genie models",
-    "quote": "[`models/genie-4`](/docs/models/genie-4) | November 19, 2026 | No shutdown date announced | "
+    "quote": "[`genie-4`](/docs/models/genie-4) | November 19, 2026 | No shutdown date announced | "
   },
   {
     "id": "lyria-3.5",
@@ -3833,7 +3835,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "pageWord": "No shutdown date announced",
     "dateText": "No shutdown date announced",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Lyria models",
     "quote": "`lyria-3.5` | September 3, 2026 | No shutdown date announced | "
   },
@@ -3844,7 +3846,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "pageWord": "No shutdown date announced",
     "dateText": "No shutdown date announced",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Lyria models › Preview models",
     "quote": "`lyria-3-clip-preview` | March 25, 2026 | No shutdown date announced | "
   },
@@ -3856,7 +3858,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "No shutdown date announced",
     "replacement": "lyria-3.5",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Lyria models › Preview models",
     "quote": "`lyria-3-pro-preview` | March 25, 2026 | No shutdown date announced | `lyria-3.5`"
   },
@@ -3867,7 +3869,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "pageWord": "No shutdown date announced",
     "dateText": "No shutdown date announced",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Lyria models › Preview models",
     "quote": "`lyria-realtime-exp` | May 20, 2025 | No shutdown date announced | "
   },
@@ -3878,7 +3880,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "pageWord": "No shutdown date announced",
     "dateText": "No shutdown date announced",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Robotics models › Preview models",
     "quote": "`gemini-robotics-er-2-preview` | July 30, 2026 | No shutdown date announced | "
   },
@@ -3889,7 +3891,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "pageWord": "No shutdown date announced",
     "dateText": "No shutdown date announced",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Robotics models › Preview models",
     "quote": "`gemini-robotics-er-2-streaming-preview` | July 30, 2026 | No shutdown date announced | "
   },
@@ -3902,7 +3904,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "August 31, 2026",
     "replacement": "gemini-robotics-er-2-preview",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Robotics models › Deprecated models",
     "quote": "`gemini-robotics-er-1.6-preview` | April 14, 2026 | August 31, 2026 | `gemini-robotics-er-2-preview`"
   },
@@ -3915,7 +3917,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "April 30, 2026",
     "replacement": "gemini-robotics-er-2-preview",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Robotics models › Deprecated models",
     "quote": "`gemini-robotics-er-1.5-preview` | September 25, 2025 | April 30, 2026 | `gemini-robotics-er-2-preview`"
   },
@@ -3926,7 +3928,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "pageWord": "No shutdown date announced",
     "dateText": "No shutdown date announced",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Gemini Decision models",
     "quote": "[`gemini-decision-1`](/docs/models/gemini-decision-1) | November 11, 2026 | No shutdown date announced | "
   },
@@ -3937,7 +3939,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "pageWord": "No shutdown date announced",
     "dateText": "No shutdown date announced",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Managed agents › Preview agents",
     "quote": "`antigravity-preview-09-2026` | September 17, 2026 | No shutdown date announced | "
   },
@@ -3948,7 +3950,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "pageWord": "No shutdown date announced",
     "dateText": "No shutdown date announced",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Managed agents › Preview agents",
     "quote": "`deep-research-preview-04-2026` | April 21, 2026 | No shutdown date announced | "
   },
@@ -3959,7 +3961,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "pageWord": "No shutdown date announced",
     "dateText": "No shutdown date announced",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Managed agents › Preview agents",
     "quote": "`deep-research-max-preview-04-2026` | April 21, 2026 | No shutdown date announced | "
   },
@@ -3972,7 +3974,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "October 23, 2026",
     "replacement": "deep-research-preview-04-2026",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Managed agents › Deprecated agents",
     "quote": "`deep-research-pro-preview-12-2025` | December 11, 2025 | October 23, 2026 | `deep-research-preview-04-2026`"
   },
@@ -3985,11 +3987,11 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "October 5, 2026",
     "replacement": "antigravity-preview-09-2026",
     "url": "https://aistudio.google.com/docs/deprecations",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "section": "Managed agents › Deprecated agents",
     "alsoUrl": "https://aistudio.google.com/docs/changelog",
     "alsoQuote": "replaces and deprecates `antigravity-preview-05-2026`",
-    "alsoReadOn": "2026-11-20",
+    "alsoReadOn": "2026-11-24",
     "quote": "`antigravity-preview-05-2026` | May 19, 2026 | October 5, 2026 | `antigravity-preview-09-2026`"
   },
   {
@@ -4000,7 +4002,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "shutdown": "2026-02-17",
     "dateText": "February 17, 2026",
     "url": "https://aistudio.google.com/docs/changelog",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "announced": "2026-02-17",
     "quote": "The following models are [shut down](/docs/deprecations)"
   },
@@ -4012,7 +4014,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "shutdown": "2025-11-14",
     "dateText": "2025-11-14",
     "url": "https://aistudio.google.com/docs/changelog",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "announced": "2025-11-11",
     "quote": "Deprecation announcement: The following models will be shut down"
   },
@@ -4024,7 +4026,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "shutdown": "2025-11-18",
     "dateText": "2025-11-18",
     "url": "https://aistudio.google.com/docs/changelog",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "announced": "2025-11-04",
     "quote": "Deprecation announcement: The following models will be shut down"
   },
@@ -4036,7 +4038,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "shutdown": "2025-12-02",
     "dateText": "2025-12-02",
     "url": "https://aistudio.google.com/docs/changelog",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "announced": "2025-11-04",
     "quote": "Deprecation announcement: The following models will be shut down"
   },
@@ -4048,7 +4050,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "shutdown": "2025-12-02",
     "dateText": "2025-12-02",
     "url": "https://aistudio.google.com/docs/changelog",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "announced": "2025-11-04",
     "quote": "Deprecation announcement: The following models will be shut down"
   },
@@ -4060,7 +4062,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "shutdown": "2025-12-02",
     "dateText": "2025-12-02",
     "url": "https://aistudio.google.com/docs/changelog",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "announced": "2025-11-04",
     "quote": "Deprecation announcement: The following models will be shut down"
   },
@@ -4072,7 +4074,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "shutdown": "2025-12-09",
     "dateText": "2025-12-09",
     "url": "https://aistudio.google.com/docs/changelog",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "announced": "2025-11-04",
     "quote": "Deprecation announcement: The following models will be shut down"
   },
@@ -4084,7 +4086,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "shutdown": "2025-12-09",
     "dateText": "2025-12-09",
     "url": "https://aistudio.google.com/docs/changelog",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "announced": "2025-11-04",
     "quote": "Deprecation announcement: The following models will be shut down"
   },
@@ -4096,7 +4098,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "shutdown": "2025-12-09",
     "dateText": "2025-12-09",
     "url": "https://aistudio.google.com/docs/changelog",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "announced": "2025-11-04",
     "quote": "Deprecation announcement: The following models will be shut down"
   },
@@ -4108,7 +4110,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "shutdown": "2025-10-20",
     "dateText": "October 20, 2025",
     "url": "https://aistudio.google.com/docs/changelog",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "announced": "2025-10-20",
     "quote": "The following Gemini Live API models are now shut down"
   },
@@ -4120,7 +4122,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "shutdown": "2025-10-20",
     "dateText": "October 20, 2025",
     "url": "https://aistudio.google.com/docs/changelog",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "announced": "2025-10-20",
     "quote": "The following Gemini Live API models are now shut down"
   },
@@ -4132,7 +4134,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "shutdown": "2025-09-29",
     "dateText": "September 29, 2025",
     "url": "https://aistudio.google.com/docs/changelog",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "announced": "2025-09-29",
     "quote": "The following Gemini 1.5 models are now shut down"
   },
@@ -4144,7 +4146,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "shutdown": "2025-09-29",
     "dateText": "September 29, 2025",
     "url": "https://aistudio.google.com/docs/changelog",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "announced": "2025-09-29",
     "quote": "The following Gemini 1.5 models are now shut down"
   },
@@ -4156,7 +4158,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "shutdown": "2025-09-29",
     "dateText": "September 29, 2025",
     "url": "https://aistudio.google.com/docs/changelog",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "announced": "2025-09-29",
     "quote": "The following Gemini 1.5 models are now shut down"
   },
@@ -4168,7 +4170,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "shutdown": "2025-06-26",
     "dateText": "June 26, 2025",
     "url": "https://aistudio.google.com/docs/changelog",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "announced": "2025-06-26",
     "quote": "`gemini-2.5-pro-exp-03-25` is shut down"
   },
@@ -4180,7 +4182,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "shutdown": "2025-07-15",
     "dateText": "July 15, 2025",
     "url": "https://aistudio.google.com/docs/changelog",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "announced": "2025-06-17",
     "quote": "`gemini-2.5-flash-preview-04-17` will be deprecated on July 15, 2025"
   },
@@ -4192,7 +4194,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "announced": "2025-02-18",
     "dateText": "February 18, 2025",
     "url": "https://aistudio.google.com/docs/changelog",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "Gemini 1.0 Pro is no longer supported.",
     "namedAs": "Gemini 1.0 Pro",
     "entryHeading": "February 18, 2025",
@@ -4210,13 +4212,13 @@ export const LEDGER: readonly LedgerRow[] = [
     "announced": "2025-02-18",
     "dateText": "February 18, 2025",
     "url": "https://aistudio.google.com/docs/changelog",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "Gemini 1.0 Pro is no longer supported.",
     "namedAs": "Gemini 1.0 Pro",
     "entryHeading": "February 18, 2025",
     "alsoUrl": "https://aistudio.google.com/docs/changelog",
     "alsoQuote": "gemini-pro: New text model for a wide variety of tasks.",
-    "alsoReadOn": "2026-11-20",
+    "alsoReadOn": "2026-11-24",
     "alsoHeading": "December 13 2023",
     "modelPage": {
       "url": "https://aistudio.google.com/docs/models/gemini-pro",
@@ -4232,7 +4234,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "announced": "2024-07-12",
     "dateText": "July 12, 2024",
     "url": "https://aistudio.google.com/docs/changelog",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "Support for Gemini 1.0 Pro Vision removed from Google AI services and tools.",
     "namedAs": "Gemini 1.0 Pro Vision",
     "entryHeading": "July 12, 2024",
@@ -4250,13 +4252,13 @@ export const LEDGER: readonly LedgerRow[] = [
     "announced": "2024-07-12",
     "dateText": "July 12, 2024",
     "url": "https://aistudio.google.com/docs/changelog",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "Support for Gemini 1.0 Pro Vision removed from Google AI services and tools.",
     "namedAs": "Gemini 1.0 Pro Vision",
     "entryHeading": "July 12, 2024",
     "alsoUrl": "https://aistudio.google.com/docs/changelog",
     "alsoQuote": "gemini-pro-vision: New multimodal model for a wide variety of tasks.",
-    "alsoReadOn": "2026-11-20",
+    "alsoReadOn": "2026-11-24",
     "alsoHeading": "December 13 2023",
     "modelPage": {
       "url": "https://aistudio.google.com/docs/models/gemini-pro-vision",
@@ -4274,7 +4276,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "2026-07-24",
     "pointedTo": "deepseek-v4-flash",
     "url": "https://api-docs.deepseek.com/updates",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "The two legacy API model names, deepseek-chat and deepseek-reasoner, will be discontinued in three months (2026-07-24).",
     "note": "During the current period, these two model names point to the non-thinking mode and thinking mode of deepseek-v4-flash, respectively."
   },
@@ -4288,7 +4290,7 @@ export const LEDGER: readonly LedgerRow[] = [
     "dateText": "2026-07-24",
     "pointedTo": "deepseek-v4-flash",
     "url": "https://api-docs.deepseek.com/updates",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "The two legacy API model names, deepseek-chat and deepseek-reasoner, will be discontinued in three months (2026-07-24).",
     "note": "During the current period, these two model names point to the non-thinking mode and thinking mode of deepseek-v4-flash, respectively."
   },
@@ -4301,12 +4303,12 @@ export const LEDGER: readonly LedgerRow[] = [
     "replacement": "deepseek-flash",
     "routesTo": "V4.1 Flash",
     "url": "https://api-docs.deepseek.com/updates",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "The previous-generation models V4 Flash and V4 Flash Vision Exp have been retired; for compatibility, the model names deepseek-v4-flash and deepseek-v4-flash-vision-exp are temporarily routed to V4.1 Flash.",
     "note": "Change the model name to deepseek-flash to call the latest V4.1 Flash model.",
-    "alsoUrl": "https://api-docs.deepseek.com/news",
+    "alsoUrl": "https://api-docs.deepseek.com/",
     "alsoQuote": "The legacy names deepseek-v4-flash and deepseek-v4-flash-vision-exp are still accepted, but the corresponding models have been retired; their requests are served by DeepSeek-V4.1-Flash-1017 and billed at the Flash price.",
-    "alsoReadOn": "2026-11-20"
+    "alsoReadOn": "2026-11-24"
   },
   {
     "id": "deepseek-v4-flash-vision-exp",
@@ -4317,11 +4319,11 @@ export const LEDGER: readonly LedgerRow[] = [
     "replacement": "deepseek-flash",
     "routesTo": "V4.1 Flash",
     "url": "https://api-docs.deepseek.com/updates",
-    "readOn": "2026-11-20",
+    "readOn": "2026-11-24",
     "quote": "The previous-generation models V4 Flash and V4 Flash Vision Exp have been retired; for compatibility, the model names deepseek-v4-flash and deepseek-v4-flash-vision-exp are temporarily routed to V4.1 Flash.",
     "note": "Change the model name to deepseek-flash to call the latest V4.1 Flash model.",
-    "alsoUrl": "https://api-docs.deepseek.com/news",
+    "alsoUrl": "https://api-docs.deepseek.com/",
     "alsoQuote": "The legacy names deepseek-v4-flash and deepseek-v4-flash-vision-exp are still accepted, but the corresponding models have been retired; their requests are served by DeepSeek-V4.1-Flash-1017 and billed at the Flash price.",
-    "alsoReadOn": "2026-11-20"
+    "alsoReadOn": "2026-11-24"
   }
 ];

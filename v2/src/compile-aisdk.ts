@@ -171,9 +171,14 @@ export function compileForAISDKv6(
   // Mirror the public `compile()` exit path: compile, then register so
   // record() can enrich the outcome. Then arm consume-tracking on the handle.
   const result = adaptOffSwitchMutations(compileImpl(ir, opts));
+  // alpha.135 (A4) — derived before registration: the row's `effort_set` on this path is what
+  // the adapter puts in `providerOptions` (its word is *set*), not the plain-fetch lowering.
+  const providerOptions = deriveProviderOptions(result);
   // alpha.68 / Release A — forward the fan-out parent handle (usually undefined
   // for AI-SDK compile paths) so registerCompile derives the linkage.
-  registerCompile(ir.appId, ir.intent.archetype, ir, result, opts?.parentHandle);
+  registerCompile(ir.appId, ir.intent.archetype, ir, result, opts?.parentHandle, undefined, {
+    effortSet: providerOptions?.anthropic?.effort ?? providerOptions?.openai?.reasoningEffort,
+  });
   armCompileConsumeTracking(result.handle);
 
   // ── System: structured form (Anthropic + cacheable sections) preserves the
@@ -190,8 +195,6 @@ export function compileForAISDKv6(
     : systemMessages.map((m) => m.content).join('\n\n');
 
   const keptToolNames = extractKeptToolNames(result);
-
-  const providerOptions = deriveProviderOptions(result);
 
   const handle = result.handle;
   const diagnostics = {
@@ -326,6 +329,19 @@ function deriveProviderOptions(
  * `raw.request` stays the plain-fetch lowering.
  * (was: `thinking-off-sent-disabled` kept and `effort-low-sent`, until Amendment B.)
  */
+/**
+ * 2026-11-27 filing, R9 (Amendment A2) — the `@ai-sdk/anthropic` version line
+ * for `thinking: { type: 'disabled' }`, beside the date it was read: 4.0.107
+ * (npm `latest`) sends it (dist/index.js:4576, `sendThinking = isThinking ||
+ * thinkingType === "disabled" || …`); 3.0.79 carries it only as a schema
+ * literal (dist/index.js:927) and never puts it on the wire. The seat's read,
+ * 2026-11-23T22:12:45Z. The `thinking-off-set-disabled` description below and
+ * the call summary's clause (call.ts) say this line; a test pins both to it.
+ * It names the two versions that were read, not a range. (was: `{ sendsFrom:
+ * '4.0', validatesOnly: '3.x' }`, until the filing's fix pass 2.)
+ */
+export const AISDK_ANTHROPIC_OFF_SWITCH_LINE = { sends: '4.0.107', validatesOnly: '3.0.79', readAt: '2026-11-23' } as const;
+
 function adaptOffSwitchMutations(result: CompileResult): CompileResult {
   if (result.provider !== 'anthropic') return result;
   const type = (result.request as { thinking?: { type?: string } }).thinking?.type;
@@ -353,9 +369,12 @@ function adaptOffSwitchMutations(result: CompileResult): CompileResult {
         id: 'thinking-off-set-disabled',
         source: 'cliff_guard',
         passName: 'compile_for_aisdk',
-        description:
-          `${result.target}: set providerOptions.anthropic.thinking { type: 'disabled' }, the model's own off-switch. ` +
-          `Whether it reaches the wire is the installed SDK's: @ai-sdk/anthropic 3.0.79 drops it (isThinking covers enabled / adaptive only).`,
+        // 2026-11-27 filing, R9 (Amendment A2) — the line that sends it, AISDK_ANTHROPIC_OFF_SWITCH_LINE.
+        // (was: "set providerOptions.anthropic.thinking { type: 'disabled' }, the model's own off-switch. Whether it
+        // reaches the wire is the installed SDK's: @ai-sdk/anthropic 3.0.79 drops it (isThinking covers enabled /
+        // adaptive only).", until R9; then "… @ai-sdk/anthropic 4.0 and later sends the switch; 3.x validates it and
+        // does not, and the model may still think at effort low …", until fix pass 2.)
+        description: `${result.target}: set thinking: disabled and effort low for the AI SDK — @ai-sdk/anthropic 4.0.107 sends the switch; 3.0.79 validates it and does not, and Claude Haiku 5.5 may still think at effort low (2 of 12 reads on 2026-11-23).`,
       });
       out.push(effortLow);
     } else {

@@ -36,8 +36,10 @@
  *   2. Stays above the archetype's perf floor (skip models scored <baseline
  *      for archetypes where degradation would be unacceptable)
  *   3. Makes NO cost guarantee. Pass `optimizeFor: 'cost'` when cost order
- *      is what you want — that mode DOES guarantee monotone-cheaper, and
- *      `assertChainCostMonotonicity` pins it.
+ *      is what you want — that mode guarantees monotone-cheaper WITHIN each
+ *      evidence class (measured and not below its incumbent first, then the
+ *      judgments, then measured below its incumbent), and
+ *      `tests/fallback.test.ts` + `tests/alpha136-cost-order.test.ts` pin it.
  *
  * In alpha.9 the chain is **hand-curated** per archetype (§3.3 starter
  * table). Brain-query mode lands in alpha.10. Policy.blockedModels filters
@@ -62,7 +64,7 @@ import {
   type ModelProfile,
 } from './profiles.js';
 import { canonicalPolicySet, isProviderBlocked, policySetHas } from './policy-match.js';
-import { getArchetypePerfScore } from './archetype-perf-brain.js';
+import { getArchetypePerfScore, type ArchetypePerfScoreResult } from './archetype-perf-brain.js';
 import { ARCHETYPE_FLOOR_DEFAULT } from './compatibility.js';
 
 /**
@@ -92,7 +94,7 @@ export interface GetDefaultFallbackChainOpts {
    */
   posture?: FallbackPosture;
   /**
-   * Cap on chain length. Default 3. Min 1. Useful when the consumer wants
+   * Cap on chain length. Default 6 (alpha.125; alpha.108 had 5, alpha.33 had 4, alpha.9 had 3). Min 1. Useful when the consumer wants
    * to keep the worst-case latency low (each fallback adds a round-trip).
    */
   maxDepth?: number;
@@ -145,17 +147,31 @@ export interface GetDefaultFallbackChainOpts {
    *      brain-loaded archetype ladder: best perf first, provider diversity
    *      down the chain. Makes NO cost guarantee (see module docstring).
    *
-   *   'cost' — cheapest-first among every `status: 'current'` model whose
-   *      `archetypePerf[archetype]` clears {@link ARCHETYPE_FLOOR_DEFAULT}.
-   *      Guarantees monotone-cheaper. Considers the WHOLE roster, not just
-   *      the curated chain — which is the point: `gemini-2.5-flash` ties
-   *      `claude-haiku-4-5` on `ask` perf at a third of the price and is
-   *      absent from the curated `ask` ladder entirely.
+   *   'cost' — every `status: 'current'` model whose archetype score clears
+   *      {@link ARCHETYPE_FLOOR_DEFAULT}, in three classes, each cheapest
+   *      first. A measured score is read WITH its outcome — the row's own
+   *      score against its own incumbent's score: (a) the candidates whose
+   *      score is a MEASUREMENT for this call (the scorer's own word,
+   *      `getArchetypePerfScore(id, archetype, appId).grounding === 'measured'`)
+   *      that is not below its incumbent; (b) the candidates whose score is a
+   *      curated JUDGMENT, and any measured row that carries no incumbent
+   *      score; (c) the measured candidates below their incumbent. With
+   *      `appId` the measured rows are the app's own; without it they are the
+   *      fleet's, which carry no incumbent and so sort in (b). Monotone-cheaper
+   *      holds WITHIN each class, not across a join: a judgment never precedes
+   *      a measurement not below its incumbent, and a measurement below its
+   *      incumbent never precedes a judgment, however much cheaper. Considers the
+   *      WHOLE roster, not just the curated chain — which is the point:
+   *      `gemini-2.5-flash` tied `claude-haiku-4-5` on `ask` perf at a third
+   *      of the price and was absent from the curated `ask` ladder entirely.
    *
-   * The quality floor is what keeps 'cost' honest: a model with no evidence
-   * scores the neutral 5 and is therefore excluded, so cost mode can never
-   * bottom-feed into unmeasured models. Quality stays a binary floor; cost
-   * optimizes only above it.
+   * The floor admits every `current` profile whose score for the archetype
+   * clears 6, whether that score is a measurement or a curated judgment; a
+   * model with no entry scores the neutral 5 and is out. The floor promises
+   * nothing else — {@link getDefaultFallbackChainWithGrounding} says which
+   * class each entry is in. A caller that wants the cheapest clearing model
+   * regardless of evidence passes its own `models`. Quality stays a binary
+   * floor; cost optimizes only above it.
    *
    * Default 'quality' — existing consumers see zero change on bump.
    */
@@ -261,9 +277,109 @@ export function estimateModelCostUsd(
 export const estimateChainCostUsd = estimateModelCostUsd;
 
 /**
+ * The grounding word for one scorer answer, said the way the advisor's
+ * tier-down sentence says a score (alpha.128): `measured on <app>, run
+ * <evidence_source>, n=<n>` for the app's own row, `measured across apps
+ * (<evidence_source>, n=<n>)` for a fleet row a measurement wrote, `judgment`
+ * otherwise. When the measured row's ruler was itself a judgment
+ * (`incumbent_grounding = 'judgment'`), the word says so:
+ * `measured (against <incumbent>, a judgment <incumbent_score>) on <app>, …`.
+ * Nothing ranks by the word.
+ */
+export function perfGroundingWord(s: ArchetypePerfScoreResult): string {
+  if (s.grounding === 'measured') {
+    if (s.source === 'measured') {
+      const anchor =
+        s.incumbentGrounding === 'judgment' && s.incumbentModel !== undefined
+          ? ` (against ${s.incumbentModel}, a judgment ${s.incumbentScore ?? 'of unknown score'})`
+          : '';
+      return `measured${anchor} on ${s.appId ?? 'this app'}, run ${s.evidenceSource ?? 'unknown'}, n=${s.n}`;
+    }
+    return `measured across apps (${s.evidenceSource ?? 'no evidence source'}, n=${s.n})`;
+  }
+  if (s.source === 'default') return 'judgment (no row: the neutral 5)';
+  return s.evidenceSource ? `judgment (${s.evidenceSource})` : 'judgment';
+}
+
+/**
+ * The cost-mode class of one scorer answer (Amendment B1 of the 2026-11-27
+ * filing: a measured score is read WITH its outcome). The outcome is the
+ * measured row's own `perf_score` against its own `incumbent_score`, both on
+ * the {@link ArchetypePerfScoreResult} the scorer returned (alpha.128 carries
+ * the incumbent on the app's own row; the fleet's rows carry none):
+ *   - `'measured-not-below-incumbent'` — class (a): measured, `score >= incumbentScore`;
+ *   - `'judgment'` — class (b): a curated judgment, or a measured row with no
+ *     `incumbentScore` (the incumbent is not known);
+ *   - `'measured-below-incumbent'` — class (c): measured, `score < incumbentScore`.
+ */
+type CostClass = 'measured-not-below-incumbent' | 'judgment' | 'measured-below-incumbent';
+
+function costClassOf(s: ArchetypePerfScoreResult): CostClass {
+  if (s.grounding !== 'measured') return 'judgment';
+  if (s.incumbentScore === undefined) return 'judgment';
+  return s.score >= s.incumbentScore ? 'measured-not-below-incumbent' : 'measured-below-incumbent';
+}
+
+/** The chain order of the three classes: (a), (b), (c). */
+const COST_CLASS_ORDER: readonly CostClass[] = ['measured-not-below-incumbent', 'judgment', 'measured-below-incumbent'];
+
+/**
+ * The outcome half of a measured entry's word in cost mode (Amendment B1): it
+ * tells class (a) from class (c). One of `not below its incumbent (<score>
+ * against <incumbent>'s <incumbent_score>)`, `below its incumbent (…)`, or
+ * `incumbent not known`; `undefined` for a judgment, whose word is unchanged.
+ */
+function costOutcomeWord(s: ArchetypePerfScoreResult): string | undefined {
+  if (s.grounding !== 'measured') return undefined;
+  if (s.incumbentScore === undefined) return 'incumbent not known';
+  const vs = `${s.score} against ${s.incumbentModel !== undefined ? `${s.incumbentModel}'s` : "its incumbent's"} ${s.incumbentScore}`;
+  return `${s.score >= s.incumbentScore ? 'not below' : 'below'} its incumbent (${vs})`;
+}
+
+/** One cost-mode candidate: the profile, its ranking cost, the scorer's own answer for it, and its class. */
+interface CostCandidate {
+  profile: ModelProfile;
+  cost: number;
+  perf: ArchetypePerfScoreResult;
+  costClass: CostClass;
+}
+
+/**
+ * The cost-mode candidates for an archetype, in chain order: every
+ * `status: 'current'` profile whose score clears the archetype perf floor, in
+ * three classes, each cheapest-first (Amendment B1 of the 2026-11-27 filing,
+ * re-ruling R2): (a) measured and not below its incumbent, (b) judgment, (c)
+ * measured below its incumbent. Shared by the plain and the grounded accessor
+ * so the two cannot disagree.
+ */
+function costOrderedCandidates(archetype: IntentArchetypeName, appId?: string): CostCandidate[] {
+  const byCost = (a: CostCandidate, b: CostCandidate) =>
+    a.cost - b.cost || a.profile.id.localeCompare(b.profile.id);
+  const admitted: CostCandidate[] = allProfiles()
+    .filter((p) => p.status === 'current')
+    .map((p) => ({ profile: p, perf: getArchetypePerfScore(p.id, archetype, appId) }))
+    .filter((c) => c.perf.score >= ARCHETYPE_FLOOR_DEFAULT)
+    .map((c) => ({ ...c, cost: estimateChainCostUsd(c.profile), costClass: costClassOf(c.perf) }));
+  return COST_CLASS_ORDER.flatMap((k) => admitted.filter((c) => c.costClass === k).sort(byCost));
+}
+
+/** A cost-mode chain entry: the scorer's grounding, its word (with the outcome when measured), and its row count when measured. */
+function costChainEntry(id: string, perf: ArchetypePerfScoreResult): ChainEntry {
+  const outcome = costOutcomeWord(perf);
+  const entry: ChainEntry = {
+    id,
+    grounding: perf.grounding,
+    reason: `cost mode: ${perfGroundingWord(perf)}${outcome !== undefined ? `; ${outcome}` : ''}; score ${perf.score}, floor ${ARCHETYPE_FLOOR_DEFAULT}`,
+  };
+  if (perf.grounding === 'measured') entry.n = perf.n;
+  return entry;
+}
+
+/**
  * Builds the cost-ordered candidate list for an archetype: every
- * `status: 'current'` profile clearing the archetype perf floor, strictly
- * cheapest-first.
+ * `status: 'current'` profile clearing the archetype perf floor, in three
+ * classes, each cheapest-first: measured and not below its incumbent, then
+ * judgment, then measured below its incumbent.
  *
  * **Cost mode does NOT guarantee provider diversity.** Strict cost order is
  * the whole contract, so the returned chain can be provider-uniform — which
@@ -276,14 +392,7 @@ export const estimateChainCostUsd = estimateModelCostUsd;
  * mode is the provider-diverse one.
  */
 function buildCostOrderedChain(archetype: IntentArchetypeName, appId?: string): string[] {
-  return allProfiles()
-    .filter((p) => p.status === 'current')
-    .filter(
-      (p) => getArchetypePerfScore(p.id, archetype, appId).score >= ARCHETYPE_FLOOR_DEFAULT,
-    )
-    .map((p) => ({ p, cost: estimateChainCostUsd(p) }))
-    .sort((a, b) => a.cost - b.cost || a.p.id.localeCompare(b.p.id))
-    .map((e) => e.p.id);
+  return costOrderedCandidates(archetype, appId).map((c) => c.profile.id);
 }
 
 /**
@@ -336,6 +445,18 @@ export function chainProviderSpread(chain: readonly string[]): number {
  * `tests/roster-status-drift.test.ts` guards it in the bundle;
  * `scripts/cross-surface-parity.mjs` compares bundle heads to brain tier 0
  * daily.
+ *
+ * alpha.135 extends it from the head to the MEMBERS (tt-intelligence 2026-11-20: one shape served
+ * claude-haiku-5-5 at 19:00 and claude-sonnet-5-5 at 19:15, cold then warm, because the brain had
+ * gained tiers the bundle never carried and placed some ahead of bundled ones). On ask, critique,
+ * extract, generate, hunt, plan and transform the chain is the bundle's tiers first, then the tiers
+ * the brain added, in the brain's order — on both surfaces once migration 105 re-tiers the brain (held: Amendment D, the ruling of 2026-11-21); the
+ * default depth (6) stays the bundled six (critique: its four and the two added) unless a block,
+ * modality or reachability filter frees a slot before the cap, which is then refilled from behind,
+ * cold as warm. Two brain tiers are not brought over but switched off by 105 (amendment B): legacy
+ * claude-sonnet-4-6 on critique and hunt, and deprecated gemini-3.5-flash on the five others.
+ * `scripts/cross-surface-parity.mjs` compares the members in order (`chainMemberDifferences`) and
+ * reports any difference as drift.
  *   - 'capability-fact'  L-040 cliff exclusions, structured-output rejects,
  *                        and the parallel-tool tier-0 placements in `hunt`.
  *   - 'judgment'         everything else. Cold-start prior, awaiting
@@ -356,6 +477,12 @@ const STARTER_CHAINS_GROUNDED: Record<IntentArchetypeName, ChainEntry[]> = {
     // third-provider tail instead.
     { id: 'gpt-5.5', grounding: 'judgment', reason: 'alpha.16: third-provider frontier-tier floor (archetypePerf=9)' },
     { id: 'deepseek-v4-pro', grounding: 'judgment', reason: 'alpha.86: third-provider tail replacing availability-restricted gemini-2.5-pro — critique=6 clears the floor exactly; last-resort when Anthropic AND OpenAI are down, not a quality peer of the tiers above' },
+    // alpha.135 (amendment B1) — the brain's added tiers, behind the bundled four, in the brain's
+    // order (read 2026-11-21T18:43Z). The brain's claude-sonnet-4-6 tier on critique is switched
+    // off by migration 105: the bundle never chained it here, and behind its family head
+    // claude-sonnet-5 it read as legacy-successor-absent. The default chain (depth 6) is these six.
+    { id: 'claude-opus-5-5', grounding: 'judgment', reason: 'alpha.135: brain tier, added 2026-11-21; not a bundle ruling — brain tier 1 (version_added 2.0.0-alpha.121, inserted behind claude-opus-5 by cold-start judgment), placed behind the bundled four so a cold call and a warm call score the same candidates' },
+    { id: 'claude-sonnet-5-5', grounding: 'judgment', reason: 'alpha.135: brain tier, added 2026-11-21; not a bundle ruling — brain tier 4 (version_added 2.0.0-alpha.121, inserted behind claude-sonnet-5 by cold-start judgment), placed behind the bundled four so a cold call and a warm call score the same candidates' },
   ],
   // alpha.62 (eval spine) — pairwise output comparison. Same reasoning-floor
   // posture as critique (a verdict from a weak judge is worse than no
@@ -377,6 +504,12 @@ const STARTER_CHAINS_GROUNDED: Record<IntentArchetypeName, ChainEntry[]> = {
     { id: 'gemini-3.7-flash', grounding: 'judgment', reason: 'alpha.101: cross-provider anchor = the gemini-flash family head (3.5-flash legacy per Google 2026-09-03; docs-verified, zero observed rows — a chain TAIL, served only when the tiers above fail). alpha.86 history: replaced availability-restricted gemini-2.5-pro' },
     { id: 'deepseek-v4-pro', grounding: 'judgment', reason: 'Tier 3 cost floor — no brain evidence yet' },
     { id: 'gpt-5.4', grounding: 'judgment', reason: 'alpha.33: third-provider tail (archetypePerf=7) — closes openai-in-default-fallback-chains' },
+    // alpha.135 — the brain's added tiers, behind the bundled six, in the brain's order (read
+    // 2026-11-20T21:45Z). Past the default depth (6): reached only with a larger `maxDepth`, by
+    // `getStarterChain()`, or by the call-time cross-provider tail.
+    { id: 'claude-sonnet-5-5', grounding: 'judgment', reason: 'alpha.135: brain tier, added 2026-11-20; not a bundle ruling — brain tier 2 (version_added 2.0.0-alpha.121, inserted behind claude-sonnet-5 by cold-start judgment), placed behind the bundled six so a cold call and a warm call score the same candidates' },
+    { id: 'claude-opus-5-5', grounding: 'judgment', reason: 'alpha.135: brain tier, added 2026-11-20; not a bundle ruling — brain tier 4 (version_added 2.0.0-alpha.121, inserted behind claude-opus-5 by cold-start judgment), placed behind the bundled six so a cold call and a warm call score the same candidates' },
+    { id: 'gemini-3.8-flash', grounding: 'judgment', reason: 'alpha.135: brain tier, added 2026-11-20; not a bundle ruling — brain tier 6 (version_added 2.0.0-alpha.109, the additive re-anchor of 2026-09-11 behind legacy gemini-3.5-flash), placed behind the bundled six so a cold call and a warm call score the same candidates' },
   ],
   // Quality + cost match.
   generate: [
@@ -386,6 +519,10 @@ const STARTER_CHAINS_GROUNDED: Record<IntentArchetypeName, ChainEntry[]> = {
     { id: 'claude-haiku-5-5', grounding: 'judgment', reason: 'alpha.125: Anthropic lists haiku-4-5 under Legacy (2026-10-25 read; retirement floor 2026-10-15 passed) — 5.5 enters directly behind it as deprecation cover, unmeasured; moves ahead only on a golden measurement' },
     { id: 'gemini-3.7-flash', grounding: 'judgment', reason: 'alpha.101: cross-provider anchor = the gemini-flash family head (3.5-flash legacy per Google 2026-09-03; docs-verified, zero observed rows — a chain TAIL, served only when the tiers above fail). alpha.86 history: replaced availability-restricted gemini-2.5-pro' },
     { id: 'gpt-5.4-mini', grounding: 'judgment', reason: 'alpha.16: third-provider tail (archetypePerf=7) — closes mono-Anthropic gap' },
+    // alpha.135 — the brain's added tiers, behind the bundled six (read 2026-11-20T21:45Z).
+    { id: 'claude-sonnet-5-5', grounding: 'judgment', reason: 'alpha.135: brain tier, added 2026-11-20; not a bundle ruling — brain tier 2 (version_added 2.0.0-alpha.121, inserted behind claude-sonnet-5 by cold-start judgment), placed behind the bundled six so a cold call and a warm call score the same candidates' },
+    { id: 'deepseek-v4-pro', grounding: 'judgment', reason: 'alpha.135: brain tier, added 2026-11-20; not a bundle ruling — brain tier 5 (version_added 2.0.0-alpha.16, the V4-Pro elevation of master plan §5.1), placed behind the bundled six so a cold call and a warm call score the same candidates' },
+    { id: 'gemini-3.8-flash', grounding: 'judgment', reason: 'alpha.135: brain tier, added 2026-11-20; not a bundle ruling — brain tier 7 (version_added 2.0.0-alpha.109, the additive re-anchor of 2026-09-11 behind legacy gemini-3.5-flash), placed behind the bundled six so a cold call and a warm call score the same candidates' },
   ],
   // ask::sonnet — STARTER_CHAINS calls this "Quality + cost match" but
   // tt-intel s78 prod data showed 27% empty rate. Labeled 'judgment' until
@@ -397,6 +534,10 @@ const STARTER_CHAINS_GROUNDED: Record<IntentArchetypeName, ChainEntry[]> = {
     { id: 'claude-haiku-4-5', grounding: 'judgment', reason: 'Same-provider step-down' },
     { id: 'gemini-3.7-flash', grounding: 'judgment', reason: 'alpha.101: cross-provider anchor = the gemini-flash family head (3.5-flash legacy per Google 2026-09-03; docs-verified, zero observed rows — a chain TAIL, served only when the tiers above fail). alpha.86 history: replaced availability-restricted gemini-2.5-pro' },
     { id: 'gpt-5.4-mini', grounding: 'judgment', reason: 'alpha.16: third-provider tail (archetypePerf=7)' },
+    // alpha.135 — the brain's added tiers, behind the bundled six (read 2026-11-20T21:45Z).
+    { id: 'claude-sonnet-5-5', grounding: 'judgment', reason: 'alpha.135: brain tier, added 2026-11-20; not a bundle ruling — brain tier 2 (version_added 2.0.0-alpha.121, inserted behind claude-sonnet-5 by cold-start judgment), placed behind the bundled six so a cold call and a warm call score the same candidates' },
+    { id: 'deepseek-v4-pro', grounding: 'judgment', reason: 'alpha.135: brain tier, added 2026-11-20; not a bundle ruling — brain tier 5 (version_added 2.0.0-alpha.16, the V4-Pro elevation of master plan §5.1), placed behind the bundled six so a cold call and a warm call score the same candidates' },
+    { id: 'gemini-3.8-flash', grounding: 'judgment', reason: 'alpha.135: brain tier, added 2026-11-20; not a bundle ruling — brain tier 7 (version_added 2.0.0-alpha.109, the additive re-anchor of 2026-09-11 behind legacy gemini-3.5-flash), placed behind the bundled six so a cold call and a warm call score the same candidates' },
   ],
   // Structured-output archetype — Flash skipped (alpha.8 MAX_TOKENS cliff,
   // capability-fact); DeepSeek skipped (no brain evidence).
@@ -407,6 +548,13 @@ const STARTER_CHAINS_GROUNDED: Record<IntentArchetypeName, ChainEntry[]> = {
     { id: 'claude-haiku-4-5', grounding: 'judgment', reason: 'Same-provider step-down with native structured output' },
     { id: 'gemini-3.7-flash', grounding: 'judgment', reason: 'alpha.101: cross-provider anchor with native structured output = the gemini-flash family head (3.5-flash legacy per Google 2026-09-03; zero observed rows — a chain tail)' },
     { id: 'gpt-5.4', grounding: 'capability-fact', reason: 'alpha.16: third-provider floor — native structured-output capability (archetypePerf=8)' },
+    // alpha.135 — the brain's added tiers, behind the bundled six (read 2026-11-20T21:45Z). This
+    // is the chain that served tt-intelligence's tiles read claude-sonnet-5-5 warm and
+    // claude-haiku-5-5 cold on 2026-11-20 (brain rows 4374 and 4370): the bundled six first on
+    // both surfaces makes the pick one.
+    { id: 'claude-sonnet-5-5', grounding: 'judgment', reason: 'alpha.135: brain tier, added 2026-11-20; not a bundle ruling — brain tier 2 (version_added 2.0.0-alpha.121, inserted behind claude-sonnet-5 by cold-start judgment), placed behind the bundled six so a cold call and a warm call score the same candidates' },
+    { id: 'deepseek-v4-pro', grounding: 'judgment', reason: 'alpha.135: brain tier, added 2026-11-20; not a bundle ruling — brain tier 5 (version_added 2.0.0-alpha.16, the V4-Pro elevation of master plan §5.1; declares no image input, so an image call drops it), placed behind the bundled six so a cold call and a warm call score the same candidates' },
+    { id: 'gemini-3.8-flash', grounding: 'judgment', reason: 'alpha.135: brain tier, added 2026-11-20; not a bundle ruling — brain tier 7 (version_added 2.0.0-alpha.109, the additive re-anchor of 2026-09-11 behind legacy gemini-3.5-flash), placed behind the bundled six so a cold call and a warm call score the same candidates' },
   ],
   // Forgiving archetype — Sonnet primary but Flash safely floors it.
   transform: [
@@ -418,6 +566,10 @@ const STARTER_CHAINS_GROUNDED: Record<IntentArchetypeName, ChainEntry[]> = {
     { id: 'gpt-5.4-mini', grounding: 'judgment', reason: 'alpha.108: moved ahead of the Google cost floor so the default chain (depth 5) keeps three providers. alpha.33: third-provider tail (archetypePerf=7) — closes openai-in-default-fallback-chains' },
     // alpha.130: the gemini-2.5-flash cost floor left the chain (Google: deprecated, shutdown
     // 2026-12-01). (was: { id: 'gemini-2.5-flash', reason: 'Cost floor — forgiving archetype tolerates Flash' }, until 2026-11-09)
+    // alpha.135 — the brain's added tiers, behind the bundled six (read 2026-11-20T21:45Z).
+    { id: 'claude-sonnet-5-5', grounding: 'judgment', reason: 'alpha.135: brain tier, added 2026-11-20; not a bundle ruling — brain tier 2 (version_added 2.0.0-alpha.121, inserted behind claude-sonnet-5 by cold-start judgment), placed behind the bundled six so a cold call and a warm call score the same candidates' },
+    { id: 'deepseek-v4-pro', grounding: 'judgment', reason: 'alpha.135: brain tier, added 2026-11-20; not a bundle ruling — brain tier 5 (version_added 2.0.0-alpha.16, the V4-Pro elevation of master plan §5.1), placed behind the bundled six so a cold call and a warm call score the same candidates' },
+    { id: 'gemini-3.8-flash', grounding: 'judgment', reason: 'alpha.135: brain tier, added 2026-11-20; not a bundle ruling — brain tier 7 (version_added 2.0.0-alpha.109, the additive re-anchor of 2026-09-11 behind legacy gemini-3.5-flash), placed behind the bundled six so a cold call and a warm call score the same candidates' },
   ],
   // Parallel-tool throughput champion — Flash leads on the L-040 cliff
   // (capability-fact: Flash 15-75 parallel calls/step vs DeepSeek 7-8).
@@ -430,6 +582,11 @@ const STARTER_CHAINS_GROUNDED: Record<IntentArchetypeName, ChainEntry[]> = {
     { id: 'claude-haiku-4-5', grounding: 'judgment', reason: 'Reduced tool budget — cliff at 16 fires' },
     { id: 'claude-haiku-5-5', grounding: 'judgment', reason: 'alpha.125: Anthropic lists haiku-4-5 under Legacy (2026-10-25 read; retirement floor 2026-10-15 passed) — 5.5 enters directly behind it as deprecation cover, unmeasured; moves ahead only on a golden measurement' },
     { id: 'gpt-5.4-mini', grounding: 'judgment', reason: 'alpha.33: third-provider tail — OpenAI parallel-tool capable archetype' },
+    // alpha.135 (amendment B1) — the brain's added tier, behind the bundled six (read
+    // 2026-11-21T18:43Z). The brain's claude-sonnet-4-6 tier on hunt is switched off by migration
+    // 105: the bundle never chained it here, and behind its family head claude-sonnet-5 it read as
+    // legacy-successor-absent.
+    { id: 'claude-sonnet-5-5', grounding: 'judgment', reason: 'alpha.135: brain tier, added 2026-11-21; not a bundle ruling — brain tier 4 (version_added 2.0.0-alpha.121, inserted behind claude-sonnet-5 by cold-start judgment), placed behind the bundled six so a cold call and a warm call score the same candidates' },
   ],
   // Cost-sensitive + tolerant.
   // alpha.130 (amendment C) — gemini-2.5-flash left the head on Google's 2026-12-01 retirement
@@ -859,6 +1016,18 @@ function resolveGroundedChainForArchetype(
  * only difference is the return shape: each position is a `ChainEntry`
  * carrying `{ id, grounding, reason?, n? }` instead of a bare string.
  *
+ * Under `optimizeFor: 'cost'` (2026-11-27 filing, R3) it returns the same
+ * ids in the same order as {@link getDefaultFallbackChain} with the same
+ * options, `appId` included, and each entry's `grounding` is the scorer's
+ * word for that call — `measured` or `judgment` (cost mode places by score
+ * and price, never by a capability, so `capability-fact` stays a quality-mode
+ * label) — with `reason` naming where the score came from (`measured on
+ * <app>, run <evidence_source>, n=<n>` / `judgment`) and, on a measured
+ * entry, its outcome, which tells the classes apart (Amendment B1: `not below
+ * its incumbent (…)` / `below its incumbent (…)` / `incumbent not known`), and
+ * `n` on a measured entry. The default depth is the plain accessor's, 6 (was 3 here until the
+ * 2026-11-27 filing, so the two accessors disagreed on a call that named none).
+ *
  * Use this when surfacing the chain to consumers who care WHY each entry
  * sits where it sits — Glass-Box panels, operator dashboards, eval
  * scaffolding deciding which entries deserve measurement priority.
@@ -872,10 +1041,12 @@ export function getDefaultFallbackChainWithGrounding(
   const {
     archetype,
     primary,
-    maxDepth = 3,
+    maxDepth = 6,
     policy,
     reachability,
     toolOrchestration,
+    optimizeFor = 'quality',
+    appId,
     inputModalities,
   } = opts;
 
@@ -885,12 +1056,20 @@ export function getDefaultFallbackChainWithGrounding(
     );
   }
 
-  const starter = resolveGroundedChainForArchetype(archetype, toolOrchestration);
-  if (!starter) {
+  const qualityStarter = resolveGroundedChainForArchetype(archetype, toolOrchestration);
+  if (!qualityStarter) {
     throw new Error(
       `getDefaultFallbackChainWithGrounding: unknown archetype "${archetype}". Known: ${Object.keys(STARTER_CHAINS_GROUNDED).join(', ')}`,
     );
   }
+
+  // 2026-11-27 filing, R3 — cost mode is the plain accessor's cost chain, each entry
+  // grounded by the scorer's own answer for this call (the archetype is validated
+  // against the curated table above either way, as in the plain accessor).
+  const cost = optimizeFor === 'cost';
+  const starter: ChainEntry[] = cost
+    ? costOrderedCandidates(archetype, appId).map((c) => costChainEntry(c.profile.id, c.perf))
+    : qualityStarter;
 
   // Build the candidate chain.
   //   - With primary: primary at position 0, then starter chain minus primary
@@ -902,6 +1081,8 @@ export function getDefaultFallbackChainWithGrounding(
     const primaryEntry = (() => {
       const inStarter = starter.find((e) => e.id === primary);
       if (inStarter) return copyEntry(inStarter);
+      // Cost mode: a primary outside the cost chain is grounded by the scorer too.
+      if (cost) return costChainEntry(primary, getArchetypePerfScore(primary, archetype, appId));
       const knownAnywhere = lookupStaticEntry(primary, archetype);
       if (knownAnywhere) return { ...copyEntry(knownAnywhere), id: primary };
       return { id: primary, grounding: 'judgment' as const };

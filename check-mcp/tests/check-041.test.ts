@@ -407,11 +407,11 @@ describe('R7 — the share path says what it stores', () => {
 });
 
 describe('R9 — version, changelog, readme', () => {
-  it('the package is 0.4.5 and the changelog says so first', () => {
-    expect(pkg.version).toBe('0.4.5');
+  it('the package is 0.4.6 and the changelog says so first', () => {
+    expect(pkg.version).toBe('0.4.6'); // 0.4.6 (R10; until 0.4.6: 0.4.5)
     const log = readFileSync(join(PKG_DIR, 'CHANGELOG.md'), 'utf8');
-    // 0.4.4 Amendment B2: dated the day the ledger was read and the release ships (0.4.5: the ledger read 2026-11-20)
-    expect(log.split('\n').find((l) => l.startsWith('## '))).toBe('## 0.4.5 — 2026-11-20');
+    // 0.4.4 Amendment B2: dated the day the ledger was read and the release ships (0.4.6: the ledger read 2026-11-24; 0.4.5: 2026-11-20)
+    expect(log.split('\n').find((l) => l.startsWith('## '))).toBe('## 0.4.6 — 2026-11-24');
   });
 
   it("the README's example card is this build's output on the stored example extract, byte for byte", async () => {

@@ -41,6 +41,8 @@ const ANTHROPIC = 'https://platform.claude.com/docs/en/about-claude/model-deprec
  * The 17 rows of Anthropic's "Model status" table whose state is Active, as the page read for this release
  * (2026-11-20T05:02:18Z, sha256 83b08416…) writes them, with each row's "Tentative retirement date" cell verbatim.
  * Typed here, not read from the ledger, so that a ledger without them fails this file.
+ * 0.4.6: 16 — on the page read 2026-11-24T09:37:37Z (sha256 035274dd…) `claude-opus-4-5-20251101` is Deprecated
+ * (November 23, 2026; retirement January 22, 2027), and the other 16 rows are as they were, each date cell verbatim.
  */
 const ACTIVE: [string, string][] = [
   ['claude-fable-5-2', 'Not sooner than November 9, 2027'],
@@ -54,7 +56,7 @@ const ACTIVE: [string, string][] = [
   ['claude-opus-4-8', 'Not sooner than May 28, 2027'],
   ['claude-opus-4-7', 'Not sooner than April 16, 2027'],
   ['claude-opus-4-6', 'Not sooner than February 5, 2027'],
-  ['claude-opus-4-5-20251101', 'Not sooner than November 24, 2026'],
+  // 0.4.6: ['claude-opus-4-5-20251101', 'Not sooner than November 24, 2026'] — Deprecated on the page read 2026-11-24 (check-046.test.ts)
   ['claude-sonnet-5-5', 'Not sooner than September 28, 2027'],
   ['claude-sonnet-5', 'Not sooner than June 30, 2027'],
   ['claude-sonnet-4-6', 'Not sooner than February 17, 2027'],
@@ -67,7 +69,7 @@ const FINE_TUNES = 'Fine-tuned versions of the models listed above follow the sa
 
 // ── R3 — the ledger carries every row of Anthropic's status table ──────────
 describe('R3 — every Active row of Anthropic’s status table is in the ledger, its date text verbatim, its floor in shutdownFloor', () => {
-  it('the 17 Active rows, and no others', () => {
+  it('the 16 Active rows, and no others (0.4.6; until 0.4.6: 17)', () => {
     const active = LEDGER.filter((r) => (r.word as string) === 'active');
     expect(active.map((r) => r.id).sort()).toEqual(ACTIVE.map(([id]) => id).sort());
   });
@@ -134,45 +136,52 @@ describe('R4 (a) — an id the page lists as Active is never “not recognised�
   });
 });
 
+// 0.4.6: on an Active row with no catalog entry, `claude-mythos-5` (floor 2027-06-09), each day the same distance from its
+// floor as before (until 0.4.6: `claude-opus-4-5-20251101`, floor 2026-11-24, which the page read 2026-11-24 calls Deprecated)
 describe('R4 (b) — the date line prints only when the floor has passed or lies within 60 days; ℹ️, the state, the page’s date text and the distance', () => {
-  const id = 'claude-opus-4-5-20251101'; // floor 2026-11-24
+  const id = 'claude-mythos-5'; // floor 2027-06-09
   const line = (today: string) => about(findings(one(id), READ, today), id);
-  it('4 days before the floor (the day of this release): one ℹ️ line, Certain, the date text in quotes and the distance', () => {
-    const [f, ...rest] = line(TODAY);
+  it('4 days before the floor: one ℹ️ line, Certain, the date text in quotes and the distance', () => {
+    const [f, ...rest] = line('2027-06-05');
     expect(rest).toEqual([]);
     expect(f!.severity).toBe('info');
     expect(f!.confidence).toBe('certain');
     expect(f!.title).toBe(
-      'On Anthropic\'s own API, `claude-opus-4-5-20251101` is Active, with a tentative retirement date of “Not sooner than November 24, 2026”, 4 days after this run',
+      'On Anthropic\'s own API, `claude-mythos-5` is Active, with a tentative retirement date of “Not sooner than June 9, 2027”, 4 days after this run',
     );
-    expect(f!.detail).toMatch(/^No retirement is announced for it: /);
+    // 0.4.6 Amendment B2: the page's words, never what it lacks (until 0.4.6: "No retirement is announced for it: …")
+    expect(f!.detail).toMatch(/^Anthropic's model deprecations page lists it as Active, and says “/);
     expect(f!.detail).toContain(NOTICE);
   });
   it('60 days before the floor (the window’s far edge): the date line prints', () => {
-    const [f] = line('2026-09-25');
-    expect(f!.title).toContain('“Not sooner than November 24, 2026”, 60 days after this run');
+    const [f] = line('2027-04-10');
+    expect(f!.title).toContain('“Not sooner than June 9, 2027”, 60 days after this run');
   });
-  it('61 days before the floor (outside the window): no date, and the line says only that the page lists it Active', () => {
-    const [f, ...rest] = line('2026-09-24');
+  // 0.4.6 Amendment B1: outside the window the line still prints the page's own cell, in the same form; only the notice
+  // sentence is the window's (until 0.4.6: no date, "is Active on Anthropic's model deprecations page")
+  it('61 days before the floor (outside the window): the page’s cell in the same form, without the notice sentence', () => {
+    const [f, ...rest] = line('2027-04-09');
     expect(rest).toEqual([]);
-    expect(f!.title).not.toMatch(/November 24|days after/);
-    expect(f!.title).toBe("On Anthropic's own API, `claude-opus-4-5-20251101` is Active on Anthropic's model deprecations page");
+    expect(f!.title).toBe(
+      'On Anthropic\'s own API, `claude-mythos-5` is Active, with a tentative retirement date of “Not sooner than June 9, 2027”, 61 days after this run',
+    );
+    expect(f!.detail).not.toContain(NOTICE);
     expect(f!.detail).toContain('The catalog has no entry for it, so its limits and price were not checked.');
     expect(f!.severity).toBe('info');
   });
   it('on the floor’s own day, and after it: the date line prints, said as the day of this run and as a date before it', () => {
-    expect(line('2026-11-24')[0]!.title).toContain('“Not sooner than November 24, 2026”, the day of this run');
-    expect(line('2026-11-25')[0]!.title).toContain('“Not sooner than November 24, 2026”, a date 1 day before this run');
+    expect(line('2027-06-09')[0]!.title).toContain('“Not sooner than June 9, 2027”, the day of this run');
+    expect(line('2027-06-10')[0]!.title).toContain('“Not sooner than June 9, 2027”, a date 1 day before this run');
   });
   it('never 🟡 or 🔴 on the card', () => {
-    const l = card(one(id)).split('\n').find((x) => x.includes('`claude-opus-4-5-20251101` is Active'))!;
+    const l = card(one(id), READ, '2027-06-05').split('\n').find((x) => x.includes('`claude-mythos-5` is Active'))!;
     expect(l.startsWith('- ℹ️ ')).toBe(true);
   });
 });
 
 describe('R4 (c) — Certain when the page was read in this run and the row stands; Likely otherwise', () => {
   it('read in this run: Certain; offline: Likely, with the day this version read the page', () => {
-    const id = 'claude-opus-4-5-20251101';
+    const id = 'claude-mythos-5'; // 0.4.6: an Active row (until 0.4.6: `claude-opus-4-5-20251101`, Deprecated on the page read 2026-11-24)
     expect(about(findings(one(id), READ), id)[0]!.confidence).toBe('certain');
     const off = about(findings(one(id), OFFLINE), id)[0]!;
     expect(off.confidence).toBe('likely');
@@ -187,7 +196,10 @@ describe('R4 (d) — an Active id is not counted as flagged; one with a far floo
     const fs = about(r.findings, 'claude-mythos-5');
     expect(fs.length).toBe(1);
     expect(fs[0]!.severity).toBe('info');
-    expect(fs[0]!.title).toBe("On Anthropic's own API, `claude-mythos-5` is Active on Anthropic's model deprecations page");
+    // 0.4.6 Amendment B1: the page's cell (until 0.4.6: "is Active on Anthropic's model deprecations page", no date)
+    expect(fs[0]!.title).toBe(
+      "On Anthropic's own API, `claude-mythos-5` is Active, with a tentative retirement date of “Not sooner than June 9, 2027”, 201 days after this run",
+    );
     expect(fs[0]!.detail).toContain('The catalog has no entry for it, so its limits and price were not checked.');
     const head = r.card.split('\n')[2]!;
     expect(head).not.toMatch(/flagged/);
@@ -198,12 +210,13 @@ describe('R4 (d) — an Active id is not counted as flagged; one with a far floo
       project: { name: 't' },
       callSites: [],
       models: [
-        { model: 'claude-opus-4-5-20251101', where: 'a.py:1', platform: 'provider-api', context: 'runs' },
+        // 0.4.6: an Active row (until 0.4.6: `claude-opus-4-5-20251101`, Deprecated on the page read 2026-11-24)
+        { model: 'claude-mythos-5-1', where: 'a.py:1', platform: 'provider-api', context: 'runs' },
         { model: 'gpt-4o-mini', where: 'b.py:1', platform: 'provider-api', context: 'runs' },
       ],
     });
     expect(card(e).split('\n')[2]).toBe(
-      '0 AI call sites and 2 model ids: `claude-opus-4-5-20251101`, `gpt-4o-mini`. 1 is flagged by OpenAI. The flagged id is in code that runs.',
+      '0 AI call sites and 2 model ids: `claude-mythos-5-1`, `gpt-4o-mini`. 1 is flagged by OpenAI. The flagged id is in code that runs.',
     );
   });
 });
@@ -221,7 +234,8 @@ describe('R4 (e) — where the catalog carries the provider’s word too, one li
     // the catalog's day is said once, of the model page's word, before the deprecations page's part — never beside the floor
     expect(f.title.split('2026-11-02').length - 1).toBe(1);
     expect(f.title.indexOf('(read 2026-11-02)')).toBeLessThan(f.title.indexOf("Anthropic's model deprecations page"));
-    expect(f.detail).toMatch(/That page was read in this run \(2026-11-20 \d{2}:\d{2} UTC\); the model page was not, and its word is as the catalog read it on 2026-11-02\./);
+    // 0.4.6: the re-read of 2026-11-24 (until 0.4.6: 2026-11-20)
+    expect(f.detail).toMatch(/That page was read in this run \(2026-11-24 \d{2}:\d{2} UTC\); the model page was not, and its word is as the catalog read it on 2026-11-02\./);
     expect(f.basis).toContain(ANTHROPIC);
     expect(f.basis).toMatch(/model deprecations page, read in this run/);
   });

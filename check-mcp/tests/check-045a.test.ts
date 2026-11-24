@@ -87,10 +87,15 @@ describe('A3 — an id whose deprecations-page row says Active is not flagged, w
     expect(f.title).toContain('“Not sooner than February 5, 2027”, 77 days after this run');
     expect(card(one('claude-opus-4-6')).split('\n')[2]).toBe('0 AI call sites and 1 model id: `claude-opus-4-6`. Its provider does not flag it.');
   });
-  it('$F offline (VA3): the header flags no Anthropic id, and no Anthropic line is 🟡', () => {
+  // 0.4.6: on the page read 2026-11-24 the two Opus 4.5 ids of $F are Deprecated, and flagged by Anthropic; the three ids whose
+  // row says Active and whose model page says Legacy are still neither flagged nor 🟡 (until 0.4.6: "the header flags no
+  // Anthropic id", with "1 is flagged by OpenAI, and 1 by this check's reading of a fine-tune's id.")
+  it('$F offline (VA3): the header flags no Active Anthropic id, and no line about one is 🟡', () => {
     const c = card(F, OFFLINE);
-    expect(c.split('\n')[2]).toContain("1 is flagged by OpenAI, and 1 by this check's reading of a fine-tune's id.");
-    expect(c).not.toMatch(/🟡 \*\*On Anthropic/);
+    expect(c.split('\n')[2]).toContain("3 are flagged by their providers, and 1 by this check's reading of a fine-tune's id.");
+    const flaggedAnthropic = c.split('\n').filter((l) => /^- 🟡 \*\*On Anthropic/.test(l));
+    expect(flaggedAnthropic.map((l) => /`([^`]+)`/.exec(l)![1])).toEqual(['claude-opus-4-5-20251101', 'claude-opus-4-5']);
+    for (const id of ['claude-haiku-4-5-20251001', 'claude-opus-4-6', 'claude-sonnet-4-6']) expect(c, id).not.toMatch(new RegExp(`🟡 \\*\\*On Anthropic's own API, \`${id}\``));
   });
 });
 

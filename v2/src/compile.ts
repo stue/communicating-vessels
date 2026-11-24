@@ -30,6 +30,7 @@ import {
   passApplyCliffs,
   passApplyConventions,
   passScoreTargets,
+  compareByRankThenCallerOrder,
   estimateInputTokens,
   computeShape,
   type TargetScore,
@@ -414,9 +415,12 @@ export function compile(ir: PromptIR, opts: CompileOptions = {}): CompileResult 
         `guards skipped, cost unknown. See diagnostics.cliffWarnings for the full list.`,
     });
   }
+  // alpha.135 (B3) — one order for the pick, the fallback chain and targetScores: rank, and on a
+  // tie (within RANK_TIE_EPSILON) the earlier position in the caller's list.
+  const byRank = compareByRankThenCallerOrder(workingIR.models);
   const fallbackChain = scores.value
     .filter((s) => s.modelId !== target.modelId && s.fits)
-    .sort((a, b) => b.rank - a.rank)
+    .sort(byRank)
     .map((s) => s.modelId);
 
   // alpha.124 — what the modality requirement left, for diagnostics + advisory.
@@ -729,7 +733,7 @@ export function compile(ir: PromptIR, opts: CompileOptions = {}): CompileResult 
     systemCacheMarkIndex,
     // alpha.110 — the ranking table, legible per call (see the type's doc).
     targetScores: [...scores.value]
-      .sort((a, b) => b.rank - a.rank)
+      .sort(byRank)
       .map((s) => ({
         modelId: s.modelId,
         rank: s.rank,
@@ -738,7 +742,14 @@ export function compile(ir: PromptIR, opts: CompileOptions = {}): CompileResult 
         ...(s.archetypePerf !== undefined ? { archetypePerf: s.archetypePerf } : {}),
         ...(s.blendedCostUsd !== undefined ? { blendedCostUsd: s.blendedCostUsd } : {}),
         ...(s.measuredFit !== undefined ? { measuredFit: s.measuredFit } : {}),
+        // alpha.135 (filing 2026-12-06, A3) — why a candidate lost, from the scorer's own
+        // record: each hard reject it carried, and the measured-failure gate that docked it.
+        ...(s.rejectReasons.length > 0 ? { rejectReasons: [...s.rejectReasons] } : {}),
+        ...(s.measuredGate ? { measuredGate: { ...s.measuredGate } } : {}),
       })),
+    // alpha.135 (A4) — the caller's per-call cost ceiling, present only when one was set, so
+    // the row's `selection` can say which ceiling the candidates were judged against.
+    ...(opts.policy?.maxCostPerCallUsd !== undefined ? { ceilingUsd: opts.policy.maxCostPerCallUsd } : {}),
     // alpha.43 — cliff-style warnings emitted by passApplyConventions.
     // Merge convention-pass cliffWarnings with any cliff-guard quality
     // warnings the cliff pass surfaced (the same shape — informational
@@ -1221,7 +1232,8 @@ function pickTarget(ir: PromptIR, scores: TargetScore[]): TargetScore | undefine
     }
   }
   // Otherwise: highest rank that fits
-  const fitting = scores.filter((s) => s.fits).sort((a, b) => b.rank - a.rank);
+  // alpha.135 (B3) — a tie in rank goes to the earlier candidate in the caller's list.
+  const fitting = scores.filter((s) => s.fits).sort(compareByRankThenCallerOrder(ir.models));
   return fitting[0];
 }
 

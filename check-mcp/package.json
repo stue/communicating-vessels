@@ -1,6 +1,6 @@
 {
   "name": "@warmdrift/kgauto-check",
-  "version": "0.4.5",
+  "version": "0.4.6",
   "description": "Communicating Vessels — the check. Your coding agent lists where your project calls an AI model (ids and counts, never code); this tool reads that list on your machine against the providers' own deprecation pages, read in each run, and a bundled catalog of model limits and prices. Nothing about your project leaves your machine unless you pass --share.",
   "type": "module",
   "bin": {

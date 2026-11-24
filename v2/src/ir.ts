@@ -1188,7 +1188,23 @@ export interface CompileResult {
       archetypePerf?: number;
       blendedCostUsd?: number;
       measuredFit?: boolean;
+      /**
+       * alpha.135 — the hard rejects this candidate carried (blocked by policy, over the cost
+       * ceiling, no declared input modality, over context …), verbatim from the scorer. Absent
+       * when it carried none.
+       */
+      rejectReasons?: string[];
+      /**
+       * alpha.135 — the measured-failure gate that docked this candidate's rank on this surface
+       * (axis, rate, lower bound, n), when one did.
+       */
+      measuredGate?: { rate: number; lowerBound: number; n: number; nFail: number; axis: 'quality' | 'availability' };
     }>;
+    /**
+     * alpha.135 — `CompilePolicy.maxCostPerCallUsd` as this compile read it. Present only when
+     * the caller set one; the brain row's `selection.ceilingUsd` carries it.
+     */
+    ceilingUsd?: number;
     /**
      * alpha.68 / Release A (delegation-fanout-accelerator §5.D) — tokens added
      * by the `discipline_contract` gate block on this call; 0 when the gate
@@ -2191,8 +2207,21 @@ export interface RecordInput {
    * When omitted, record() auto-enriches from the registry-cached compile
    * declaration. Undefined end-to-end → the `effort` key is absent from the
    * outcome payload entirely (safe against pre-migration-033 brains).
+   * alpha.135: this is the caller's statement; what kgauto set on the wire is
+   * `effortSet` (the `effort_set` column).
    */
   effort?: EffortLevel;
+  /**
+   * alpha.135 — the effort kgauto SET on the request that served this call (the
+   * `effort_set` column): on the AI-SDK adapter path the value it put in
+   * `providerOptions` (e.g. `anthropic.effort: 'low'`), on the plain-fetch path
+   * the value in the lowered request (OpenAI `reasoning_effort`, `'none'`
+   * included). `call()` sets it on a fallback row from the compile that served;
+   * when omitted, record() takes the registered compile's. `null` says the
+   * serving request set none (the key is then left out). Distinct from
+   * `effort`, which is what the CALLER declared.
+   */
+  effortSet?: string | null;
   /**
    * alpha.20 — advisories fired at compile() time. Persisted to the brain's
    * `compile_outcome_advisories` sibling table via a second POST that fires

@@ -700,6 +700,68 @@ interface CompileRecord {
   disciplineGateTokens?: number;
   /** alpha.106 (migration 075) — the receipt, so a consumer's own record() path carries it without threading anything. */
   savings?: { inputTokensAsGiven: number; inputTokensRemoved: number; estimatedUsdSavedFirstCall: number; passes: string[] };
+  /** alpha.135 (migration 104) — why this compile picked its model, cut for the row (`buildOutcomeSelection`). */
+  selection?: OutcomeSelection;
+  /** alpha.135 (migration 104) — the effort kgauto set on the request it handed over; undefined when none. */
+  effortSet?: string;
+}
+
+/**
+ * alpha.135 (filing 2026-12-06, A4) — the `compile_outcomes.selection` jsonb: which world
+ * answered the compile (`diagnostics.freshness`), the candidates in rank order
+ * (`diagnostics.targetScores`, at most 16, each reject reason cut to 200 characters), how many
+ * were left off, and the caller's cost ceiling when one was set. Nothing is computed twice: it
+ * is the compile's own table, cut to a row's size.
+ */
+export interface OutcomeSelection {
+  freshness: CompileResult['diagnostics']['freshness'];
+  candidates: NonNullable<CompileResult['diagnostics']['targetScores']>;
+  /** Candidates beyond the 16 kept. Absent when none were left off. */
+  omitted?: number;
+  /** `CompilePolicy.maxCostPerCallUsd`. Absent when the caller set none. */
+  ceilingUsd?: number;
+}
+
+/** alpha.135 (A4) — the row keeps at most this many candidates, best rank first. */
+export const SELECTION_MAX_CANDIDATES = 16;
+/** alpha.135 (A4) — each reject reason on the row is cut to this many characters. */
+export const SELECTION_MAX_REASON_CHARS = 200;
+
+function cutReason(s: string): string {
+  return s.length <= SELECTION_MAX_REASON_CHARS ? s : `${s.slice(0, SELECTION_MAX_REASON_CHARS - 1)}…`;
+}
+
+/**
+ * alpha.135 (A4) — the row's `selection`, from a compile's diagnostics. Pure. Candidates keep
+ * the order the compile gives them (rank, descending); the 17th and later are counted in
+ * `omitted`; a reject reason longer than 200 characters ends in `…` at 200.
+ */
+export function buildOutcomeSelection(diagnostics: Pick<CompileResult['diagnostics'], 'freshness' | 'targetScores' | 'ceilingUsd'>): OutcomeSelection {
+  const all = diagnostics.targetScores ?? [];
+  const candidates = all.slice(0, SELECTION_MAX_CANDIDATES).map((c) => ({
+    ...c,
+    ...(c.rejectReasons ? { rejectReasons: c.rejectReasons.map(cutReason) } : {}),
+  }));
+  return {
+    freshness: { ...diagnostics.freshness },
+    candidates,
+    ...(all.length > SELECTION_MAX_CANDIDATES ? { omitted: all.length - SELECTION_MAX_CANDIDATES } : {}),
+    ...(diagnostics.ceilingUsd !== undefined ? { ceilingUsd: diagnostics.ceilingUsd } : {}),
+  };
+}
+
+/**
+ * alpha.135 (A4) — the effort a plain-fetch lowered request carries on the wire: OpenAI-shaped
+ * `reasoning_effort` (`'none'` is a value, not an absence), or Anthropic `output_config.effort`.
+ * Undefined when the request sets none. Pure. The AI-SDK adapter does not use this: it hands
+ * the consumer `providerOptions`, and passes what it set there to `registerCompile`.
+ */
+export function effortSetOfRequest(request: unknown): string | undefined {
+  if (!request || typeof request !== 'object') return undefined;
+  const r = request as { reasoning_effort?: unknown; output_config?: { effort?: unknown } };
+  if (typeof r.reasoning_effort === 'string') return r.reasoning_effort;
+  if (typeof r.output_config?.effort === 'string') return r.output_config.effort;
+  return undefined;
 }
 
 const compileRegistry = new Map<string, CompileRecord>();
@@ -734,6 +796,10 @@ export function registerCompile(
   // (`model@openrouter`) and stamps the outcome row, so gateway evidence and
   // direct-vendor evidence never mix. Absent ⇒ 'direct'.
   route?: 'direct' | 'openrouter',
+  // alpha.135 (A4) — what an adapter handed the consumer in place of the plain-fetch request.
+  // Present ⇒ `wire.effortSet` is the row's `effort_set` (undefined = it set none); absent ⇒
+  // the effort is read from `result.request` (the request `call()` sends).
+  wire?: { effortSet: string | undefined },
 ): void {
   if (compileRegistry.size >= REGISTRY_MAX_ENTRIES) {
     // Evict oldest 25%
@@ -814,6 +880,9 @@ export function registerCompile(
           passes: result.diagnostics.savings.passes,
         }
       : undefined,
+    // alpha.135 (migration 104) — the reason for the pick, and the effort set on the wire.
+    selection: buildOutcomeSelection(result.diagnostics),
+    effortSet: wire ? wire.effortSet : effortSetOfRequest(result.request),
   });
 }
 
@@ -1164,7 +1233,22 @@ export interface OutcomePayload {
   // ── alpha.5: history-cache telemetry (migration 004) ──
   history_cacheable_tokens?: number;
   // ── alpha.57: effort dimension, data-first (migration 033) ──
+  /** What the CALLER declared (`ir.constraints.effort`, or record()'s `effort`) — not what was sent; see `effort_set`. */
   effort?: string;
+  // ── alpha.135: the reason for the pick and the effort set (migration 104) ──
+  /**
+   * Which world answered the compile and the candidates in rank order with their reject
+   * reasons and measured gates (`OutcomeSelection`). Key OMITTED when the handle was never
+   * registered — never sent as null: a consumer's proxy forwards the body as it is, and a
+   * null for a column a pre-104 brain lacks would lose the row.
+   */
+  selection?: OutcomeSelection;
+  /**
+   * The effort kgauto SET on the request that served the call (adapter: `providerOptions`;
+   * plain fetch: the lowered request's `reasoning_effort`, `'none'` included). Key OMITTED when
+   * none was set, never null.
+   */
+  effort_set?: string;
   // ── alpha.7: byte-aware history-compression telemetry (migration 005) ──
   history_tokens_at_compile?: number;
   // ── alpha.20 E3: consumer-declared tool-orchestration mode (migration 015) ──
@@ -1373,6 +1457,11 @@ function buildPayload(input: RecordInput, reg: CompileRecord | undefined): Outco
     // end-to-end -> key absent from the JSON body entirely (safe against
     // brains that haven't applied migration 033 yet).
     effort: input.effort ?? reg?.effortFromCompile,
+    // alpha.135 (migration 104) — the reason for the pick and the effort set on the wire.
+    // Undefined → the key is absent from the JSON body (never null — pre-104 brains refuse an
+    // unknown column, and a consumer's proxy forwards the body as it is).
+    selection: reg?.selection,
+    effort_set: (input.effortSet !== undefined ? input.effortSet : reg?.effortSet) ?? undefined,
     history_tokens_at_compile: reg?.historyTokensTotal,
     // alpha.20 E3: mirror consumer's declared tool-orchestration mode so
     // the brain can measure per-mode model perf separately (DeepSeek in
