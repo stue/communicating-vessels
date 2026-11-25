@@ -102,7 +102,7 @@ describe('R1 — a provider line is Certain only when its page was read in this 
     const read = await readPagesFromNetwork({ fetchImpl: serve(MIN, calls), ledger: MIN_LEDGER.set });
     expect(calls.map((c) => c.url).sort()).toEqual([...MIN_LEDGER.set.urls].sort());
     expect([...read.rows.values()].every((s) => s.state === 'confirmed')).toBe(true);
-    expect(read.rows.size).toBe(19); // 0.4.5 (R3): the made-up page's Active row is a row (until 0.4.5: 18)
+    expect(read.rows.size).toBe(22); // 0.4.7 (R4): three made-up OpenAI past rows for the fine-tune note's tie (until 0.4.7: 19); 0.4.5 (R3): the made-up page's Active row is a row (until 0.4.5: 18)
   });
 
   it('the request: plain GET, redirects followed, no cookie, no body, no query string, User-Agent kgauto-check/<version>', async () => {
@@ -227,15 +227,15 @@ describe('R2 — every provider line says when its page was read, in the line', 
   // 0.4.4 (R6): the page is named by its own title ("Model deprecations"); until 0.4.3 "Anthropic's page"
   it('confirmed: basis "<Provider>\'s <page, by its title>, read in this run (<YYYY-MM-DD HH:MM> UTC): <url>"', () => {
     const f = lineOf(runCheck(ex([{ model: 'claude-opus-4-1' }]), { pages: READ }), 'claude-opus-4-1')!;
-    // 0.4.6: the ledger re-read on 2026-11-24 at 09:37 UTC (until 0.4.6: 2026-11-20 05:02)
-    expect(f.basis).toBe("Anthropic's model deprecations page, read in this run (2026-11-24 09:37 UTC): https://platform.claude.com/docs/en/about-claude/model-deprecations.md");
+    // 0.4.7: the ledger re-read on 2026-11-25 at 09:06 UTC (until 0.4.7: 2026-11-24 09:37; until 0.4.6: 2026-11-20 05:02)
+    expect(f.basis).toBe("Anthropic's model deprecations page, read in this run (2026-11-25 09:06 UTC): https://platform.claude.com/docs/en/about-claude/model-deprecations.md");
   });
 
   it('unread: the detail ends with the day this version read it, n days before, and why not now; the basis says "as read"', async () => {
     const read = await readPagesFromNetwork({ fetchImpl: status(503) });
-    const f = lineOf(runCheck(ex([{ model: 'claude-opus-4-1' }]), { pages: read, today: '2026-11-27' }), 'claude-opus-4-1')!; // 0.4.6: three days after the re-read (until 0.4.6: 2026-11-23; until 0.4.5: 2026-11-21)
+    const f = lineOf(runCheck(ex([{ model: 'claude-opus-4-1' }]), { pages: read, today: '2026-11-28' }), 'claude-opus-4-1')!; // 0.4.7: three days after the re-read (until 0.4.7: 2026-11-27; until 0.4.6: 2026-11-23; until 0.4.5: 2026-11-21)
     const row = LEDGER.find((r) => r.id === 'claude-opus-4-1-20250805')!;
-    expect(row.readOn).toBe('2026-11-24'); // 0.4.6: the ledger re-read on 2026-11-24 (until 0.4.6: 2026-11-20; until 0.4.5: 2026-11-18, fix pass 1's re-read, A4)
+    expect(row.readOn).toBe('2026-11-25'); // 0.4.7: the ledger re-read on 2026-11-25 (until 0.4.7: 2026-11-24; until 0.4.6: 2026-11-20; until 0.4.5: 2026-11-18, fix pass 1's re-read, A4)
     expect(f.detail.endsWith(`This is Anthropic's model deprecations page as this version of the check read it on ${row.readOn}, 3 days before this run; it was not read in this run (HTTP 503).`)).toBe(true);
     expect(f.basis).toBe(`Anthropic's model deprecations page as read ${row.readOn}: ${row.url}`);
   });
@@ -252,7 +252,7 @@ describe('R2 — every provider line says when its page was read, in the line', 
     (rec.rows as Map<string, unknown>).set('claude-opus-4-1-20250805', { state: 'changed', at: '2026-11-16T22:54:38Z', gone: [] });
     (rec.definitions as Map<string, unknown>).set('anthropic|retired', { state: 'changed', at: '2026-11-16T22:54:38Z', gone: [] });
     const f = lineOf(runCheck(ex([{ model: 'claude-opus-4-1' }]), { pages: rec }), 'claude-opus-4-1')!;
-    expect(f.title.startsWith('As read on 2026-11-24 (the page has changed since): On Anthropic\'s own API')).toBe(true); // 0.4.6: the re-read (until 0.4.6: 2026-11-20)
+    expect(f.title.startsWith('As read on 2026-11-25 (the page has changed since): On Anthropic\'s own API')).toBe(true); // 0.4.7: the re-read (until 0.4.7: 2026-11-24; until 0.4.6: 2026-11-20)
     expect(f.confidence).toBe('likely');
     expect(f.detail).toContain("This line is no longer on Anthropic's model deprecations page as it was read. Read the page before acting on the date: https://platform.claude.com/docs/en/about-claude/model-deprecations.md. A newer version of the check carries a newer read.");
     expect(f.detail).not.toContain('Requests to retired models fail.');
@@ -284,7 +284,7 @@ describe('R2 — every provider line says when its page was read, in the line', 
 
   it('the stamp: "deprecation pages bundled <date>", and after a read ", read in this run <YYYY-MM-DD HH:MM> UTC"', async () => {
     const last = (c: string) => c.split('\n').at(-1)!;
-    expect(last(runCheck(ex([{ model: 'gpt-4o' }]), { pages: READ }).card)).toMatch(/· deprecation pages bundled \d{4}-\d{2}-\d{2}, read in this run 2026-11-24 09:37 UTC<\/sub>$/); // 0.4.6: the re-read (until 0.4.6: 2026-11-20 05:02)
+    expect(last(runCheck(ex([{ model: 'gpt-4o' }]), { pages: READ }).card)).toMatch(/· deprecation pages bundled \d{4}-\d{2}-\d{2}, read in this run 2026-11-25 09:06 UTC<\/sub>$/); // 0.4.7: the re-read (until 0.4.7: 2026-11-24 09:37); 0.4.6: the re-read (until 0.4.6: 2026-11-20 05:02)
     expect(last(runCheck(ex([{ model: 'gpt-4o' }]), { pages: await readForRun({ switchedOff: true }) }).card)).toMatch(/· deprecation pages bundled \d{4}-\d{2}-\d{2}<\/sub>$/);
   });
 
@@ -295,8 +295,8 @@ describe('R2 — every provider line says when its page was read, in the line', 
   });
 
   it('--model-facts and get_model_facts follow it: in this run, or the day it was read and why not now', async () => {
-    // 0.4.6: the re-read of 2026-11-24 09:37 UTC (until 0.4.6: 2026-11-20 05:02, and the lookup on 2026-11-23)
-    expect(renderModelFacts('claude-opus-4-1', { pages: READ })).toContain('(read in this run, 2026-11-24 09:37 UTC)');
+    // 0.4.7: the re-read of 2026-11-25 09:06 UTC (until 0.4.7: 2026-11-24 09:37; until 0.4.6: 2026-11-20 05:02, and the lookup on 2026-11-23)
+    expect(renderModelFacts('claude-opus-4-1', { pages: READ })).toContain('(read in this run, 2026-11-25 09:06 UTC)');
     const off = renderModelFacts('claude-opus-4-1', { pages: await readForRun({ switchedOff: true }), today: '2026-11-27' });
     expect(off).toMatch(/\(read \d{4}-\d{2}-\d{2}, \d+ days before this lookup; not read in this run \(--offline\)\)/);
     expect(off).toContain('this lookup made no network request (--offline)');
@@ -501,8 +501,9 @@ describe('R6 — a changelog row: news about a model named in words, never Certa
     expect(r.card).not.toMatch(/\bour reading\b|\bis ours\b/);
     expect(r.card).toContain('## Likely — a provider’s page as read on an earlier day (the day is on the line); a provider’s release notes that name a model in words, not by its id;');
     expect(f.detail).toContain('Its entry of December 13 2023 introduced the id: “gemini-pro: New text model for a wide variety of tasks.”');
-    // the generator's own request, 2026-11-18T18:24:09Z (until 0.4.3: 2026-11-16; until fix pass 1: 2026-11-17)
-    expect(f.detail.endsWith("Google's model page for this id answered 404 on 2026-11-18.")).toBe(true);
+    // the generator's own request, 2026-11-25T10:01:13Z (0.4.7 fix pass 1, re-read on the build day; until then 2026-11-18T18:24:09Z;
+    // until 0.4.3: 2026-11-16; until fix pass 1: 2026-11-17)
+    expect(f.detail.endsWith("Google's model page for this id answered 404 on 2026-11-25.")).toBe(true);
     expect(r.card).not.toContain('was not recognised');
     expect(r.card.split('\n').filter((l) => l.includes('no longer supported'))).toHaveLength(1);
   });
@@ -549,7 +550,7 @@ describe('Amendment A1 — ledger-drift.mjs --fetch --discard-pages', () => {
     const lines = r.stdout.trimEnd().split('\n');
     expect(r.status).toBe(0);
     expect(lines.at(-2)).toBe('pages removed (clean run)');
-    expect(lines.at(-1)).toBe('0 rows moved — 19 rows checked of 19');
+    expect(lines.at(-1)).toBe('0 rows moved — 22 rows checked of 22' /* 0.4.7 (R4): three made-up OpenAI past rows (until 0.4.7: 19) */);
     expect(existsSync(savedIn(r.stdout))).toBe(false);
   });
 
@@ -581,7 +582,7 @@ describe('Amendment A1 — ledger-drift.mjs --fetch --discard-pages', () => {
     const r = run(['--fetch']);
     expect(r.status).toBe(0);
     expect(existsSync(savedIn(r.stdout))).toBe(true);
-    expect(r.stdout.trimEnd().split('\n').at(-1)).toBe('0 rows moved — 19 rows checked of 19');
+    expect(r.stdout.trimEnd().split('\n').at(-1)).toBe('0 rows moved — 22 rows checked of 22' /* 0.4.7 (R4): three made-up OpenAI past rows (until 0.4.7: 19) */);
   });
 });
 
@@ -647,8 +648,8 @@ describe('Amendment B1 — a model page is the page asked for, or it is unread',
     expect(f.confidence).toBe('likely');
     // 0.4.4 (R4): the deprecations page WAS read in this run; only the model page was not, and the line says so by name
     expect(f.detail).toContain(
-      // 0.4.6: the re-read of 2026-11-24 09:37 UTC (until 0.4.6: 2026-11-20 05:02)
-      "In this run OpenAI's deprecations page was read (2026-11-24 09:37 UTC) and still says this, and OpenAI's model page for GPT-4o mini was not read (not the page this version reads);",
+      // 0.4.7: the re-read of 2026-11-25 09:06 UTC (until 0.4.7: 2026-11-24 09:37; until 0.4.6: 2026-11-20 05:02)
+      "In this run OpenAI's deprecations page was read (2026-11-25 09:06 UTC) and still says this, and OpenAI's model page for GPT-4o mini was not read (not the page this version reads);",
     );
     expect(f.detail).not.toContain('was not read in this run (not the page this version reads)');
   });

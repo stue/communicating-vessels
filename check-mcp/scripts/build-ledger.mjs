@@ -38,6 +38,12 @@
  * (`onPage` and `said` below, and push()'s quote check); a typed value inside a sentence (a date, a name, a
  * model id) is checked inside the sentence it comes from. The drift script re-reads each of them with the
  * rows: each is a row's quote, note or second quote, or a definition.
+ * 0.4.7 (R1): a row's `pageWord` is the page's own words or it is absent: before anything is written, every row's
+ * `pageWord` is checked on the text of the page the row cites (or of its second page, which the row then names in
+ * `pageWordUrl`) by `wordOn` (src/ledger-check.mjs: whitespace flattened, links reduced to their text, on both sides), and
+ * the generator stops on one that is not. What this script writes in its own words goes to `ourWord`.
+ * 0.4.7 (R3): an id the page carries on two rows keeps the first; the second is written onto it as `secondRow`, read by
+ * the same parsers the table sweep reads (`tableIds`). A third row for one id stops the generator.
  */
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
@@ -48,6 +54,7 @@ import {
   quoteOn,
   replacementForm,
   PAGE_URL,
+  pageFileOf,
   htmlToText,
   googlePageRows,
   googleTableRows,
@@ -59,6 +66,13 @@ import {
   pageTextOf,
   pageShapeMisses,
   pageTitleOf,
+  wordOn,
+  unlinked,
+  tableIds,
+  pageWordMisses,
+  fineTuneNoteTie,
+  fineTuneNoteTies,
+  sentenceAround,
 } from '../src/ledger-check.mjs';
 
 const args = process.argv.slice(2);
@@ -193,7 +207,10 @@ const unbacktick = (s) =>
       id,
       provider: 'anthropic',
       word: retired ? 'retired' : 'deprecated',
-      pageWord: retired ? h.note : `Deprecated model (${h.section})`,
+      // 0.4.7 (R1): the page's sentence, or (no sentence under the heading) the history table's column name, which is on
+      // the page; the heading path is this check's
+      pageWord: retired ? h.note : 'Deprecated model',
+      ...(retired ? {} : { ourWord: `Deprecated model (${h.section})` }),
       announced: isoOf(h.section),
       shutdown: isoOf(h.retirementText),
       dateText: h.retirementText,
@@ -236,10 +253,18 @@ const unbacktick = (s) =>
     const noRepl = /^-+$/.test(replRaw) || /^no one-to-one replacement\.?$/i.test(replRaw);
     const replacement = replRaw && !noRepl ? unbacktick(replRaw) : undefined;
     const where = section ?? status;
+    const heading = part === 'upcoming' ? 'Upcoming deprecations' : 'Past deprecations';
+    // 0.4.7 (R1): the page's word is the row's Status cell (the upcoming table); a past row's table has no status column,
+    // so its word is the heading it sits under, and its `word` is this check's reading of its date (R6). The heading
+    // joined to a cell (until 0.4.7 the `pageWord` of every upcoming row, "Upcoming deprecations: Deprecated") is this check's.
+    const joined = `${heading}${where ? `: ${where}` : ''}`;
     const base = {
       provider: 'openai',
       word,
-      pageWord: `${part === 'upcoming' ? 'Upcoming deprecations' : 'Past deprecations'}${where ? `: ${where}` : ''}`,
+      pageWord: status ?? section ?? heading,
+      ...(joined !== (status ?? section ?? heading) ? { ourWord: joined } : {}),
+      ...(part === 'past' ? { wordBy: 'date' } : {}),
+      table: heading,
       announced: (iNotice === -1 ? undefined : isoOf(cells[iNotice])) ?? isoOf(section),
       shutdown: /earliest/i.test(dateText) ? undefined : shutdown,
       shutdownFloor: /earliest/i.test(dateText) ? shutdown : undefined,
@@ -289,11 +314,17 @@ const unbacktick = (s) =>
   const depFlat = flat(dep);
   const chgFlat = flat(chg);
 
-  /** A sentence on either Google page that calls the id deprecated, verbatim, or null. */
+  /**
+   * A sentence on either Google page that calls the id deprecated, verbatim, or null.
+   * 0.4.7 (R1): a match that begins at a link's text starts at the link's "[" (until 0.4.7 it began inside the link, so its
+   * words carried the link's dangling end, "`id`](/docs/…) is deprecated"); `words` is the match with its links reduced to
+   * their text, the row's `pageWord`. (R2): `whole` is the page's whole sentence around the match, verbatim (markup kept),
+   * which a row whose word comes from this page quotes.
+   */
   function deprecatedSentence(id) {
     const e = id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const pats = [
-      new RegExp(`\`${e}\`(?:\\]\\([^)]*\\))? (?:model )?is (?:\\[)?deprecated(?:\\]\\([^)]*\\))?`),
+      new RegExp(`\\[?\`${e}\`(?:\\]\\([^)]*\\))? (?:model )?is (?:\\[)?deprecated(?:\\]\\([^)]*\\))?`),
       new RegExp(`The (?:\`[^\`]+\` and )*\`${e}\`(?: and \`[^\`]+\`)* models are deprecated`),
       new RegExp(`replaces and deprecates \`${e}\``),
     ];
@@ -303,7 +334,7 @@ const unbacktick = (s) =>
     ]) {
       for (const p of pats) {
         const m = p.exec(txt);
-        if (m) return { where, sentence: m[0], url };
+        if (m) return { where, sentence: m[0], words: unlinked(m[0]), whole: sentenceAround(txt, m.index, m[0].length), url };
       }
     }
     return null;
@@ -315,11 +346,16 @@ const unbacktick = (s) =>
 
   // Deprecations page tables.
   const tableRows = googleTableRows(dep);
+  // 0.4.7 (R2): each table's own header row, read from the page, so a row the card quotes by column names the columns
+  let header;
   for (const r of tableRows) {
     const cells = googleRowCells(r);
     const [model, , shutdownText, replCell] = cells;
     const idm = /`([^`]+)`/.exec(model ?? '');
-    if (!idm) continue; // header row
+    if (!idm) {
+      header = r.cells.map((c) => c.trim()); // header row
+      continue;
+    }
     const id = idm[1];
     const deprecatedSection = /^Deprecated (models|agents)/.test(r.h3 ?? '');
     const routes = /rout/i.test(replCell);
@@ -327,20 +363,40 @@ const unbacktick = (s) =>
     const shutdown = isoOf(shutdownText);
     const said = deprecatedSentence(id);
     let word;
+    // 0.4.7 (R1): `pageWord` the page's own words, `ourWord` this check's, `wordBy` where the word is not the page's (R6)
     let pageWord;
+    let ourWord;
+    let wordBy;
+    // 0.4.7 (R2): the word "deprecated" comes from the release notes' sentence, not from this row's page
+    let fromSecond = false;
     if (routes) {
       word = said ? 'deprecated' : 'rerouted';
-      pageWord = said ? said.sentence : unbacktick(replCell);
+      if (said) {
+        pageWord = said.words;
+        fromSecond = said.where === 'changelog';
+      } else {
+        // the cell's own words, verbatim; until 0.4.7 its backticks were removed, which is on no page
+        pageWord = replCell;
+        ourWord = unbacktick(replCell);
+        wordBy = 'ours';
+      }
     } else if (deprecatedSection) {
       word = shutdown && shutdown <= readOn ? 'shut down' : 'deprecated';
-      pageWord = `listed under ${r.h2} › ${r.h3}`;
+      // the heading's own words; the path joined with "›" is this check's
+      pageWord = r.h3;
+      ourWord = `listed under ${r.h2} › ${r.h3}`;
+      // fix pass 1 (the seat's ruling on objection 1): *shut down* here is Google's own word — the page says "Already-shutdown
+      // models and agents are listed under the **Deprecated models** and **Deprecated agents** sections." (a definition below,
+      // read and checked like the others). Until fix pass 1 these rows were marked `wordBy: 'date'`, the check's reading.
     } else if (said) {
       word = 'deprecated';
-      pageWord = said.sentence;
+      pageWord = said.words;
+      fromSecond = said.where === 'changelog';
     } else if (shutdown) {
       // Amendment B, objection 1: a date and no deprecation word is the page's schedule, written as such.
       word = 'scheduled for shutdown';
-      pageWord = `shutdown date ${shutdownText}, no deprecation word on either page`;
+      ourWord = `shutdown date ${shutdownText}, no deprecation word on either page`;
+      wordBy = 'ours';
     } else if (/^no shutdown date announced\.?$/i.test(shutdownText.trim())) {
       // 0.4.2 Amendment A1 (amends Amendment B, objection 1): the page lists the id with no date and no
       // deprecation word. It is written in the page's own words, so the card never calls it "not recognised".
@@ -350,6 +406,8 @@ const unbacktick = (s) =>
       log.push(`google: ${id} not written (date cell "${shutdownText}", no deprecation word)`);
       continue;
     }
+    if (fromSecond && (!header || header.length !== cells.length))
+      throw new Error(`google: ${id}'s table has no header row of ${cells.length} columns to name its cells by (found ${JSON.stringify(header)})`);
     const replacement = replCell ? unbacktick(unbacktick(replCell).replace(/\s*\([\s\S]*\)\s*$/, '')) || undefined : undefined;
     // the same cell as `replacement` reads it (links unwrapped, a trailing parenthesis dropped), with its code marks kept
     const replForm = replacement
@@ -359,7 +417,10 @@ const unbacktick = (s) =>
       id,
       provider: 'google',
       word,
-      pageWord,
+      ...(pageWord !== undefined ? { pageWord } : {}),
+      ...(fromSecond ? { pageWordUrl: URL.googleChangelog } : {}),
+      ...(ourWord !== undefined ? { ourWord } : {}),
+      ...(wordBy ? { wordBy } : {}),
       // Amendment C, ruling 5: the page says its table dates are "the earliest possible dates";
       // only a routing row's date is the callout's own "Effective <date>" and stays a date.
       shutdown: /no shutdown|n\/a/i.test(shutdownText) || !routes ? undefined : shutdown,
@@ -371,7 +432,12 @@ const unbacktick = (s) =>
       url: URL.google,
       readOn,
       section: `${r.h2}${r.h3 ? ` › ${r.h3}` : ''}`,
-      ...(said && said.where === 'changelog' ? { alsoUrl: URL.googleChangelog, alsoQuote: said.sentence, alsoReadOn: readOnOf(fc) } : {}),
+      // 0.4.7 (R2): a row whose word is the release notes' carries that page's whole sentence, which the card quotes, and
+      // its table's column names, which the card prints beside the row's cells (until 0.4.7: the words around the id only)
+      ...(said && said.where === 'changelog'
+        ? { alsoUrl: URL.googleChangelog, alsoQuote: fromSecond ? said.whole : said.sentence, alsoReadOn: readOnOf(fc) }
+        : {}),
+      ...(fromSecond ? { columns: header } : {}),
       quote: cells.join(' | '),
       _file: fd,
       // Amendment B, ruling 3: a Google table row is checked as ONE row of the page — every cell in
@@ -414,7 +480,7 @@ const unbacktick = (s) =>
             id,
             provider: 'google',
             word: 'deprecated',
-            pageWord: sentence,
+            pageWord: unlinked(sentence),
             shutdown: isoOf(willDep[2]),
             dateText: willDep[2],
             url: URL.googleChangelog,
@@ -469,7 +535,13 @@ const unbacktick = (s) =>
           id,
           provider: 'google',
           word: past ? 'shut down' : 'deprecated',
-          pageWord: past ? `release notes ${s.heading}: ${hit[0].replace(/[[\]]/g, '')}` : `release notes ${s.heading}: ${hit[0].replace(/[[\]]/g, '')}`,
+          // 0.4.7 (R1): the sentence's own words, links reduced to their text; the entry's heading joined to them is this
+          // check's (until 0.4.7 the `pageWord`, with its brackets stripped and the link's address left in one of them).
+          // A sentence that says "will be shut down" gives the word "deprecated" only where it carries one itself (Google's
+          // entries open "Deprecation announcement: …"); where it does not, that word is this check's (R6).
+          pageWord: unlinked(hit[0]),
+          ourWord: `release notes ${s.heading}: ${unlinked(hit[0])}`,
+          ...(past || /deprecat/i.test(sentence) ? {} : { wordBy: 'ours' }),
           shutdown: date,
           dateText: past ? s.heading : date,
           url: URL.googleChangelog,
@@ -685,12 +757,159 @@ const DEFINITIONS = [
     file: 'openai-deprecations.md',
     quote: 'Fine-tuned versions of the models listed above follow the same shutdown schedule as their underlying base models.',
   },
+  // 0.4.7 (R4): OpenAI's sentences about fine-tuned models outside that table (the page's markdown form, read
+  // 2026-11-25T09:06:11Z; each as the page writes it, its links kept, so the drift check reads it as it is). The first is
+  // quoted on the card for a fine-tune of a model on the rows its link ties it to (src/ledger-check.mjs fineTuneNoteTie);
+  // the other four are read and checked here, by the drift check and in each run, so a moved one is said, and not printed.
+  {
+    provider: 'openai',
+    word: 'fine-tunes of the October 2026 shutdown',
+    url: URL.openai,
+    file: 'openai-deprecations.md',
+    quote:
+      'Fine-tuned versions of the [legacy GPT models shut down in October 2026](https://developers.openai.com/api/docs/deprecations#2026-04-22-legacy-gpt-model-snapshots) followed the same shutdown schedule as their underlying base models.',
+  },
+  {
+    provider: 'openai',
+    word: 'existing fine-tuned models',
+    url: URL.openai,
+    file: 'openai-deprecations.md',
+    quote: 'You can continue to run inference on each existing fine-tuned model until OpenAI retires its underlying base model.',
+  },
+  {
+    provider: 'openai',
+    word: 'fine-tuning training on babbage-002 and davinci-002',
+    url: URL.openai,
+    file: 'openai-deprecations.md',
+    quote:
+      'The October 2024 shutdown for [fine-tuning training on `babbage-002` and `davinci-002`](https://developers.openai.com/api/docs/deprecations#2024-08-29-fine-tuning-training-on-babbage-002-and-davinci-002-models) applied to creating new fine-tuned models. Existing fine-tuned models were unaffected by that change.',
+  },
+  {
+    provider: 'openai',
+    word: 'fine-tunes of the GPT-3.5 Turbo snapshots',
+    url: URL.openai,
+    file: 'openai-deprecations.md',
+    quote: 'Existing fine-tuned models from those GPT-3.5 Turbo snapshots were unaffected by that shutdown.',
+  },
+  {
+    provider: 'openai',
+    word: 'the legacy fine-tunes endpoint',
+    url: URL.openai,
+    file: 'openai-deprecations.md',
+    quote:
+      'The [legacy fine-tunes endpoint shutdown](https://developers.openai.com/api/docs/deprecations#2023-08-22-fine-tunes-endpoint) also removed access to models trained with that endpoint.',
+  },
+  // 0.4.7, fix pass 1: Google's sentence that makes *shut down* its own word for a row under "Deprecated models" or
+  // "Deprecated agents" (the page's text as htmlToText gives it, read 2026-11-25T09:06:12Z; bold's marks kept as the page writes them)
+  {
+    provider: 'google',
+    word: 'already-shutdown sections',
+    url: URL.google,
+    file: 'google-deprecations.html',
+    quote: 'Already-shutdown models and agents are listed under the **Deprecated models** and **Deprecated agents** sections.',
+  },
+  // 0.4.7 (R5, Amendment A9): Anthropic's sentences naming the platforms its dates apply to and those that set their own
+  // (the page's markdown form, read 2026-11-25T09:06:11Z; links kept as the page writes them)
+  {
+    provider: 'anthropic',
+    word: 'operated platforms',
+    url: URL.anthropic,
+    file: 'anthropic-deprecations.md',
+    quote:
+      'The dates on this page apply to Anthropic-operated platforms: the Claude API, [Claude Platform on AWS](https://platform.claude.com/docs/en/build-with-claude/claude-platform-on-aws), [Claude Models on Google Cloud (Anthropic managed)](https://platform.claude.com/docs/en/build-with-claude/claude-models-on-google-cloud/anthropic-managed), and [Microsoft Foundry](https://platform.claude.com/docs/en/build-with-claude/claude-in-microsoft-foundry). Partner-operated platforms, Claude Models on Google Cloud (Google managed) and Amazon Bedrock, set their own retirement schedules, so a model’s lifecycle status and dates can differ.',
+  },
 ];
 const definitions = DEFINITIONS.map(({ provider, word, url, file, quote }) => {
   const text = file.endsWith('.html') ? htmlToText(page(file)) : page(file);
   if (!quoteOn(text, quote)) throw new Error(`definition for ${provider} "${word}" not found on ${file}: ${quote}`);
   return { provider, word, url, quote };
 });
+
+// ── 0.4.7 (R4, Amendment A5): what ties OpenAI's note on fine-tunes to its rows ──
+// The note's link ends "#2026-04-22-legacy-gpt-model-snapshots": that date is the notice date of the rows it means, and
+// "shut down in October 2026" their month. Read from the sentence, never typed; a note that ties no row stops the build.
+{
+  const note = definitions.find((d) => d.provider === 'openai' && d.word === 'fine-tunes of the October 2026 shutdown');
+  const tie = fineTuneNoteTie(note.quote);
+  if (!tie) throw new Error(`openai: the fine-tune note gives no notice date and month to tie it to rows: ${note.quote}`);
+  const tied = rows.filter((r) => fineTuneNoteTies(note.quote, r));
+  if (tied.length === 0) throw new Error(`openai: the fine-tune note ties no row (notice ${tie.notice}, shut down in ${tie.month})`);
+  log.push(`openai: the fine-tune note ties ${tied.length} rows (notice date ${tie.notice}, shut down in ${tie.month}): ${tied.map((r) => r.id).join(', ')}`);
+}
+
+// ── 0.4.7 (R3): a second row of a page, written onto the first ──────────
+// The ids of each page's tables, row by row, by the parsers the table sweep reads (tableIds); the second row for an id on
+// the same page is kept on the ledger's row for that id, with its line, its heading, its date and replacement cells, and
+// whether the id sits in it inside a cell that names a feature. A third row for one id is a shape this version does not read.
+{
+  const ctl = (s) => (s ?? '').replace(/\*\*/g, '').replace(/‑/g, '-').replace(/\s+/g, ' ').trim();
+  for (const [file, url] of [
+    ['anthropic-deprecations.md', URL.anthropic],
+    ['openai-deprecations.md', URL.openai],
+    ['google-deprecations.html', URL.google],
+  ]) {
+    const text = pageTextOf(file, page(file));
+    const seen = new Map();
+    for (const t of tableIds(file, text)) {
+      const n = (seen.get(t.id) ?? 0) + 1;
+      seen.set(t.id, n);
+      if (n === 1) continue;
+      const row = rows.find((r) => r.id === t.id && r.url === url);
+      if (!row) {
+        log.push(`second row: ${t.id} on ${file} has no ledger row on that page; not written`);
+        continue;
+      }
+      if (n > 2) throw new Error(`${file}: ${t.id} is on a third row (${t.line}); this version reads two at most`);
+      let dateText;
+      let replacement;
+      if (file === 'anthropic-deprecations.md') {
+        const h = anthropicHistoryRows(text).find((x) => x.line === t.line);
+        dateText = h?.retirementText;
+        replacement = h?.replacement;
+      } else if (file === 'openai-deprecations.md') {
+        const o = openaiTableRows(text).find((x) => x.line === t.line);
+        const c = o ? openaiColumns(o.header) : undefined;
+        dateText = o && c && c.date !== -1 ? ctl(o.cells[c.date]) : undefined;
+        const raw = o && c && c.replacement !== -1 ? o.cells[c.replacement] : '';
+        replacement = raw && !/^-+$/.test(raw) && !/^no one-to-one replacement\.?$/i.test(raw) ? unbacktick(raw) : undefined;
+      } else {
+        const g = googleTableRows(text).find((x) => googleRowCells(x).join(' | ') === t.line);
+        dateText = g ? ctl(g.cells[2]) || undefined : undefined;
+        replacement = g && g.cells[3] ? unbacktick(unbacktick(g.cells[3]).replace(/\s*\([\s\S]*\)\s*$/, '')) || undefined : undefined;
+      }
+      const heading = t.table.replace(/^## /, '').split(' › ').at(-1);
+      const quote = t.line;
+      const ok = file === 'google-deprecations.html' ? oneRowIn(googlePageRows(text), quote.split(' | ')) : quoteOn(text, quote);
+      if (!ok) throw new Error(`second row for ${t.id} not found on ${file}: ${quote}`);
+      if (!quoteOn(text, heading)) throw new Error(`the heading "${heading}" of ${t.id}'s second row is not on ${file}`);
+      row.secondRow = {
+        quote,
+        heading,
+        ...(dateText ? { dateText } : {}),
+        ...(replacement ? { replacement } : {}),
+        ...(t.kind === 'feature' ? { feature: true } : {}),
+      };
+    }
+  }
+}
+
+// ── 0.4.7 (R1): a pageWord is the page's word, or the build stops ───────
+{
+  const textByUrl = new Map();
+  const textOf = (url) => {
+    if (!textByUrl.has(url)) {
+      const file = pageFileOf(url);
+      textByUrl.set(url, file && existsSync(join(PAGES, file)) ? pageTextOf(file, page(file)) : undefined);
+    }
+    return textByUrl.get(url);
+  };
+  const misses = pageWordMisses(rows, textOf);
+  if (misses.length) {
+    for (const m of misses) console.error(`stop: ${m}`);
+    console.error(`stop: ${misses.length} row(s) carry a pageWord that is not on the page they name. No ledger written.`);
+    process.exit(1);
+  }
+}
 
 // ── write ────────────────────────────────────────────────────────────────
 const ALLOWED = new Set(['deprecated', 'retired', 'shut down', 'legacy', 'rerouted', 'scheduled for shutdown', 'listed', 'no longer supported', 'active']);

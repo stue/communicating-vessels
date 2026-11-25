@@ -11,7 +11,8 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runCheck, type Finding } from '../src/engine.js';
 import { ExtractSchema, type Extract } from '../src/extract.js';
-import { LEDGER } from '../src/lifecycle-ledger.js';
+import { LEDGER, LEDGER_DEFINITIONS } from '../src/lifecycle-ledger.js';
+import { fineTuneNoteTies } from '../src/ledger-check.mjs';
 import { noRequestRead, type PageRead } from '../src/pages.js';
 import { READ } from './helpers/read.js';
 
@@ -57,7 +58,10 @@ describe('R5 — `ft:<base>:…` prints the base’s lifecycle line with both na
   });
   // Amendment A1: the line says only that the check quotes no sentence (until fix pass 1: "The pages this check reads do not say …", false of OpenAI's page)
   it('on a base the page lists in its past table, the line says the check quotes no sentence of the provider’s about it', () => {
-    const past = LEDGER.find((r) => r.provider === 'openai' && r.word === 'shut down' && /^[a-z0-9.-]+$/.test(r.id))!;
+    // 0.4.7 (R4, Amendment A5): a past base the historical note's link does not tie (until 0.4.7 the first shut-down row,
+    // `gpt-3.5-turbo-0125`, whose fine-tunes now quote the note: check-047.test.ts)
+    const note = LEDGER_DEFINITIONS.find((d) => d.word === 'fine-tunes of the October 2026 shutdown')!.quote;
+    const past = LEDGER.find((r) => r.provider === 'openai' && r.word === 'shut down' && /^[a-z0-9.-]+$/.test(r.id) && !fineTuneNoteTies(note, r))!;
     const f = about(findings(one(`ft:${past.id}:acme::x1`)), `ft:${past.id}:acme::x1`)[0]!;
     expect(f.detail).toContain("This check quotes no sentence of OpenAI's about fine-tunes of this model.");
     expect(f.detail).not.toContain(FINE_TUNES);

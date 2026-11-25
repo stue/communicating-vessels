@@ -1,0 +1,38 @@
+{
+  "project": {
+    "name": "verifier-047"
+  },
+  "callSites": [],
+  "models": [
+    {
+      "model": "gemini-3.1-flash-image",
+      "where": "src/a.py:1",
+      "platform": "provider-api",
+      "context": "runs"
+    },
+    {
+      "model": "ft:gpt-3.5-turbo-0125:acme::abc123",
+      "where": "src/b.py:1",
+      "platform": "provider-api",
+      "context": "runs"
+    },
+    {
+      "model": "ft:gpt-5.4-cyber:acme::abc123",
+      "where": "src/c.py:1",
+      "platform": "provider-api",
+      "context": "runs"
+    },
+    {
+      "model": "ft:gpt-4-0314:acme::abc123",
+      "where": "src/d.py:1",
+      "platform": "provider-api",
+      "context": "runs"
+    },
+    {
+      "model": "ft:gpt-4o-2024-08-06:acme::abc123",
+      "where": "src/e.py:1",
+      "platform": "provider-api",
+      "context": "runs"
+    }
+  ]
+}

@@ -338,6 +338,9 @@ describe('R5 — two sentences', () => {
   it('--model-facts on the same id says it the same way', async () => {
     const { renderModelFacts } = await import('../src/model-facts.js');
     const t = renderModelFacts('gemini-3-pro-preview');
+    // 0.4.7, fix pass 1 (the seat's ruling): a row under Google's "Deprecated models" has *shut down* as Google's own word, by
+    // the page's sentence ("Already-shutdown models and agents are listed under …"), so the pin is back to 0.4.6's words
+    // (the 0.4.7 build before fix pass 1 printed "this check's word, read from the date on …")
     expect(t).toContain("Google's word: **shut down** (the earliest shutdown date the page gave was 2026-03-09)");
     expect(t.split('\n')[2]).not.toMatch(/not before/);
   });
@@ -407,11 +410,11 @@ describe('R7 — the share path says what it stores', () => {
 });
 
 describe('R9 — version, changelog, readme', () => {
-  it('the package is 0.4.6 and the changelog says so first', () => {
-    expect(pkg.version).toBe('0.4.6'); // 0.4.6 (R10; until 0.4.6: 0.4.5)
+  it('the package is 0.4.7 and the changelog says so first', () => {
+    expect(pkg.version).toBe('0.4.7'); // 0.4.7 (R7; until 0.4.7: 0.4.6; until 0.4.6: 0.4.5)
     const log = readFileSync(join(PKG_DIR, 'CHANGELOG.md'), 'utf8');
-    // 0.4.4 Amendment B2: dated the day the ledger was read and the release ships (0.4.6: the ledger read 2026-11-24; 0.4.5: 2026-11-20)
-    expect(log.split('\n').find((l) => l.startsWith('## '))).toBe('## 0.4.6 — 2026-11-24');
+    // 0.4.4 Amendment B2: dated the day the ledger was read and the release ships (0.4.7: the ledger read 2026-11-25; 0.4.6: 2026-11-24; 0.4.5: 2026-11-20)
+    expect(log.split('\n').find((l) => l.startsWith('## '))).toBe('## 0.4.7 — 2026-11-25');
   });
 
   it("the README's example card is this build's output on the stored example extract, byte for byte", async () => {

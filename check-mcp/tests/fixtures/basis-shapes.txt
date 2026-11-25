@@ -104,3 +104,8 @@ your token estimates multiplied by the catalog's prices for this model (the cata
 your token estimates multiplied by the catalog's prices for this model (the catalog's record, checked against Z.ai's documentation on <date>)
 your token estimates multiplied by the catalog's prices for this model (the catalog's record, not checked against Anthropic's documentation)
 your token estimates; <n>% is a rule of thumb from the projects the check's makers run, not a provider's figure
+Anthropic's page for this model, as the catalog read it <date>: <url>; Amazon Bedrock: <url>; Anthropic's model deprecations page, for the definition the line quotes, as read <date>: <url>
+Anthropic's page for this model, as the catalog read it <date>: <url>; Vertex AI: <url>; Anthropic's model deprecations page, for the definition the line quotes, as read <date>: <url>
+Google's release notes page as read <date>, changed when read in this run (<time> UTC): <url>; Google's Gemini deprecations page, for the definition the line quotes, as read <date>: <url>
+Google's release notes page as read <date>: <url>; Google's Gemini deprecations page, for the definition the line quotes, as read <date>: <url>
+Google's release notes page, read in this run (<time> UTC): <url>; Google's Gemini deprecations page, for the definition the line quotes, as read <date>: <url>

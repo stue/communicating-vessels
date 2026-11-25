@@ -34,6 +34,97 @@ export function quoteOn(text, quote) {
 }
 
 /**
+ * 0.4.7 (R1): a markdown link `[text](url)` reduced to its text — the one link strip, applied the same way to a page's
+ * text and to a string compared with it (`wordOn`), and to a quote the card prints. A string cut inside a link (one that
+ * begins at the link's text, "`id`](/docs/…) is deprecated") loses the link's dangling end the same way.
+ * @param {string} s
+ */
+export function unlinked(s) {
+  return s.replace(/\[([^\]]*)\]\([^)]*\)/g, '$1').replace(/\]\([^)\s]*\)/g, '');
+}
+
+/**
+ * 0.4.7 (R1, Amendment A7): is a row's `pageWord` on a page's text? The generator's own `quoteOn` (whitespace flattened)
+ * with the link strip on both sides, then a substring test. The generator stops on a row whose `pageWord` fails it, and
+ * scripts/page-word-sweep.mjs counts with it.
+ * @param {string} text the page's text, as pageTextOf gives it  @param {string} word
+ */
+export function wordOn(text, word) {
+  return quoteOn(unlinked(text), unlinked(word));
+}
+
+/**
+ * 0.4.7 (R1): every row whose `pageWord` is not on the page it names — its own page, or the page `pageWordUrl` names —
+ * in words; [] when every one is. `textOf(url)` gives a page's text as pageTextOf gives it (undefined: not in the set).
+ * The generator stops on any; a row with no `pageWord` is not a miss.
+ * @param {{ id: string, provider: string, url: string, pageWord?: string, pageWordUrl?: string, alsoUrl?: string }[]} rows
+ * @param {(url: string) => string | undefined} textOf
+ */
+export function pageWordMisses(rows, textOf) {
+  const out = [];
+  for (const r of rows) {
+    if (r.pageWord === undefined) continue;
+    const url = r.pageWordUrl ?? r.url;
+    if (r.pageWordUrl !== undefined && r.pageWordUrl !== r.alsoUrl) {
+      out.push(`${r.provider} ${r.id}: its pageWord is said to be on ${r.pageWordUrl}, which is not a page the row rests on`);
+      continue;
+    }
+    const text = textOf(url);
+    if (text === undefined) out.push(`${r.provider} ${r.id}: ${url} is not in the page set, so its pageWord cannot be checked`);
+    else if (!wordOn(text, r.pageWord)) out.push(`${r.provider} ${r.id}: its pageWord ${JSON.stringify(r.pageWord)} is not on ${url}`);
+  }
+  return out;
+}
+
+/**
+ * 0.4.7 (R2): the page's whole sentence around a match in a flattened text, verbatim: from the end of the sentence or the
+ * start of the list item before it, to the first full stop after it that ends a sentence (a "." before a space or the end).
+ * A full stop inside a link's address or a version ("3.7") does not end it.
+ * @param {string} flatText whitespace already flattened  @param {number} index  @param {number} length
+ */
+export function sentenceAround(flatText, index, length) {
+  let start = 0;
+  for (const m of flatText.slice(0, index).matchAll(/\.(?=\s)|(?:^|\s)\*\s/g)) start = m.index + m[0].length;
+  const end = /\.(?=\s|$)/g;
+  end.lastIndex = index + length;
+  const e = end.exec(flatText);
+  return flatText.slice(start, e ? e.index + 1 : flatText.length).trim();
+}
+
+/**
+ * 0.4.7 (R4, Amendment A5): what OpenAI's note on fine-tunes of the legacy GPT models names, read from the note itself:
+ * the date its link ends on ("#2026-04-22-legacy-gpt-model-snapshots": the notice date of the rows it means) and the month
+ * its words give ("shut down in October 2026"), as `{ notice: 'YYYY-MM-DD', month: 'YYYY-MM' }`; undefined when the
+ * note gives either one no more.
+ * @param {string} note the note as the page writes it, its link kept
+ */
+export function fineTuneNoteTie(note) {
+  const notice = /\]\([^)]*#(\d{4}-\d{2}-\d{2})-[^)]*\)/.exec(note)?.[1];
+  const m = /shut down in ([A-Z][a-z]+) (\d{4})/.exec(note);
+  const MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
+  const mo = m ? MONTHS.indexOf(m[1].toLowerCase()) + 1 : 0;
+  if (!notice || !mo) return undefined;
+  return { notice, month: `${m[2]}-${String(mo).padStart(2, '0')}` };
+}
+
+/**
+ * Does the note tie this row? An OpenAI row of the past table whose notice date (`announced`) is the date the note's link
+ * names and whose shutdown date falls in the month its words name — on the page of 2026-11-25, exactly the twelve rows shut
+ * down on Oct 23, 2026 with the notice date Apr 22, 2026 (the month alone would add `gpt-5.4-cyber`, notice Sep 11, 2026).
+ * @param {string} note  @param {{ provider: string, table?: string, announced?: string, shutdown?: string }} row
+ */
+export function fineTuneNoteTies(note, row) {
+  const tie = fineTuneNoteTie(note);
+  return (
+    !!tie &&
+    row.provider === 'openai' &&
+    row.table === 'Past deprecations' &&
+    row.announced === tie.notice &&
+    (row.shutdown ?? '').startsWith(`${tie.month}-`)
+  );
+}
+
+/**
  * 0.4.2 Amendment A2: what a replacement cell holds, read from the page's own code marks.
  *  - undefined: model ids only (in backticks), joined by commas, "or", "and" — the card says "its page names".
  *  - 'ids-in-text': ids inside a sentence — the card quotes the cell whole.
@@ -535,9 +626,14 @@ export function pageNameOf(file, title) {
 /** Is a ledger row a table row of Google's deprecations page (checked as ONE page row, cell by cell in order)? */
 export const isGoogleTableRow = (r) => r.url === PAGE_URL.google && r.section !== undefined;
 
-/** Every quote a row rests on: its quote on its url, its note on the same page, its alsoQuote on its alsoUrl. */
+/**
+ * Every quote a row rests on: its quote on its url, its note on the same page, its alsoQuote on its alsoUrl.
+ * 0.4.7 (R3, Amendment A4): and its second row on its url, by the same check as its first, so a moved second row is a
+ * changed row — never an unchecked quote inside a Certain line.
+ */
 export function rowTests(r) {
   const tests = [{ url: r.url, quote: r.quote, what: 'quote', table: isGoogleTableRow(r) }];
+  if (r.secondRow) tests.push({ url: r.url, quote: r.secondRow.quote, what: 'second', table: isGoogleTableRow(r) });
   if (r.note) tests.push({ url: r.url, quote: r.note, what: 'note', table: false });
   if (r.alsoUrl && r.alsoQuote) tests.push({ url: r.alsoUrl, quote: r.alsoQuote, what: 'also', table: false });
   return tests;

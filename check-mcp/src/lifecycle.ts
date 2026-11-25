@@ -334,8 +334,13 @@ export function coveredBy(provider: string, partner: Partner): string | undefine
   return undefined;
 }
 
-export const PARTNER_CAVEAT =
-  'Anthropic\'s page: the dates "apply to Anthropic-operated platforms"; Amazon Bedrock and Google-managed Claude on Google Cloud "set their own retirement schedules, so a model’s lifecycle status and dates can differ."';
+// 0.4.7 (Amendment A9): PARTNER_CAVEAT, a paraphrase of Anthropic's sentences that nothing printed, is removed; the card
+// quotes the sentences themselves from the ledger (LEDGER_DEFINITIONS, `operated platforms`; engine.ts platformSentences).
+
+/** 0.4.7 (R6): the day the ledger read a page, from its source list (the ledger's own read day for a page not in it). */
+export function sourceReadOn(url: string): string {
+  return LEDGER_SOURCES.find((s) => s.url === url)?.readAt.slice(0, 10) ?? LEDGER_READ_ON;
+}
 
 // ── the new-release sentence ──────────────────────────────────────────────
 interface FamVer {

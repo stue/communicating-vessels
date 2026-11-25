@@ -1,7 +1,8 @@
 import { LIBRARY_VERSION } from '@warmdrift/kgauto-compiler';
 import { retirementFloorClause } from '@warmdrift/kgauto-compiler/profiles';
-import { analyseModel, rowStateIn, daysSinceRead, pageLineQuote, idSpans, LOWER_CASE_STEP } from './engine.js';
-import { PROVIDER_NAME, LEDGER_READ_ON, PARTNER_NAME, GATEWAYS, partnerPage, pageName, pagesName } from './lifecycle.js';
+import { analyseModel, rowStateIn, definitionStateIn, daysSinceRead, pageLineQuote, printedText, idSpans, platformSentences, LOWER_CASE_STEP } from './engine.js';
+import type { LedgerRow } from './lifecycle-types.js';
+import { PROVIDER_NAME, LEDGER_READ_ON, PARTNER_NAME, GATEWAYS, partnerPage, pageName, pagesName, WORD_DEFINITION } from './lifecycle.js';
 import { unreadAll, NOT_READ_BY_CALLER, readInThisRun, pagesCount, lastReadAt, minuteOf, type PageRead, type RowState } from './pages.js';
 
 /** Amendment B4: "n days before this lookup", said as the card says it — "the day of this lookup" at 0, "1 day" at 1. */
@@ -40,6 +41,21 @@ function lookupHow(steps: readonly string[]): string {
   const others = steps.filter((s) => s !== LOWER_CASE_STEP);
   if (others.length === steps.length) return steps.length ? `: ${steps.join(', ')}` : '';
   return others.length ? `: in ${LOWER_CASE_STEP}, ${others.join(', ')}` : `, ${LOWER_CASE_STEP}`;
+}
+
+/**
+ * 0.4.7 (R6, Amendment A8): the row's word, said as whose it is. The page's own status word stays "<provider>'s word";
+ * a word this check read from the page's date (`wordBy: 'date'`) is said as this check's reading of the date; where the
+ * page gives no status word (`wordBy: 'ours'`) the line says so, or gives the page's own words where it has some
+ * ("will be shut down", a replacement cell that routes requests). Until 0.4.7 every one printed as "<provider>'s word".
+ */
+function wordWords(r: LedgerRow, P: string): string {
+  if (r.wordBy === 'date') return `this check's word, read from the date on ${pageName(r.provider, r.url)}: **${r.word}**`;
+  if (r.wordBy === 'ours')
+    return r.pageWord
+      ? `${pageName(r.provider, r.pageWordUrl ?? r.url)}, in its own words: “${printedText(r.pageWord)}”`
+      : `${pageName(r.provider, r.url)}: a shutdown date and no status word on the page`;
+  return `${P}'s word: **${r.word}**`;
 }
 
 /** 0.4.3 (R1/R2): the lookup's last line — the catalog, and the pages as this run read them (or did not). */
@@ -104,12 +120,23 @@ export function renderModelFacts(model: string, opts: { pages?: PageRead; surfac
       r.namedAs
         ? // 0.4.3 (R6): the changelog names the model in words; the link from the id to the name is this check's (Amendment B4).
           // 0.4.4 (R6): the page by its own title (Google's is "Release notes").
-          `- ${pageName(r.provider, r.url)}, by this check's reading of the id as ${r.namedAs}: **${r.pageWord}** (${r.entryHeading}) — the page names the model in words, not by this id, so the link is this check's`
-        : r.word === 'listed'
+          `- ${pageName(r.provider, r.url)}, by this check's reading of the id as ${r.namedAs}: **${r.pageWord ?? r.quote}** (${r.entryHeading}) — the page names the model in words, not by this id, so the link is this check's`
+        : r.word === 'listed' && r.pageWord
           ? // 0.4.2 Amendment A1: listed on the page with no date and no deprecation word, in the page's own words.
             `- ${pageName(r.provider, r.url)} lists it: **${r.pageWord.charAt(0).toLowerCase()}${r.pageWord.slice(1)}**${repl}`
-          : `- ${P}'s word: **${r.word}**${dates.length ? ` (${dates.join('; ')})` : ''}${repl}${r.routesTo ? ` · requests routed to: ${r.routesTo}` : ''}`,
+          : `- ${wordWords(r, P)}${dates.length ? ` (${dates.join('; ')})` : ''}${repl}${r.routesTo ? ` · requests routed to: ${r.routesTo}` : ''}`,
     );
+    // 0.4.7, fix pass 1: a Google row under "Deprecated models" / "Deprecated agents" has *shut down* as Google's own word, by
+    // the page's sentence, quoted where it is on the page as read (never a changed one)
+    const already = WORD_DEFINITION.google?.['already-shutdown sections'];
+    if (
+      already &&
+      r.provider === 'google' &&
+      r.word === 'shut down' &&
+      /^Deprecated (models|agents)$/.test(r.section?.split(' › ')[1] ?? '') &&
+      definitionStateIn(read, { provider: 'google', word: 'already-shutdown sections' }).state !== 'changed'
+    )
+      out.push(`- ${pageName(r.provider, r.url)}: “${printedText(already)}”`);
     // 0.4.3 (R2): when the page was read, in the line.
     const st = rowStateIn(read, r.id);
     // 0.4.4 (R4): when one of the row's pages was read in this run and another was not, the line names the one not read
@@ -128,7 +155,8 @@ export function renderModelFacts(model: string, opts: { pages?: PageRead; surfac
     // why it was not read now (until 0.4.6: "(read <day>)" whatever this run read, so a page that answered 404 was not said)
     if (r.alsoUrl) {
       const also = r.alsoUrl !== r.url ? alsoWhen(st, r.alsoUrl, r.alsoReadOn ?? r.readOn, today) : undefined;
-      out.push(`- also: ${r.alsoUrl}${r.alsoHeading ? ` (${r.alsoHeading})` : ` (${also ?? `read ${r.alsoReadOn}`})`} — “${r.alsoQuote}”`);
+      // 0.4.7 (R2): the second page's sentence as the card prints it (links reduced to their text, bold's marks removed)
+      out.push(`- also: ${r.alsoUrl}${r.alsoHeading ? ` (${r.alsoHeading})` : ` (${also ?? `read ${r.alsoReadOn}`})`} — “${printedText(r.alsoQuote ?? '')}”`);
     }
     if (r.modelPage?.status === 404) out.push(`- ${P}'s model page for this id answered 404 on ${r.modelPage.at.slice(0, 10)} (${r.modelPage.url})`);
     if (a.via) out.push(`- matched the dated snapshot \`${a.via}\` the page lists`);
@@ -136,10 +164,16 @@ export function renderModelFacts(model: string, opts: { pages?: PageRead; surfac
       const page = partnerPage(a.partner, r.provider);
       const N = PARTNER_NAME[a.partner];
       // 0.4.1 (R3): a gateway form is not the provider's own API; the gateway MAY keep its own schedule.
+      // 0.4.7 (R5, Amendment A9): an Anthropic id in Bedrock's or Google Cloud's form gets the card's sentences — Anthropic's
+      // own, quoted, and the side the platform falls on by them (until 0.4.7: "<platform> runs its own schedule", which
+      // Anthropic's page says of the Google-managed offering and Bedrock, not of the Anthropic-managed one)
+      const platforms = platformSentences(r.provider, a.partner, read, 'id');
       out.push(
         GATEWAYS.has(a.partner)
           ? `- this id form is ${N}'s, a gateway: ${P}'s word above is for ${P}'s own API, and ${N} may keep its own schedule${page ? ` (${page})` : ''}`
-          : `- this id form is ${N}'s: ${P}'s word above is for ${P}'s own API, and ${N} runs its own schedule${page ? ` (${page})` : ''}`,
+          : platforms
+            ? `- this id form is ${N}'s: ${P}'s word above is for ${P}'s own API. ${platforms.sentences.join(' ')}`
+            : `- this id form is ${N}'s: ${P}'s word above is for ${P}'s own API, and ${N} runs its own schedule${page ? ` (${page})` : ''}`,
       );
     }
   }

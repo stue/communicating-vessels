@@ -26,7 +26,7 @@
  * 0.4.6 (R5): a file named in <dir>/statuses.json ({ "<file>": <HTTP status> }) answers that status instead of
  * being copied, as a page that did not answer does.
  *
- * Checked per row: its `quote` on its `url`, its `note` on the same page, its `alsoQuote` on its
+ * Checked per row: its `quote` on its `url`, its second row (0.4.7, R3) on the same page, its `note` on the same page, its `alsoQuote` on its
  * `alsoUrl`; and each definition the card quotes (LEDGER_DEFINITIONS, since 0.4.2) on its page.
  * 0.4.3 (R3): a page whose shape is not the one this version reads (src/ledger-check.mjs, PAGE_SHAPES)
  * is treated as not saved: its rows are not checked, and the missing piece is printed.
@@ -242,7 +242,8 @@ console.log('');
 for (const { r, gone } of moved) {
   console.log(`MOVED ${r.provider} ${r.id} — ${r.url}`);
   for (const g of gone) {
-    const label = g.what === 'quote' ? 'ledger' : g.what === 'note' ? 'ledger note' : `ledger, also ${g.url}`;
+    // 0.4.7 (R3): a row's second row on the same page is checked like its first
+    const label = g.what === 'quote' ? 'ledger' : g.what === 'second' ? 'ledger, second row' : g.what === 'note' ? 'ledger note' : `ledger, also ${g.url}`;
     console.log(`  ${label} (read ${g.what === 'also' ? r.alsoReadOn ?? r.readOn : r.readOn}): ${flat(g.quote)}`);
   }
   const now = currentLines(r) ?? [];

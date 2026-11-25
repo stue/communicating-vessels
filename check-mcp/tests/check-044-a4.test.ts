@@ -22,7 +22,8 @@ describe('A4 — DeepSeek’s rows: pageWord is a phrase of the page’s own sen
   it('the bundled ledger: each DeepSeek row’s pageWord is inside the sentence the row quotes (a quote checked on its page)', () => {
     const ds = LEDGER.filter((r) => r.provider === 'deepseek');
     expect(ds.length).toBeGreaterThan(0);
-    expect(ds.filter((r) => r.pageWord !== '' && !r.quote.includes(r.pageWord)).map((r) => `${r.id}: ${r.pageWord}`)).toEqual([]);
+    // 0.4.7 (R1): `pageWord` is optional in the type; every DeepSeek row carries one
+    expect(ds.filter((r) => r.pageWord === undefined || (r.pageWord !== '' && !r.quote.includes(r.pageWord))).map((r) => `${r.id}: ${r.pageWord}`)).toEqual([]);
   });
 
   const out = join(mkdtempSync(join(ROOT, 'gen-')), 'lifecycle-ledger.ts');

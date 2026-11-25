@@ -67,8 +67,9 @@ describe('R1 — DeepSeek’s “Your First API Call” page is read at the addr
 
 // ── R2 ────────────────────────────────────────────────────────────────────
 describe('R2 — the ledger as read on 2026-11-24', () => {
-  it('every page the ledger rests on was read on 2026-11-24', () => {
-    expect([...new Set(LEDGER_SOURCES.map((s) => s.readAt.slice(0, 10)))]).toEqual(['2026-11-24']);
+  // 0.4.7 (Amendment A10): the ledger re-read on 2026-11-25 (until 0.4.7: 2026-11-24); the rows this file pins did not move
+  it('every page the ledger rests on was read on 2026-11-25', () => {
+    expect([...new Set(LEDGER_SOURCES.map((s) => s.readAt.slice(0, 10)))]).toEqual(['2026-11-25']);
   });
 
   it('`claude-opus-4-5-20251101` is deprecated, with the shutdown date and the replacement Anthropic’s page names', () => {

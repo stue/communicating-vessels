@@ -432,7 +432,8 @@ export function chainProviderSpread(chain: readonly string[]): number {
  *   - 'measured'         only when brain rows back the placement (currently:
  *                        classify tier 1, summarize tier 1, and — alpha.108 —
  *                        the generate/extract tier 0 kept on golden runs
- *                        #23/#22).
+ *                        #23/#22; alpha.136 — the extract head on run #67,
+ *                        the Haiku tier on generate on run #65).
  *
  * alpha.108 invariant (PB filing 2026-09-05, "cold isolates rank generate onto
  * the model your eval declined"): a bundled chain HEAD says what the brain's
@@ -513,14 +514,19 @@ const STARTER_CHAINS_GROUNDED: Record<IntentArchetypeName, ChainEntry[]> = {
   ],
   // Quality + cost match.
   generate: [
-    { id: 'claude-sonnet-4-6', grounding: 'measured', reason: 'alpha.108: the brain chain\'s tier 0, kept on a MEASUREMENT — golden run #23 (playbacksam generate, 24 cases, Opus-5 judge, 2026-09-05): sonnet-5 won-or-tied 79% (bar 80%), 2.19× slower, 2.0× cost, so the successor was NOT promoted. The bundle now says what the brain says, so a cold isolate ranks as a warm one does (PB filing 2026-09-05: cold ranked onto the declined candidate at 1.8–2.6× latency). sonnet-5 sits directly behind it (deprecation cover, not replacement): if 4-6 is retired the chain walks on without a gap.', n: 24 },
-    { id: 'claude-sonnet-5', grounding: 'judgment', reason: 'alpha.108: tier 1 — the current successor behind the measured/kept 4-6 head (deprecation cover). Previously head from alpha.90 by judgment. Quality + cost match — engineer pick. alpha.90: retargeted from legacy claude-sonnet-4-6' },
-    { id: 'claude-haiku-4-5', grounding: 'judgment', reason: 'Same-provider step-down' },
-    { id: 'claude-haiku-5-5', grounding: 'judgment', reason: 'alpha.125: Anthropic lists haiku-4-5 under Legacy (2026-10-25 read; retirement floor 2026-10-15 passed) — 5.5 enters directly behind it as deprecation cover, unmeasured; moves ahead only on a golden measurement' },
+    { id: 'claude-sonnet-4-6', grounding: 'measured', reason: 'alpha.108: the brain chain\'s tier 0, kept on a MEASUREMENT — golden run #23 (playbacksam generate, 24 cases, Opus-5 judge, 2026-09-05): sonnet-5 won-or-tied 79% (bar 80%), 2.19× slower, 2.0× cost, so the successor was NOT promoted. The bundle now says what the brain says, so a cold isolate ranks as a warm one does (PB filing 2026-09-05: cold ranked onto the declined candidate at 1.8–2.6× latency). sonnet-5 sits directly behind it (deprecation cover, not replacement): if 4-6 is retired the chain walks on without a gap. alpha.136: claude-sonnet-5-5 now sits directly behind it (golden run #64), claude-sonnet-5 behind that.', n: 24 },
+    // alpha.136 (filing 2026-11-25, R2) — second, not first: run #64 prefers it on quality at 2.60× the latency and 2.8× the cost; a
+    // default chain is served to callers who did not ask for that trade.
+    { id: 'claude-sonnet-5-5', grounding: 'judgment', reason: 'alpha.136: second on generate, by judgment over a MEASUREMENT — golden run #64 (playbacksam/generate, incumbent claude-sonnet-4-6, 44W/3T/2L of 49, PROMOTE-READY) at a p50 latency ratio of 2.60 and $0.636 against $0.227 over the set; a default chain is served to callers who did not ask for that trade, so the head stays on claude-sonnet-4-6 and a caller who wants the quality at the latency prefers this model. What would reverse it: a consumer\'s word that it wants the trade, or claude-sonnet-4-6 within 60 days of its page\'s date (2027-02-17). (was: tier 6, a brain tier alpha.135 brought over, until alpha.136)' },
+    { id: 'claude-sonnet-5', grounding: 'judgment', reason: 'alpha.108: tier 1 — the current successor behind the measured/kept 4-6 head (deprecation cover). Previously head from alpha.90 by judgment. Quality + cost match — engineer pick. alpha.90: retargeted from legacy claude-sonnet-4-6. alpha.136: tier 2, behind claude-sonnet-5-5 (golden run #23 declined it against claude-sonnet-4-6; #64 did not decline claude-sonnet-5-5)' },
+    { id: 'claude-haiku-5-5', grounding: 'measured', reason: 'alpha.136: the Haiku tier on a MEASUREMENT — golden run #65 (playbacksam/generate, incumbent claude-haiku-4-5, 45W/2T/3L of 50, PROMOTE-READY; $0.040 against $0.135 over the set). claude-haiku-4-5 left this chain the same release (its page: legacy, retirement floor 2026-10-15 passed). (was: directly behind claude-haiku-4-5 as deprecation cover, unmeasured — alpha.125 — until alpha.136)', n: 50 },
     { id: 'gemini-3.7-flash', grounding: 'judgment', reason: 'alpha.101: cross-provider anchor = the gemini-flash family head (3.5-flash legacy per Google 2026-09-03; docs-verified, zero observed rows — a chain TAIL, served only when the tiers above fail). alpha.86 history: replaced availability-restricted gemini-2.5-pro' },
     { id: 'gpt-5.4-mini', grounding: 'judgment', reason: 'alpha.16: third-provider tail (archetypePerf=7) — closes mono-Anthropic gap' },
+    // alpha.136 (Amendment A4) — claude-haiku-4-5 left generate: Anthropic's page lists it legacy with a retirement floor
+    // (2026-10-15) already past, and alpha.135's rule (no added tier reads legacy on its page) holds for the bundle's tiers.
+    // Migration 106 switches its brain row off. (was: { id: 'claude-haiku-4-5', grounding: 'judgment', reason: 'Same-provider
+    // step-down' } at tier 2, until alpha.136)
     // alpha.135 — the brain's added tiers, behind the bundled six (read 2026-11-20T21:45Z).
-    { id: 'claude-sonnet-5-5', grounding: 'judgment', reason: 'alpha.135: brain tier, added 2026-11-20; not a bundle ruling — brain tier 2 (version_added 2.0.0-alpha.121, inserted behind claude-sonnet-5 by cold-start judgment), placed behind the bundled six so a cold call and a warm call score the same candidates' },
     { id: 'deepseek-v4-pro', grounding: 'judgment', reason: 'alpha.135: brain tier, added 2026-11-20; not a bundle ruling — brain tier 5 (version_added 2.0.0-alpha.16, the V4-Pro elevation of master plan §5.1), placed behind the bundled six so a cold call and a warm call score the same candidates' },
     { id: 'gemini-3.8-flash', grounding: 'judgment', reason: 'alpha.135: brain tier, added 2026-11-20; not a bundle ruling — brain tier 7 (version_added 2.0.0-alpha.109, the additive re-anchor of 2026-09-11 behind legacy gemini-3.5-flash), placed behind the bundled six so a cold call and a warm call score the same candidates' },
   ],
@@ -542,17 +548,20 @@ const STARTER_CHAINS_GROUNDED: Record<IntentArchetypeName, ChainEntry[]> = {
   // Structured-output archetype — Flash skipped (alpha.8 MAX_TOKENS cliff,
   // capability-fact); DeepSeek skipped (no brain evidence).
   extract: [
-    { id: 'claude-sonnet-4-6', grounding: 'measured', reason: 'alpha.108: the brain chain\'s tier 0, kept on a MEASUREMENT — golden run #22 (playbacksam extract, 10 cases, Opus-5 judge, 2026-09-05): sonnet-5 won-or-tied 50% (3W/2T/5L) against 4-6, bar 80%. Bundle follows the brain so cold == warm. sonnet-5 sits directly behind it (deprecation cover, not replacement): if 4-6 is retired the chain walks on without a gap.', n: 10 },
-    { id: 'claude-sonnet-5', grounding: 'judgment', reason: 'alpha.108: tier 1 — the current successor behind the measured/kept 4-6 head (deprecation cover). Previously head from alpha.90 by judgment. Reliable structured-output anchor — engineer pick. alpha.90: retargeted from legacy claude-sonnet-4-6 (which served the believe-card endpoint\'s first real call 2026-08-26 while daily-ops had been advising consumers OFF it for weeks)' },
-    { id: 'claude-haiku-5-5', grounding: 'measured', reason: 'alpha.125: moved directly AHEAD of haiku-4-5 on a MEASUREMENT — golden run #44 (playbacksam/extract, 23W/4T/3L of 30 = 90%, judge claude-opus-5, bar 80%) PROMOTE-READY. haiku-4-5 (Legacy on Anthropic\'s page, read 2026-10-25) stays directly behind it. (was: directly behind haiku-4-5, unmeasured, until the run landed 2026-10-25)', n: 30 },
-    { id: 'claude-haiku-4-5', grounding: 'judgment', reason: 'Same-provider step-down with native structured output' },
+    // alpha.136 (filing 2026-11-25, R1) — the head moved on a MEASUREMENT against the head itself.
+    { id: 'claude-sonnet-5-5', grounding: 'measured', reason: 'alpha.136: heads extract on a MEASUREMENT against the head it replaces — golden run #67 (playbacksam/extract, incumbent claude-sonnet-4-6, 25W/15T/7L of 47, not worse on 40 of 47, PROMOTE-READY), p50 latency ratio 0.64, $0.350 against $0.345 over the set; 3 of 50 cases set aside because the incumbent failed its structured-output contract. What would reverse it: a golden run on another app\'s extract set in which it falls below the bar. (was: tier 6, a brain tier alpha.135 brought over by cold-start judgment, until alpha.136)', n: 47 },
+    { id: 'claude-sonnet-4-6', grounding: 'measured', reason: 'alpha.136: second, behind claude-sonnet-5-5 — golden run #67 (playbacksam/extract, 47 judged cases) found claude-sonnet-5-5 not worse than it on 40 of 47, faster (latency ratio 0.64) at the same cost, and this model failed its structured-output contract on 3 of 50 cases. Kept AHEAD of claude-sonnet-5 on its own MEASUREMENT — golden run #22 (playbacksam extract, 10 cases, Opus-5 judge, 2026-09-05): sonnet-5 won-or-tied 50% (3W/2T/5L) against 4-6, bar 80%. (was: tier 0, alpha.108, until alpha.136)', n: 10 },
+    { id: 'claude-sonnet-5', grounding: 'judgment', reason: 'alpha.108: tier 1 — the current successor behind the measured/kept 4-6 head (deprecation cover). Previously head from alpha.90 by judgment. Reliable structured-output anchor — engineer pick. alpha.90: retargeted from legacy claude-sonnet-4-6 (which served the believe-card endpoint\'s first real call 2026-08-26 while daily-ops had been advising consumers OFF it for weeks). alpha.136: tier 2, behind claude-sonnet-5-5 and claude-sonnet-4-6' },
+    { id: 'claude-haiku-5-5', grounding: 'measured', reason: 'alpha.125: moved directly AHEAD of haiku-4-5 on a MEASUREMENT — golden run #44 (playbacksam/extract, 23W/4T/3L of 30 = 90%, judge claude-opus-5, bar 80%) PROMOTE-READY. alpha.136: haiku-4-5 left this chain (its page: legacy, retirement floor 2026-10-15 passed). (was: "haiku-4-5 (Legacy on Anthropic\'s page, read 2026-10-25) stays directly behind it", until alpha.136; directly behind haiku-4-5, unmeasured, until the run landed 2026-10-25)', n: 30 },
+    // alpha.136 (Amendment A4) — claude-haiku-4-5 left extract: Anthropic's page lists it legacy with a retirement floor
+    // (2026-10-15) already past. Migration 106 switches its brain row off. (was: { id: 'claude-haiku-4-5', grounding:
+    // 'judgment', reason: 'Same-provider step-down with native structured output' } at tier 3, until alpha.136)
     { id: 'gemini-3.7-flash', grounding: 'judgment', reason: 'alpha.101: cross-provider anchor with native structured output = the gemini-flash family head (3.5-flash legacy per Google 2026-09-03; zero observed rows — a chain tail)' },
     { id: 'gpt-5.4', grounding: 'capability-fact', reason: 'alpha.16: third-provider floor — native structured-output capability (archetypePerf=8)' },
     // alpha.135 — the brain's added tiers, behind the bundled six (read 2026-11-20T21:45Z). This
     // is the chain that served tt-intelligence's tiles read claude-sonnet-5-5 warm and
     // claude-haiku-5-5 cold on 2026-11-20 (brain rows 4374 and 4370): the bundled six first on
-    // both surfaces makes the pick one.
-    { id: 'claude-sonnet-5-5', grounding: 'judgment', reason: 'alpha.135: brain tier, added 2026-11-20; not a bundle ruling — brain tier 2 (version_added 2.0.0-alpha.121, inserted behind claude-sonnet-5 by cold-start judgment), placed behind the bundled six so a cold call and a warm call score the same candidates' },
+    // both surfaces makes the pick one. (alpha.136: claude-sonnet-5-5 left this tail for the head.)
     { id: 'deepseek-v4-pro', grounding: 'judgment', reason: 'alpha.135: brain tier, added 2026-11-20; not a bundle ruling — brain tier 5 (version_added 2.0.0-alpha.16, the V4-Pro elevation of master plan §5.1; declares no image input, so an image call drops it), placed behind the bundled six so a cold call and a warm call score the same candidates' },
     { id: 'gemini-3.8-flash', grounding: 'judgment', reason: 'alpha.135: brain tier, added 2026-11-20; not a bundle ruling — brain tier 7 (version_added 2.0.0-alpha.109, the additive re-anchor of 2026-09-11 behind legacy gemini-3.5-flash), placed behind the bundled six so a cold call and a warm call score the same candidates' },
   ],
@@ -627,10 +636,14 @@ const STARTER_CHAINS_GROUNDED: Record<IntentArchetypeName, ChainEntry[]> = {
  * entry's OWN grounding, never more. *measured* appears only where the entry's grounding is
  * `measured` AND a run is named. The three heads alpha.130 moved carry the filing's words
  * (B4, C5) and the model they replaced; a fixed word applies only while its model is still that
- * archetype's head entry.
+ * archetype's head entry. alpha.136 (R1) adds the extract head it moved off `claude-sonnet-4-6`:
+ * without it a caller on 4-6 for extract would be told to move to the `claude-sonnet` family head
+ * for extract by curated score (`claude-sonnet-5`, the model run #22 declined against 4-6), not to
+ * the head run #67 measured.
  */
 const CHAIN_HEAD_WORDS: Partial<Record<IntentArchetypeName, { id: string; replaces: string; word: string }>> = {
   classify: { id: 'gemini-3.5-flash-lite', replaces: 'gemini-2.5-flash', word: 'measured (golden run #55)' },
+  extract: { id: 'claude-sonnet-5-5', replaces: 'claude-sonnet-4-6', word: 'measured (golden run #67)' },
   hunt: { id: 'gemini-3.8-flash', replaces: 'gemini-2.5-flash', word: 'curated, unmeasured; placed by the 2026-12-01 retirement' },
   summarize: {
     id: 'claude-haiku-5-5',
@@ -641,7 +654,8 @@ const CHAIN_HEAD_WORDS: Partial<Record<IntentArchetypeName, { id: string; replac
 
 /**
  * alpha.130 (B4) — did this archetype's head entry replace `staleId` as the head? True for the
- * three heads alpha.130 moved off `gemini-2.5-flash`, while each is still the bundled head. The
+ * three heads alpha.130 moved off `gemini-2.5-flash` and the extract head alpha.136 moved off
+ * `claude-sonnet-4-6`, while each is still the bundled head. The
  * stale-model advisory names such a head as the replacement; elsewhere it keeps the family head.
  */
 export function chainHeadReplaced(archetype: IntentArchetypeName, headId: string, staleId: string): boolean {

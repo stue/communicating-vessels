@@ -14,7 +14,7 @@ export {
 } from './pages.js';
 export type { PageRead, PageOutcome, ReadRecord, RowState } from './pages.js';
 export { LEDGER, LEDGER_SOURCES } from './lifecycle-ledger.js';
-export type { LedgerRow, LedgerSource, LedgerWord, LedgerProvider } from './lifecycle-types.js';
+export type { LedgerRow, LedgerSource, LedgerWord, LedgerProvider, SecondRow } from './lifecycle-types.js';
 export { resolveId, lookupLedger, LEDGER_READ_ON } from './lifecycle.js';
 export { buildServer } from './server.js';
 export { START_CHECK_INSTRUCTIONS, SERVER_INSTRUCTIONS } from './instructions.js';

@@ -16,6 +16,9 @@
  *
  * Last line: `ids on tables: N · without a line: n · not recognised: n`. Exit 0 when both n are 0; 1 when either is
  * not; 2 on a usage error or a page that is missing or not the page this version reads.
+ * 0.4.7 (R3, Amendment A3): each second row is also run, and the line before the summary's group says how many are said
+ * on the card (`second rows said on the card: N of N`, a line about the id that quotes the second row under its heading);
+ * one not said makes the exit 1.
  */
 import { existsSync, readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -68,13 +71,25 @@ export function sweep(dir, engine) {
   if (stops.length) return { stops, perPage, ids, seconds, withoutLine: [], notRecognised: [] };
   const withoutLine = [];
   const notRecognised = [];
+  const linesOf = (id) => {
+    const extract = { project: { name: 'table-sweep' }, callSites: [], models: [{ model: id, where: 'table-sweep', platform: 'provider-api', context: 'runs' }] };
+    return engine.runCheck(extract, { pages: engine.pages }).findings.filter((f) => f.confidence !== 'measurable-only');
+  };
   for (const t of ids) {
-    const extract = { project: { name: 'table-sweep' }, callSites: [], models: [{ model: t.id, where: 'table-sweep', platform: 'provider-api', context: 'runs' }] };
-    const lines = engine.runCheck(extract, { pages: engine.pages }).findings.filter((f) => f.confidence !== 'measurable-only');
+    const lines = linesOf(t.id);
     if (lines.some((f) => /was not recognised$/.test(f.title))) notRecognised.push(t);
     else if (!lines.some((f) => f.basis.includes(t.url))) withoutLine.push(t);
   }
-  return { stops, perPage, ids, seconds, withoutLine, notRecognised };
+  // 0.4.7 (R3, Amendment A3): a second row is said on the card — a line about the id that names the second row's heading
+  // in the sentence the card adds for it ("… is on two rows of …: … the second, under its heading “<heading>”, reads …")
+  const said = [];
+  const unsaid = [];
+  for (const s of seconds) {
+    const heading = s.table.replace(/^## /, '').split(' › ').at(-1);
+    const lines = linesOf(s.id);
+    (lines.some((f) => (f.detail ?? "").includes(`\`${s.id}\` is on two rows of`) && (f.detail ?? "").includes(`under its heading “${heading}”`)) ? said : unsaid).push(s);
+  }
+  return { stops, perPage, ids, seconds, said, unsaid, withoutLine, notRecognised };
 }
 
 /** The report, as the script prints it; the last line is the summary. */
@@ -96,13 +111,16 @@ export function report(dir, r) {
     out.push(`${p.file}: ${p.rows} ids on its table rows, ${p.ids} distinct${p.feature ? `; ${p.feature} of them inside a cell that names a feature, not a model` : ''}`);
   for (const s of r.seconds) out.push(`second row: ${s.provider} ${s.id} — ${s.table}: ${s.line}   (first: ${s.first.table}: ${s.first.line})`);
   out.push(`second rows: ${r.seconds.length}`);
+  // 0.4.7 (R3, Amendment A3): each second row not said on the card, then the count said
+  for (const s of r.unsaid ?? []) out.push(`second row not said on the card: ${s.provider} ${s.id} — ${s.table}: ${s.line}`);
+  out.push(`second rows said on the card: ${(r.said ?? []).length} of ${r.seconds.length}`);
   for (const t of r.withoutLine) out.push(`without a line: ${t.provider} ${t.id} — ${t.table}: ${t.line}`);
   for (const t of r.notRecognised) out.push(`not recognised: ${t.provider} ${t.id} — ${t.table}: ${t.line}`);
   out.push(`ids on tables: ${r.ids.length} · without a line: ${r.withoutLine.length} · not recognised: ${r.notRecognised.length}`);
   return out;
 }
 
-export const exitCode = (r) => (r.stops.length ? 2 : r.withoutLine.length || r.notRecognised.length ? 1 : 0);
+export const exitCode = (r) => (r.stops.length ? 2 : r.withoutLine.length || r.notRecognised.length || (r.unsaid ?? []).length ? 1 : 0);
 
 async function main() {
   const args = process.argv.slice(2);

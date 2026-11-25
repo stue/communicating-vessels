@@ -1616,7 +1616,8 @@ const PROFILES_RAW: ModelProfile[] = [
     // #41 (ask, claude-sonnet-5 → claude-sonnet-5-5: 90 % win-or-tie, promote-ready) and #42
     // (extract: 10W/10T/10L = 67 %, BELOW the 80 % bar), both 2026-10-25, say the measured
     // head stays (the filing); on this line runs #44–#47 placed claude-haiku-5-5 at equal perf
-    // and the tie falls to versionAdded, so haiku-4-5 holds. `status` moves on a measurement,
+    // and the tie falls to versionAdded — haiku-5-5 since alpha.136 stamped it on runs #44, #45
+    // and #65 (was: "so haiku-4-5 holds", until alpha.136). `status` moves on a measurement,
     // on the provider's `retired`, or when the seat records why — never on this field.
     providerLifecycle: { status: 'legacy', readOn: '2026-11-02', url: 'https://platform.claude.com/docs/en/models/haiku-4-5/overview', retirementFloor: '2026-10-15' },
     // alpha.124 — read 2026-10-24 on https://platform.claude.com/docs/en/models/haiku-4-5/overview — the page says 'Input → output: Text and images → text'.
@@ -1717,14 +1718,20 @@ const PROFILES_RAW: ModelProfile[] = [
     //   probedLimits: none — nothing measured on this model.
     id: 'claude-haiku-5-5',
     verifiedAgainstDocs: '2026-10-25',
-    // versionAdded deliberately UNSET (brain row: version_added NULL), by
-    // migration 085's reasoning: archetype-less family resolution ties at perf
-    // 0 and the newest versionAdded wins, so a stamp would move every
-    // `{ family: 'claude-haiku' }` resolution without an archetype onto 5.5 on
-    // judgment. Unstamped, the tie falls to id ASC → claude-haiku-4-5.
-    // Registered at 2.0.0-alpha.125. (No closing brace may sit between `id`
-    // and `provider` in this block: scripts/check-model-releases.mjs pairs the
-    // two with a regex that stops at one.)
+    // alpha.136 (filing 2026-11-25, Amendment A1) — STAMPED on measurement: golden runs #44
+    // (playbacksam/extract, 23W/4T/3L of 30) and #45 (playbacksam/ask, 6W/22T/2L of 30), each
+    // against claude-haiku-4-5 and each scored 7 against its 7, and #65 (playbacksam/generate,
+    // against claude-haiku-4-5, 45W/2T/3L of 50, promote-ready). With no archetype, and on
+    // ask, extract and summarize where the bundled scores tie, the `claude-haiku` head is now
+    // this model; elsewhere the curated scores decide, as before. The brain's row is stamped the
+    // same by migration 106. Registered at 2.0.0-alpha.125. (was: "versionAdded deliberately
+    // UNSET (brain row: version_added NULL), by migration 085's reasoning: … a stamp would move
+    // every `{ family: 'claude-haiku' }` resolution without an archetype onto 5.5 on judgment.
+    // Unstamped, the tie falls to id ASC → claude-haiku-4-5", until alpha.136 — the move is now
+    // made on the three runs, not on judgment.) (No closing brace may sit between `id` and
+    // `provider` in this block: scripts/check-model-releases.mjs pairs the two with a regex that
+    // stops at one.)
+    versionAdded: '2.0.0-alpha.136',
     provider: 'anthropic',
     status: 'current',
     // alpha.126 — the provider's word, read 2026-11-02 on this model's page (Status row
@@ -1831,8 +1838,10 @@ const PROFILES_RAW: ModelProfile[] = [
     // vs incumbent claude-haiku-4-5, judge claude-opus-5, bar 80% win-or-tie
     // (kgauto_golden_eval_runs, read 2026-10-25). MEASURED NON-INFERIOR on
     // ask / summarize / extract. On ask and extract → EQUAL to haiku-4-5's prior;
-    // the `claude-haiku` family head still stays on haiku-4-5, by the versionAdded
-    // tiebreak (5.5 unstamped sorts oldest; bundled ties fall to id ASC). On
+    // the versionAdded tiebreak decides the `claude-haiku` family head there — this model
+    // since alpha.136's stamp (was: "the `claude-haiku` family head still stays on
+    // haiku-4-5, by the versionAdded tiebreak (5.5 unstamped sorts oldest; bundled ties fall
+    // to id ASC)", until alpha.136). On
     // summarize → 7, NOT haiku-4-5's 8: #46 measured against haiku-4-5, not
     // against gemini-2.5-flash, so 8 would be haiku-4-5's prior arguing with the
     // summarize head (the alpha.106 one-opinion rule went red at 8); the
@@ -4603,8 +4612,17 @@ const PROFILES_RAW: ModelProfile[] = [
     // probedLimits: none — Sonnet 5's run-36 probe does not transfer.
     id: 'claude-sonnet-5-5',
     verifiedAgainstDocs: '2026-10-06',
-    // versionAdded deliberately UNSET — see claude-opus-5-5 (archetype-less
-    // family resolution must not move to 5.5 on a registration stamp).
+    // alpha.136 (filing 2026-11-25, Amendment A1) — STAMPED on measurement, the lever the
+    // archetype-less family head has always had (an unstamped profile never outranks a stamped
+    // one; family-resolution.ts compareVersionAdded): golden runs #41 and #43 (playbacksam/ask,
+    // against claude-sonnet-5, promote-ready twice), #64 (playbacksam/generate, against
+    // claude-sonnet-4-6, 44W/3T/2L of 49, promote-ready) and #67 (playbacksam/extract, against
+    // claude-sonnet-4-6, 25W/15T/7L of 47, promote-ready). With no archetype the `claude-sonnet`
+    // head is now this model; with an archetype the curated scores decide, as before. The brain's
+    // row is stamped the same by migration 106. (was: "versionAdded deliberately UNSET — see
+    // claude-opus-5-5 (archetype-less family resolution must not move to 5.5 on a registration
+    // stamp)", until alpha.136 — the stamp now follows a measurement, not the registration.)
+    versionAdded: '2.0.0-alpha.136',
     provider: 'anthropic',
     status: 'current',
     // alpha.126 — the provider's word, read 2026-11-02 on this model's page (Status row

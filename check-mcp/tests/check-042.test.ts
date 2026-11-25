@@ -63,10 +63,17 @@ describe('0.4.2 R1 — the ledger, re-read from all four providers', () => {
     // 0.4.5: and two sentences kept the same way — Anthropic's notice period (R4 b) and OpenAI's sentence about fine-tunes (R5)
     expect(LEDGER_DEFINITIONS.map((d) => `${d.provider}:${d.word}`).sort()).toEqual([
       'anthropic:notice period',
+      'anthropic:operated platforms', // 0.4.7 (R5)
       'anthropic:retired',
+      'google:already-shutdown sections', // 0.4.7 fix pass 1: what makes *shut down* Google's word under "Deprecated models"
       'google:shut down',
+      'openai:existing fine-tuned models', // 0.4.7 (R4): read and checked, not printed
       'openai:fine-tuned versions',
+      'openai:fine-tunes of the GPT-3.5 Turbo snapshots', // 0.4.7 (R4): read and checked, not printed
+      'openai:fine-tunes of the October 2026 shutdown', // 0.4.7 (R4): quoted for a fine-tune of a base its link ties it to
+      'openai:fine-tuning training on babbage-002 and davinci-002', // 0.4.7 (R4): read and checked, not printed
       'openai:shut down',
+      'openai:the legacy fine-tunes endpoint', // 0.4.7 (R4): read and checked, not printed
     ]);
     for (const d of LEDGER_DEFINITIONS) expect(urls.has(d.url), d.provider).toBe(true);
   });

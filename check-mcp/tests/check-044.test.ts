@@ -230,12 +230,13 @@ describe('R3 — the header: what each number counts, in sentences, plurals writ
 });
 
 // ── R4 — the sentence names the page that was not read ────────────────────
+// 0.4.7: the ledger re-read on 2026-11-25 at 09:06 UTC; each day below moved by the one day the read moved (until 0.4.7: 2026-11-24 09:37 and 2026-11-25)
 // 0.4.6: the ledger re-read on 2026-11-24 at 09:37 UTC; each day below moved by the four days the read moved (until 0.4.6: 2026-11-20 05:02 and 2026-11-21; until 0.4.5: 2026-11-18 18:23 and 2026-11-19)
 describe('R4 — a row on two pages, one read and one not, names which', () => {
   const MINI = 'https://developers.openai.com/api/docs/models/gpt-4o-mini.md';
   const DEP = 'https://developers.openai.com/api/docs/deprecations.md';
   const site = { model: 'gpt-4o-mini', platform: 'provider-api' as const, context: 'runs' as const };
-  const lineOf = (pages: PageRead) => runCheck(ex([site]), { pages, today: '2026-11-25' }).findings.find((f) => f.title.includes('gpt-4o-mini'))!;
+  const lineOf = (pages: PageRead) => runCheck(ex([site]), { pages, today: '2026-11-26' }).findings.find((f) => f.title.includes('gpt-4o-mini'))!;
   /** The release's record with one page's outcome replaced. */
   const withPage = (url: string, outcome: { ok: false; reason: string }) => fromRecord({ ...JSON.parse(JSON.stringify({ how: 'record', changedRows: [], changedDefinitions: [] })), pages: READ.pages.map((p) => (p.url === url ? { url, ...outcome } : p)) });
 
@@ -243,20 +244,20 @@ describe('R4 — a row on two pages, one read and one not, names which', () => {
     const f = lineOf(withPage(MINI, { ok: false, reason: 'not the page this version reads' }));
     expect(f.confidence).toBe('likely');
     expect(f.detail).toContain(
-      "In this run OpenAI's deprecations page was read (2026-11-24 09:37 UTC) and still says this, and OpenAI's model page for GPT-4o mini was not read (not the page this version reads); for that page, this is what this version of the check read on 2026-11-24, 1 day before this run.",
+      "In this run OpenAI's deprecations page was read (2026-11-25 09:06 UTC) and still says this, and OpenAI's model page for GPT-4o mini was not read (not the page this version reads); for that page, this is what this version of the check read on 2026-11-25, 1 day before this run.",
     );
     expect(f.detail).not.toContain('was not read in this run (not the page this version reads)');
-    expect(f.basis).toBe(`OpenAI's deprecations page, read in this run (2026-11-24 09:37 UTC): ${DEP}; OpenAI's model page for GPT-4o mini, not read in this run, as read 2026-11-24: ${MINI}`);
+    expect(f.basis).toBe(`OpenAI's deprecations page, read in this run (2026-11-25 09:06 UTC): ${DEP}; OpenAI's model page for GPT-4o mini, not read in this run, as read 2026-11-25: ${MINI}`);
     // --model-facts says the same of its source line
-    expect(renderModelFacts('gpt-4o-mini', { pages: withPage(MINI, { ok: false, reason: 'not the page this version reads' }), today: '2026-11-25' })).toContain(
-      `- source: ${DEP} (read in this run, 2026-11-24 09:37 UTC; OpenAI's model page for GPT-4o mini not read in this run (not the page this version reads), as read 2026-11-24, 1 day before this lookup)`,
+    expect(renderModelFacts('gpt-4o-mini', { pages: withPage(MINI, { ok: false, reason: 'not the page this version reads' }), today: '2026-11-26' })).toContain(
+      `- source: ${DEP} (read in this run, 2026-11-25 09:06 UTC; OpenAI's model page for GPT-4o mini not read in this run (not the page this version reads), as read 2026-11-25, 1 day before this lookup)`,
     );
   });
 
   it('the deprecations page not read, the model page read: the other way round', () => {
     const f = lineOf(withPage(DEP, { ok: false, reason: 'HTTP 503' }));
-    expect(f.detail).toContain("In this run OpenAI's model page for GPT-4o mini was read (2026-11-24 09:37 UTC) and still says this, and OpenAI's deprecations page was not read (HTTP 503);");
-    expect(f.basis).toBe(`OpenAI's model page for GPT-4o mini, read in this run (2026-11-24 09:37 UTC): ${MINI}; OpenAI's deprecations page, not read in this run, as read 2026-11-24: ${DEP}`);
+    expect(f.detail).toContain("In this run OpenAI's model page for GPT-4o mini was read (2026-11-25 09:06 UTC) and still says this, and OpenAI's deprecations page was not read (HTTP 503);");
+    expect(f.basis).toBe(`OpenAI's model page for GPT-4o mini, read in this run (2026-11-25 09:06 UTC): ${MINI}; OpenAI's deprecations page, not read in this run, as read 2026-11-25: ${DEP}`);
   });
 
   it('neither read, for two reasons: both pages named, each with its reason', () => {
@@ -264,7 +265,7 @@ describe('R4 — a row on two pages, one read and one not, names which', () => {
     rows.set('gpt-4o-mini', { state: 'unread', reason: 'HTTP 503', notRead: [{ url: DEP, reason: 'HTTP 503' }, { url: MINI, reason: 'timed out' }], read: [] });
     const f = lineOf({ ...READ, rows });
     expect(f.detail).toContain(
-      "This is OpenAI's deprecations page and its model page for GPT-4o mini as this version of the check read them on 2026-11-24, 1 day before this run; they were not read in this run (OpenAI's deprecations page: HTTP 503; OpenAI's model page for GPT-4o mini: timed out).",
+      "This is OpenAI's deprecations page and its model page for GPT-4o mini as this version of the check read them on 2026-11-25, 1 day before this run; they were not read in this run (OpenAI's deprecations page: HTTP 503; OpenAI's model page for GPT-4o mini: timed out).",
     );
   });
 

@@ -234,8 +234,8 @@ describe('R4 (e) — where the catalog carries the provider’s word too, one li
     // the catalog's day is said once, of the model page's word, before the deprecations page's part — never beside the floor
     expect(f.title.split('2026-11-02').length - 1).toBe(1);
     expect(f.title.indexOf('(read 2026-11-02)')).toBeLessThan(f.title.indexOf("Anthropic's model deprecations page"));
-    // 0.4.6: the re-read of 2026-11-24 (until 0.4.6: 2026-11-20)
-    expect(f.detail).toMatch(/That page was read in this run \(2026-11-24 \d{2}:\d{2} UTC\); the model page was not, and its word is as the catalog read it on 2026-11-02\./);
+    // 0.4.7: the re-read of 2026-11-25 (until 0.4.7: 2026-11-24; until 0.4.6: 2026-11-20)
+    expect(f.detail).toMatch(/That page was read in this run \(2026-11-25 \d{2}:\d{2} UTC\); the model page was not, and its word is as the catalog read it on 2026-11-02\./);
     expect(f.basis).toContain(ANTHROPIC);
     expect(f.basis).toMatch(/model deprecations page, read in this run/);
   });

@@ -1,6 +1,18 @@
 export declare function oneRowIn(pageRows: string[], cells: string[]): boolean;
 export declare function replacementForm(cell: string): 'ids-in-text' | 'text' | undefined;
 export declare function quoteOn(text: string, quote: string): boolean;
+/** 0.4.7 (R1): the one link strip, and the comparison of a pageWord with a page's text. */
+export declare function unlinked(s: string): string;
+export declare function wordOn(text: string, word: string): boolean;
+export declare function pageWordMisses(
+  rows: readonly { id: string; provider: string; url: string; pageWord?: string; pageWordUrl?: string; alsoUrl?: string }[],
+  textOf: (url: string) => string | undefined,
+): string[];
+/** 0.4.7 (R2): the page's whole sentence around a match in a flattened text. */
+export declare function sentenceAround(flatText: string, index: number, length: number): string;
+/** 0.4.7 (R4): what OpenAI's note on fine-tunes ties it to, read from the note. */
+export declare function fineTuneNoteTie(note: string): { notice: string; month: string } | undefined;
+export declare function fineTuneNoteTies(note: string, row: { provider: string; table?: string; announced?: string; shutdown?: string }): boolean;
 export declare const PAGE_URL: {
   anthropic: string;
   openai: string;
@@ -50,11 +62,13 @@ export interface QuotedRow {
   note?: string;
   alsoUrl?: string;
   alsoQuote?: string;
+  /** 0.4.7 (R3): the page's second row for the id, checked like the first. */
+  secondRow?: { quote: string };
 }
 export interface RowTest {
   url: string;
   quote: string;
-  what: 'quote' | 'note' | 'also' | 'definition';
+  what: 'quote' | 'second' | 'note' | 'also' | 'definition';
   table: boolean;
 }
 export declare function isGoogleTableRow(r: QuotedRow): boolean;

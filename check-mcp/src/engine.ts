@@ -48,7 +48,6 @@ import {
   LEDGER_READ_ON,
   WORD_DEFINITION,
   DEFINITION_PAGE,
-  PARTNER_CAVEAT,
   PARTNER_NAME,
   GATEWAYS,
   partnerPage,
@@ -56,12 +55,13 @@ import {
   coveredBy,
   pageName,
   pagesName,
+  sourceReadOn,
   type SiteState,
   type Partner,
   type Resolution,
 } from './lifecycle.js';
-import type { LedgerRow } from './lifecycle-types.js';
-import { rowPages } from './ledger-check.mjs';
+import type { LedgerRow, DefinitionWord } from './lifecycle-types.js';
+import { rowPages, unlinked, fineTuneNoteTies } from './ledger-check.mjs';
 import {
   unreadAll,
   NOT_READ_BY_CALLER,
@@ -246,12 +246,53 @@ const providerWord = (p: string) => PROVIDER_NAME[p as keyof typeof PROVIDER_NAM
 const UNSTATED_CLAUSE =
   'If this call goes through a cloud platform (Vertex, Bedrock, Azure, a gateway), that platform may keep its own schedule.';
 
-function placeLine(line: Line, provider: string, st: SiteState): Line {
+/**
+ * 0.4.7 (R5, Amendment A9): for an Anthropic id on Amazon Bedrock or Google Cloud (Vertex AI), what cannot be told from the
+ * code, in the page's words: Anthropic's own sentences naming the platforms its dates apply to (Anthropic-operated, Claude
+ * Models on Google Cloud "(Anthropic managed)" among them) and those that set their own (Claude Models on Google Cloud
+ * "(Google managed)" and Amazon Bedrock), quoted whole; then which side the site's platform falls on by them — Amazon
+ * Bedrock is named on the partner side; for Google Cloud the extract does not say which one manages it — and that the
+ * partner's own offering runs its own schedule. Undefined for any other provider or platform, and when the sentences are
+ * not on the page as read in this run (a changed definition is never quoted).
+ */
+export function platformSentences(
+  provider: string,
+  partner: Partner | undefined,
+  pages: PageRead | undefined,
+  /** what tells the platform: the site (a card) or the id's own form (`--model-facts`, which has no extract) */
+  by: 'site' | 'id' = 'site',
+): { sentences: string[]; url: string } | undefined {
+  if (provider !== 'anthropic' || (partner !== 'bedrock' && partner !== 'vertex')) return undefined;
+  const q = WORD_DEFINITION.anthropic?.['operated platforms'];
+  const url = DEFINITION_PAGE.anthropic;
+  if (!q || !url || definitionStateIn(pages, { provider: 'anthropic', word: 'operated platforms' }).state === 'changed') return undefined;
+  const page = partnerPage(partner, provider);
+  const its = page ? ` (its page: ${page})` : '';
+  return {
+    url,
+    sentences: [
+      `${pageName('anthropic', url)} says: “${printedText(q)}”`,
+      partner === 'bedrock'
+        ? `By those words Amazon Bedrock, ${by === 'site' ? 'where this site runs' : 'whose form this id is written in'}, is a partner-operated platform: Amazon Bedrock runs its own schedule${its}.`
+        : `${by === 'site' ? 'This site runs on Google Cloud (Vertex AI), and the extract does not say' : 'This id is written in Google Cloud’s (Vertex AI) form, and the id does not say'} which Claude Models on Google Cloud it is: the Anthropic-managed one, which those words put under these dates, or the Google-managed one, which runs its own schedule${its}.`,
+    ],
+  };
+}
+
+function placeLine(line: Line, provider: string, st: SiteState, pages?: PageRead): Line {
   if (st.providerApi) return line;
   const P = providerWord(provider);
   const parts: string[] = [];
   let basis = line.basis;
-  if (st.partner) {
+  const platforms = platformSentences(provider, st.partner, pages);
+  if (st.partner && platforms) {
+    // 0.4.7 (R5): the page's sentences and the side the platform falls on, under Likely (until 0.4.7: "This site runs on
+    // <platform>, and <platform> runs its own schedule", true of the Google-managed offering only)
+    parts.push(...platforms.sentences);
+    const page = partnerPage(st.partner, provider);
+    if (page) basis = `${basis}; ${PARTNER_NAME[st.partner]}: ${page}`;
+    basis = definitionBasis(basis, 'anthropic', 'operated platforms', pages);
+  } else if (st.partner) {
     const N = PARTNER_NAME[st.partner];
     const covered = coveredBy(provider, st.partner);
     if (covered) {
@@ -410,15 +451,38 @@ export function cutQuote(s: string, limit: number = QUOTE_LIMIT): string {
   return best > 0 ? `${s.slice(0, best)}…` : s;
 }
 
+/**
+ * 0.4.7: a page's text as a card prints it — whitespace flattened, links reduced to their text by the one link strip
+ * (src/ledger-check.mjs `unlinked`, the same the generator compares a pageWord with), bold's asterisks removed.
+ */
+export function printedText(s: string): string {
+  return unlinked(s.replace(/\s+/g, ' ')).replace(/\*\*/g, '').trim();
+}
+
 /** The page's line as the card quotes it: the same whitespace and markdown normalisation as before, then cutQuote. */
-export function pageLineQuote(row: LedgerRow): string {
+export function pageLineQuote(row: LedgerRow, quote: string = row.quote): string {
   // 0.4.2: markdown markup is not the page's words — links lose their URL, bold its asterisks (OpenAI's page of 2026-11-14 bolds every date).
   // Amendment A1: a Google table row's quote is its cells joined by " | "; an empty last cell is not quoted.
+  // 0.4.7 (R3): a second row of the same page is quoted the same way (`quote`).
+  return cutQuote(printedText(row.section !== undefined ? quote.replace(/ \| $/, '') : quote));
+}
+
+/**
+ * 0.4.7 (R2, Amendment A2): a Google table row quoted with its table's column names ("Model: `x` | Release date: May 28,
+ * 2026 | …"), so a release date is not read as a shutdown date. Only for a row whose word is its second page's; an empty
+ * cell is left out with its name. Undefined for a row the generator gave no column names.
+ */
+export function columnQuote(row: LedgerRow): string | undefined {
+  const cols = row.columns;
+  if (!cols) return undefined;
+  const cells = row.quote.split(' | ');
+  if (cells.length !== cols.length) return undefined;
   return cutQuote(
-    (row.section !== undefined ? row.quote.replace(/ \| $/, '') : row.quote)
-      .replace(/\s+/g, ' ')
-      .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
-      .replace(/\*\*/g, ''),
+    cells
+      .map((c, i) => [cols[i]!, printedText(c)] as const)
+      .filter(([, c]) => c !== '')
+      .map(([n, c]) => `${n}: ${c}`)
+      .join(' | '),
   );
 }
 
@@ -456,7 +520,13 @@ function displayNameLine(a: {
   const word = status.replace(/^Status:\s*/, '').toLowerCase() || row.word;
   const date = row.shutdown;
   const floor = row.shutdownFloor;
-  const when = date ? `a shutdown date of ${date}` : floor ? `a shutdown date not before ${floor}` : 'no shutdown date';
+  // 0.4.7 (R8, Amendment A1): a date after the page's read day and before this run's day carries its distance
+  const lapsed = (d: string) => d > row.readOn && daysUntil(a.today, d) < 0;
+  const when = date
+    ? `a shutdown date of ${date}${lapsed(date) ? ` (${distanceWords(a.today, date)})` : ''}`
+    : floor
+      ? `a shutdown date not before ${floor}${lapsed(floor) ? ` (${distanceWords(a.today, floor)})` : ''}`
+      : 'no shutdown date';
   // the line agrees with its count: one snapshot is "the snapshot … its replacement"
   const one = display.snapshots.length === 1;
   const their = one ? 'its' : 'their';
@@ -484,6 +554,63 @@ function displayNameLine(a: {
   };
 }
 
+// ── 0.4.7 (R3): a second row of the same page ──────────────────────────
+const cellWords = (s?: string) => (s ?? '').replace(/\*\*/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
+
+/**
+ * Amendment A4: what an id's second row gives that its first does not — another date, another replacement. [] when the two
+ * say the same, and when the second is about something else (the id sits in it inside a cell that names a feature).
+ */
+export function secondRowDiffers(row: LedgerRow): ('date' | 'replacement')[] {
+  const s = row.secondRow;
+  if (!s || s.feature) return [];
+  const out: ('date' | 'replacement')[] = [];
+  if (cellWords(s.dateText) !== cellWords(row.dateText)) out.push('date');
+  if (cellWords(s.replacement) !== cellWords(row.replacement)) out.push('replacement');
+  return out;
+}
+
+/**
+ * R3: the one sentence a line about an id on two rows of its page adds — the second row quoted with the heading it sits
+ * under. It says which row the line is from and, where they differ, that they differ; never which is right.
+ */
+export function secondRowSentence(row: LedgerRow): string | undefined {
+  const s = row.secondRow;
+  if (!s) return undefined;
+  const d = secondRowDiffers(row);
+  const differ = d.length ? `; the two rows give different ${andList(d.map((x) => (x === 'date' ? 'dates' : 'replacements')))}` : '';
+  return `\`${row.id}\` is on two rows of ${pageName(row.provider, row.url)}: this line is from the first, and the second, under its heading “${s.heading}”, reads “${pageLineQuote(row, s.quote)}”${differ}.`;
+}
+
+/**
+ * 0.4.7 (R2): a row whose lifecycle word is its second page's (`pageWordUrl`) — on Google's pages, a deprecation said in
+ * the release notes of a model the deprecations page lists without that word. Its quote is that page's sentence, the page
+ * named with its read day; the table row follows, by its columns (Amendment A2). Undefined for every other row.
+ */
+function secondPageQuote(row: LedgerRow, st: RowState): string[] | undefined {
+  if (!row.pageWordUrl || row.pageWordUrl === row.url || row.alsoUrl !== row.pageWordUrl || !row.alsoQuote) return undefined;
+  const read = st.read?.find((r) => r.url === row.alsoUrl);
+  const day = read ? `read in this run, ${minuteOf(read.at)} UTC` : `as read on ${row.alsoReadOn ?? row.readOn}`;
+  const cq = columnQuote(row);
+  return [
+    `${pageName(row.provider, row.alsoUrl)} (${day}): “${cutQuote(printedText(row.alsoQuote))}”`,
+    cq ? `Its row on ${pageName(row.provider, row.url)}, by the table's columns: “${cq}”.` : `The page's line: “${pageLineQuote(row)}”.`,
+  ];
+}
+
+/**
+ * 0.4.7 (R6, Amendment A8): a line that quotes a provider's definition from a page the row does not rest on names that
+ * page in its basis, with its read state (until 0.4.7 seven of Google's release-notes rows quoted the deprecations page's
+ * definition under a basis that named the release notes alone).
+ */
+function definitionBasis(basis: string, provider: LedgerRow['provider'], word: string, pages: PageRead | undefined): string {
+  const url = DEFINITION_PAGE[provider];
+  if (!url || basis.includes(url)) return basis;
+  const st = definitionStateIn(pages, { provider, word });
+  const when = st.state === 'confirmed' ? `read in this run (${minuteOf(st.at)} UTC)` : `as read ${sourceReadOn(url)}`;
+  return `${basis}; ${pageName(provider, url)}, for the definition the line quotes, ${when}: ${url}`;
+}
+
 /** R2: one ledger row → the provider's word about its own API, when, and the replacement the page names. */
 function ledgerLine(a: {
   shown: string;
@@ -502,6 +629,11 @@ function ledgerLine(a: {
   const date = row.shutdown;
   const floor = row.shutdownFloor;
   const past = date !== undefined && date <= readOn;
+  // 0.4.7 (R8, Amendment A1): a date after the day the page was read and before this run's day is said as the page's date
+  // with its distance, never in the future ("shuts down on") and never as done ("was shut down"), which only the page's
+  // own word can say; whether or not the page was read in this run (until 0.4.7 the tense came from the read day alone)
+  const lapsed = (d: string | undefined) => d !== undefined && d > readOn && daysUntil(a.today, d) < 0;
+  const ago = (d: string) => distanceWords(a.today, d);
   const on = `On ${P}'s own API, ${shown}`;
   const display = displayNameRow(row);
   let title: string;
@@ -519,13 +651,18 @@ function ledgerLine(a: {
           : `${on} has been shut down`;
       break;
     case 'legacy':
-      title = `${on} is a legacy name ${P} said it would discontinue on ${date}${past ? ', a date before this read; the page states nothing later' : ''}`;
+      title = `${on} is a legacy name ${P} said it would discontinue on ${date}${
+        past ? ', a date before this read; the page states nothing later' : lapsed(date) ? `, ${ago(date!)}` : ''
+      }`;
       break;
     case 'rerouted':
-      title = `${on} has its requests routed to \`${row.routesTo}\`${date && !past ? ` from ${date}` : ''}`;
+      title =
+        date && lapsed(date)
+          ? `${on}: its page gives ${date}, ${ago(date)}, as the day its requests route to \`${row.routesTo}\``
+          : `${on} has its requests routed to \`${row.routesTo}\`${date && !past ? ` from ${date}` : ''}`;
       break;
     case 'scheduled for shutdown':
-      title = `${on} is scheduled for shutdown not before ${floor ?? date}`;
+      title = `${on} is scheduled for shutdown not before ${floor ?? date}${lapsed(floor ?? date) ? `, ${ago((floor ?? date)!)}` : ''}`;
       break;
     case 'listed': {
       // 0.4.2 Amendment A1: the page lists the id with no date and no deprecation word — said in the page's own words.
@@ -540,16 +677,28 @@ function ledgerLine(a: {
               ? 'among its preview agents'
               : `under its heading “${h3}”`;
       // 0.4.4 (R6): the page by its own title ("Gemini deprecations")
-      title = `${on} has ${row.pageWord.charAt(0).toLowerCase()}${row.pageWord.slice(1)}: ${pageName(row.provider, row.url)} lists it ${among}`;
+      // 0.4.7 (R1): a listed row's pageWord is its date cell as the page writes it ("No shutdown date announced"); a row
+      // without one says only that the page lists it
+      const cell = row.pageWord;
+      title = cell
+        ? `${on} has ${cell.charAt(0).toLowerCase()}${cell.slice(1)}: ${pageName(row.provider, row.url)} lists it ${among}`
+        : `${on}: ${pageName(row.provider, row.url)} lists it ${among}`;
       break;
     }
     default: {
       if (row.routesTo) {
-        title = `${on} is deprecated; ${date && !past ? `from ${date} its requests route to` : 'its requests are routed to'} \`${row.routesTo}\``;
+        title =
+          date && lapsed(date)
+            ? `${on} is deprecated; its page gives ${date}, ${ago(date)}, as the day its requests route to \`${row.routesTo}\``
+            : `${on} is deprecated; ${date && !past ? `from ${date} its requests route to` : 'its requests are routed to'} \`${row.routesTo}\``;
       } else if (date) {
-        title = past ? `${on} is deprecated, with a shutdown date of ${date}, before this read` : `${on} is deprecated and shuts down on ${date}`;
+        title = past
+          ? `${on} is deprecated, with a shutdown date of ${date}, before this read`
+          : lapsed(date)
+            ? `${on} is deprecated, and its page gives a shutdown date of ${date}, ${ago(date)}`
+            : `${on} is deprecated and shuts down on ${date}`;
       } else if (floor) {
-        title = `${on} is deprecated; shutdown not before ${floor}`;
+        title = `${on} is deprecated; shutdown not before ${floor}${lapsed(floor) ? `, ${ago(floor)}` : ''}`;
       } else {
         title = `${on} is deprecated`;
       }
@@ -576,7 +725,11 @@ function ledgerLine(a: {
   }
   if (parts.length === 0 || (!def && row.word !== 'legacy' && !a.via))
     // 0.4.4 (R2): never cut inside a word or an id (until 0.4.3: `.slice(0, 240)`, which cut Google's reroute of gemini-2.5-flash inside an id)
-    parts.unshift(`The page's line: “${pageLineQuote(row)}”.`);
+    // 0.4.7 (R2): a row whose word is its second page's quotes that page's sentence first, then its row by its columns
+    parts.unshift(...(secondPageQuote(row, a.state) ?? [`The page's line: “${pageLineQuote(row)}”.`]));
+  // 0.4.7 (R3): an id on two rows of its page says the second
+  const second = secondRowSentence(row);
+  if (second) parts.push(second);
   if (a.checksSkip) parts.push('The catalog has no entry for it, so its limits and price were not checked.');
   const w = stateWords(row, a.state, a.today);
   if (w.tail) parts.push(w.tail);
@@ -585,10 +738,12 @@ function ledgerLine(a: {
   return {
     severity,
     // 0.4.3 (R1): Certain only when the row is confirmed in this run (placeLine still lowers it off the provider's API).
-    confidence: a.state.state === 'confirmed' ? 'certain' : 'likely',
+    // 0.4.7 (Amendment A4): and never when the page's second row for the id gives another date or another replacement
+    confidence: a.state.state === 'confirmed' && secondRowDiffers(row).length === 0 ? 'certain' : 'likely',
     title: `${w.titlePrefix}${title}`,
     detail: parts.join(' '),
-    basis: w.basis,
+    // 0.4.7 (R6, Amendment A8): the definition's page, where the row does not rest on it
+    basis: def ? definitionBasis(w.basis, row.provider, row.word, a.pages) : w.basis,
   };
 }
 
@@ -696,6 +851,7 @@ function activeLines(a: {
       // sentence opened by saying the page announces no retirement for the id, then quoted the notice sentence)
       lineQuote,
       notice ? `${dep} says “${notice}”` : undefined,
+      secondRowSentence(row), // 0.4.7 (R3)
       a.state.state === 'confirmed'
         ? `That page was read in this run (${minuteOf(a.state.at)} UTC); the model page was not, and its word is as the catalog read it on ${pl.readOn}.`
         : w.tail,
@@ -713,7 +869,9 @@ function activeLines(a: {
     ];
   }
 
-  const confidence: Confidence = a.state.state === 'confirmed' ? 'certain' : 'likely';
+  // 0.4.7 (Amendment A4): never Certain while the page's second row for the id gives another date or replacement
+  const confidence: Confidence = a.state.state === 'confirmed' && secondRowDiffers(row).length === 0 ? 'certain' : 'likely';
+  const second = secondRowSentence(row); // 0.4.7 (R3)
   const noEntry = a.profile ? undefined : 'The catalog has no entry for it, so its limits and price were not checked.';
   if (floorInWindow(today, floor)) {
     // (b) the date line: ℹ️, the state, the page's date text and the distance, and the page's notice sentence
@@ -721,6 +879,7 @@ function activeLines(a: {
     const parts = [
       viaSentence,
       notice ? `${dep} lists it as Active, and says “${notice}”` : `${dep} lists it as Active.`,
+      second,
       noEntry,
       w.tail || undefined,
     ].filter((x): x is string => !!x);
@@ -730,7 +889,7 @@ function activeLines(a: {
   // (until 0.4.6 that second case printed nothing, and the card named the id only in its header). Amendment B1: the
   // title is (b)'s, the row's cell with its distance, without the notice sentence, which is the window's (until fix
   // pass 1: "is Active on <page>", no date, and a detail saying the page announces no retirement for the id)
-  const parts = [viaSentence, lineQuote ?? `${dep} lists it as Active.`, noEntry, w.tail || undefined].filter((x): x is string => !!x);
+  const parts = [viaSentence, lineQuote ?? `${dep} lists it as Active.`, second, noEntry, w.tail || undefined].filter((x): x is string => !!x);
   const title = dateWords ? `${on} is Active${dateWords}` : `${on} is Active on ${dep}`;
   return [{ severity: 'info', confidence, title: `${w.titlePrefix}${title}`, detail: parts.join(' '), basis: w.basis }];
 }
@@ -931,8 +1090,14 @@ const FINE_TUNE = /^ft:([^:]+)(?::|$)/;
  * OpenAI's, under its table of upcoming deprecations, speaking of "the models listed above". Otherwise the line says
  * only that the check quotes no such sentence (until fix pass 1: "The pages this check reads do not say what happens to
  * a fine-tune of this model.", false of OpenAI's page, whose "Historical notes" speak of the models shut down in
- * October 2026; that note links to an anchor on the HTML page, not to a section of the page this check reads, so no
- * row can be tied to it mechanically).
+ * October 2026).
+ *
+ * 0.4.7 (R4, Amendment A5): that historical note IS tied to its rows mechanically, by the note's own words. Its link ends
+ * "#2026-04-22-legacy-gpt-model-snapshots" — the notice date of exactly the rows shut down on Oct 23, 2026 — and its words
+ * say "shut down in October 2026"; both are read from the note (fineTuneNoteTie), never typed. (Until 0.4.7 this comment
+ * said no row could be tied to it, since the anchor is on the HTML page and not a section of the markdown page this check
+ * reads; the date inside the anchor is on the markdown page as the rows' notice cell.) A fine-tune of a base on one of
+ * those rows quotes the note; of any other past base, the line still says the check quotes no sentence.
  */
 function analyseFineTune(
   configured: string,
@@ -980,13 +1145,24 @@ function analyseFineTune(
       },
     ]);
   }
-  // the provider's sentence about fine-tunes, where its page says it of this row
-  const q = provider ? WORD_DEFINITION[provider as LedgerRow['provider']]?.['fine-tuned versions'] : undefined;
-  const says = row && q && row.provider === 'openai' && /^Upcoming deprecations/.test(row.pageWord);
-  const ftSentence = says
-    ? definitionStateIn(opts.pages, { provider: row.provider, word: 'fine-tuned versions' }).state === 'changed'
-      ? `The sentence this version read on ${pageName(row.provider, row.url)} about fine-tunes is not on it as read in this run.`
-      : `${pageName(row.provider, row.url)}: “${q}”`
+  // the provider's sentence about fine-tunes, where its page says it of this row: OpenAI's footnote under its table of
+  // upcoming deprecations, for a row of that table (0.4.7, R1: by the row's `table`, a record field — until 0.4.7 by the
+  // words of its `pageWord`); or (0.4.7, R4) OpenAI's historical note on the legacy GPT models shut down in October 2026,
+  // for a row its own link ties it to (fineTuneNoteTies: the notice date in the link, the month in its words)
+  const footnote = WORD_DEFINITION.openai?.['fine-tuned versions'];
+  const note = WORD_DEFINITION.openai?.['fine-tunes of the October 2026 shutdown'];
+  const which: DefinitionWord | undefined =
+    row?.provider !== 'openai'
+      ? undefined
+      : row.table === 'Upcoming deprecations' && footnote
+        ? 'fine-tuned versions'
+        : note && fineTuneNoteTies(note, row)
+          ? 'fine-tunes of the October 2026 shutdown'
+          : undefined;
+  const ftSentence = which
+    ? definitionStateIn(opts.pages, { provider: row!.provider, word: which }).state === 'changed'
+      ? `The sentence this version read on ${pageName(row!.provider, row!.url)} about fine-tunes is not on it as read in this run.`
+      : `${pageName(row!.provider, row!.url)}: “${printedText(which === 'fine-tuned versions' ? footnote! : note!)}”`
     : `This check quotes no sentence of ${provider ? providerWord(provider) : 'the provider'}'s about fine-tunes of this model.`;
 
   let line: Line | undefined;
@@ -1023,7 +1199,7 @@ function analyseFineTune(
     confidence: 'likely',
     detail: [link, ftSentence, notChecked, rest].filter(Boolean).join(' '),
   };
-  return out([provider ? placeLine(fineLine, provider, st) : fineLine]);
+  return out([provider ? placeLine(fineLine, provider, st, opts.pages) : fineLine]);
 }
 
 /**
@@ -1075,7 +1251,7 @@ export function analyseModel(
   if (row && active) {
     const today = opts.today ?? machineToday();
     for (const l of activeLines({ shown: shownId, row, via: hit.via, profile, state: rowStateIn(opts.pages, row.id), today, pages: opts.pages }))
-      lines.push(placeLine(l, row.provider, st));
+      lines.push(placeLine(l, row.provider, st, opts.pages));
   } else if (row) {
     lines.push(
       placeLine(
@@ -1091,13 +1267,14 @@ export function analyseModel(
         }),
         row.provider,
         st,
+        opts.pages,
       ),
     );
     const pl = listed && profile ? providerLifecycleLine(shownId, profile) : undefined;
-    if (pl && profile) lines.push(placeLine(pl, profile.provider, st));
+    if (pl && profile) lines.push(placeLine(pl, profile.provider, st, opts.pages));
   } else if (profile) {
     const pl = providerLifecycleLine(shownId, profile);
-    if (pl) lines.push(placeLine(pl, profile.provider, st));
+    if (pl) lines.push(placeLine(pl, profile.provider, st, opts.pages));
   } else {
     // 0.4.6 (R9): an id is matched without regard to case before it is called not recognised — `GPT-4o` prints the
     // line `gpt-4o` prints, under the same heading (until 0.4.6 it was "not recognised", under Certain)

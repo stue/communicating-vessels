@@ -59,13 +59,15 @@ describe('R7 — `--model-facts` prints nothing written for our own records', ()
 describe('R7 — the `also:` line says when its page was read, as the source line does', () => {
   const also = (t: string) => t.split('\n').find((l) => l.startsWith('- also: '))!;
   it('its page did not answer: the same not-read clause as the source line, with the status', () => {
-    const t = renderModelFacts('deepseek-v4-flash', { pages: withPage(ROOT_URL, 'HTTP 404'), today: '2026-11-25' });
-    expect(also(t)).toMatch(/^- also: https:\/\/api-docs\.deepseek\.com\/ \(read 2026-11-24, 1 day before this lookup; not read in this run \(HTTP 404\)\) — “The legacy names/);
-    expect(t).toContain("DeepSeek's “Your First API Call” page not read in this run (HTTP 404), as read 2026-11-24, 1 day before this lookup)");
+    const t = renderModelFacts('deepseek-v4-flash', { pages: withPage(ROOT_URL, 'HTTP 404'), today: '2026-11-26' }); // 0.4.7: a day after the re-read (until 0.4.7: 2026-11-25)
+    // 0.4.7: the ledger re-read on 2026-11-25 (until 0.4.7: 2026-11-24)
+    expect(also(t)).toMatch(/^- also: https:\/\/api-docs\.deepseek\.com\/ \(read 2026-11-25, 1 day before this lookup; not read in this run \(HTTP 404\)\) — “The legacy names/);
+    expect(t).toContain("DeepSeek's “Your First API Call” page not read in this run (HTTP 404), as read 2026-11-25, 1 day before this lookup)");
   });
   it('offline: the clause names the switch; read in this run: the time it was read', () => {
-    expect(also(renderModelFacts('deepseek-v4-flash', { pages: OFFLINE, today: '2026-11-24' }))).toContain('(read 2026-11-24, the day of this lookup; not read in this run (--offline))');
-    expect(also(renderModelFacts('deepseek-v4-flash', { pages: READ, today: '2026-11-24' }))).toContain('(read in this run, 2026-11-24 09:37 UTC)');
+    // 0.4.7: the ledger re-read on 2026-11-25 at 09:06 UTC (until 0.4.7: 2026-11-24 09:37)
+    expect(also(renderModelFacts('deepseek-v4-flash', { pages: OFFLINE, today: '2026-11-25' }))).toContain('(read 2026-11-25, the day of this lookup; not read in this run (--offline))');
+    expect(also(renderModelFacts('deepseek-v4-flash', { pages: READ, today: '2026-11-25' }))).toContain('(read in this run, 2026-11-25 09:06 UTC)');
   });
 });
 

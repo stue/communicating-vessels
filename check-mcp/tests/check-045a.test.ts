@@ -33,7 +33,9 @@ const FINE_TUNES = 'Fine-tuned versions of the models listed above follow the sa
 // ── A1 ─────────────────────────────────────────────────────────────────────
 describe('A1 — no sentence says what a page does not say; with no sentence held for the base, the line says only that', () => {
   it('a fine-tune of a base in OpenAI’s past table: “This check quotes no sentence of OpenAI’s about fine-tunes of this model.”', () => {
-    const id = 'ft:gpt-3.5-turbo-0125:acme::abc123';
+    // 0.4.7 (R4, Amendment A5): a past base the historical note's link does not tie (until 0.4.7: `ft:gpt-3.5-turbo-0125:…`,
+    // whose base is on a row the note ties, and which now quotes the note: check-047.test.ts)
+    const id = 'ft:gpt-4-0314:acme::abc123';
     const f = about(findings(one(id)), id)[0]!;
     expect(f.detail).toContain("This check quotes no sentence of OpenAI's about fine-tunes of this model.");
     expect(f.detail).not.toMatch(/do not say what happens to a fine-tune/);
