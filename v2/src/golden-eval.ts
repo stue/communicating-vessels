@@ -43,7 +43,7 @@
 import type { ApiKeys, PromptIR } from './ir.js';
 import { compile } from './compile.js';
 import { execute } from './execute.js';
-import { tryGetProfile } from './profiles.js';
+import { tryGetProfile, inferProviderFromId } from './profiles.js';
 import { _internal } from './call.js';
 import { resolveOutputMode } from './dialect.js';
 import { countTokens } from './tokenizer.js';
@@ -1081,6 +1081,23 @@ export async function runGoldenEval(
   };
 
   for (const [i, row] of goldenRows.entries()) {
+    // alpha.138 (R2, fix pass 4) — a captured IR whose messages carry
+    // provider-native blocks (`parts`) was written for the provider of the model
+    // it was captured on (`incumbent_model`); lowering passes them verbatim, so
+    // a replay on another provider would send that provider blocks it does not
+    // read. Such a case is excluded before any request (named, counted toward
+    // attrition, as a failed arm-B replay is), never replayed across providers.
+    if (_internal.irCarriesNativeParts(row.ir)) {
+      const providerOf = (m: string): string | undefined => tryGetProfile(m)?.provider ?? inferProviderFromId(m);
+      const written = providerOf(row.incumbent_model);
+      const other = [incumbentModel, candidateModel].filter((m) => providerOf(m) !== written);
+      if (other.length > 0) {
+        const why = `the captured IR carries native parts written for ${written ?? 'an unknown provider'} (captured on ${row.incumbent_model}); not replayed on ${[...new Set(other)].join(', ')}, another provider`;
+        cases.push({ goldenIrId: row.id, verdict: 'inconclusive', floorViolations: [], excludedReason: why });
+        notes.push(`case #${row.id}: ${why} — excluded`);
+        continue;
+      }
+    }
     progress(
       `Case ${i + 1}/${goldenRows.length} (golden #${row.id}): replaying ${incumbentModel} + ${candidateModel}…`,
     );

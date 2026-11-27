@@ -510,7 +510,21 @@ export interface ModelProfile {
   providerLifecycle?: ProviderLifecycle;
 
   // Hard capabilities
+  /** The provider's context window (input and output together). */
   maxContextTokens: number;
+  /**
+   * alpha.138 (R3) — the most input tokens the provider's page says one
+   * request may carry, where the page states it apart from the window (OpenAI's
+   * `gpt-5.4-mini` and `gpt-5.4-nano`: *"Maximum input tokens: 272,000"* under
+   * a *"400,000 context window"*). ABSENT = the page states no separate
+   * maximum; the window is the only bound. Read with its page's sentence and
+   * read date in the comment beside it. The context-budget test
+   * (`passScoreTargets`) refuses a model when the estimated input exceeds
+   * `min(0.9 × maxContextTokens, maxInputTokens)`. Rides the brain as
+   * `kgauto_models.max_input_tokens` (migration 107); a NULL there keeps the
+   * bundled value (`rowToProfile`).
+   */
+  maxInputTokens?: number;
   maxOutputTokens: number;
   maxTools: number;
   parallelToolCalls: boolean;
@@ -2639,7 +2653,14 @@ const PROFILES_RAW: ModelProfile[] = [
   // pricing zone.
   {
     id: 'gpt-5.5',
-    verifiedAgainstDocs: '2026-05-17',
+    // alpha.137 (R3) — read 2026-11-26T03:44Z (curl -sL, HTTP 200): https://developers.openai.com/api/docs/pricing.md,
+    //   Standard row "gpt-5.5 (<272K context length) | $5.00 | $30.00 | $0.50 | - | - | $10.00 | $45.00 | $1.00 | - | -",
+    //   Batch row "gpt-5.5 (<272K context length) | $2.50 | $15.00 | $0.25 | - | - | $5.00 | $22.50 | $0.50 | - | -";
+    //   https://developers.openai.com/api/docs/models/gpt-5.5.md: "Input modalities: text, image" · "1,050,000 context
+    //   window" · "128,000 max output tokens" · ">272K input tokens are priced at 2x input and 1.5x output"; no Status
+    //   line. https://developers.openai.com/api/docs/deprecations.md names no `gpt-5.5` row. Every value unchanged.
+    //   (was: '2026-05-17', until alpha.137.)
+    verifiedAgainstDocs: '2026-11-26',
     provider: 'openai',
     status: 'current',
     // alpha.127 — providerLifecycle NOT written: a lifecycle word not read on a page is not written. Read
@@ -2649,6 +2670,9 @@ const PROFILES_RAW: ModelProfile[] = [
     // not name `gpt-5.5`. No page states a lifecycle word for this model, so none is written.
     // alpha.124 — read 2026-10-24 on https://developers.openai.com/api/docs/models/gpt-5.5 — the page says 'Input modalities: text, image'.
     inputModalities: ['text', 'image'],
+    // alpha.138 (R3) — no maxInputTokens: read 2026-11-26T06:56:20Z (curl -sL, HTTP 200) on
+    //   https://developers.openai.com/api/docs/models/gpt-5.5.md: "1,050,000 context window" · "128,000 max output
+    //   tokens"; the page states no maximum input (its 272K sentence is a price step, `costTiers`).
     maxContextTokens: 1_050_000,
     maxOutputTokens: 128_000,
     maxTools: 64,
@@ -2731,6 +2755,10 @@ const PROFILES_RAW: ModelProfile[] = [
     // alpha.124 — read 2026-10-24 on https://developers.openai.com/api/docs/models/gpt-6-astra — the page says 'Input modalities: text, image'.
     inputModalities: ['text', 'image'],
     maxContextTokens: 1_050_000,
+    // alpha.138 (R3, fix pass 4) — read 2026-11-26T07:29:31Z (curl -sL, HTTP 200) on
+    //   https://developers.openai.com/api/docs/models/gpt-6-astra.md: "1,050,000 context window" ·
+    //   "Maximum input tokens: 922,000" · "128,000 max output tokens". Tighter than 0.9 × window (945,000).
+    maxInputTokens: 922_000,
     maxOutputTokens: 128_000,
     maxTools: 64,
     parallelToolCalls: true,
@@ -2818,6 +2846,10 @@ const PROFILES_RAW: ModelProfile[] = [
     // alpha.124 — read 2026-10-24 on https://developers.openai.com/api/docs/models/gpt-6.1-sol — the page says 'Input modalities: text, image'.
     inputModalities: ['text', 'image'],
     maxContextTokens: 1_050_000,
+    // alpha.138 (R3, fix pass 4) — read 2026-11-26T07:29:31Z (curl -sL, HTTP 200) on
+    //   https://developers.openai.com/api/docs/models/gpt-6.1-sol.md: "1,050,000 context window" ·
+    //   "Maximum input tokens: 922,000" · "128,000 max output tokens". Tighter than 0.9 × window (945,000).
+    maxInputTokens: 922_000,
     maxOutputTokens: 128_000,
     maxTools: 0,
     parallelToolCalls: true,
@@ -2907,6 +2939,10 @@ const PROFILES_RAW: ModelProfile[] = [
     // alpha.132 — read 2026-11-11 on https://developers.openai.com/api/docs/models/gpt-6.1-terra (23:32Z) — the page says 'Input modalities: text, image'.
     inputModalities: ['text', 'image'],
     maxContextTokens: 1_050_000,
+    // alpha.138 (R3, fix pass 4) — read 2026-11-26T07:29:32Z (curl -sL, HTTP 200) on
+    //   https://developers.openai.com/api/docs/models/gpt-6.1-terra.md: "1,050,000 context window" ·
+    //   "Maximum input tokens: 922,000" · "128,000 max output tokens". Tighter than 0.9 × window (945,000).
+    maxInputTokens: 922_000,
     maxOutputTokens: 128_000,
     maxTools: 0,
     parallelToolCalls: true,
@@ -2998,6 +3034,10 @@ const PROFILES_RAW: ModelProfile[] = [
     // alpha.132 — read 2026-11-11 on https://developers.openai.com/api/docs/models/gpt-6-luna (23:32Z) — the page says 'Input modalities: text, image'.
     inputModalities: ['text', 'image'],
     maxContextTokens: 1_050_000,
+    // alpha.138 (R3, fix pass 4) — read 2026-11-26T07:29:32Z (curl -sL, HTTP 200) on
+    //   https://developers.openai.com/api/docs/models/gpt-6-luna.md: "1,050,000 context window" ·
+    //   "Maximum input tokens: 922,000" · "128,000 max output tokens". Tighter than 0.9 × window (945,000).
+    maxInputTokens: 922_000,
     maxOutputTokens: 128_000,
     maxTools: 64,
     parallelToolCalls: true,
@@ -3072,7 +3112,14 @@ const PROFILES_RAW: ModelProfile[] = [
   },
   {
     id: 'gpt-5.4',
-    verifiedAgainstDocs: '2026-05-17',
+    // alpha.137 (R3) — read 2026-11-26T03:44Z (curl -sL, HTTP 200): https://developers.openai.com/api/docs/pricing.md,
+    //   Standard row "gpt-5.4 (<272K context length) | $2.50 | $15.00 | $0.25 | - | - | $5.00 | $22.50 | $0.50 | - | -",
+    //   Batch row "gpt-5.4 (<272K context length) | $1.25 | $7.50 | $0.13 | - | - | $2.50 | $11.25 | $0.25 | - | -";
+    //   https://developers.openai.com/api/docs/models/gpt-5.4.md: "Input modalities: text, image" · "1,050,000 context
+    //   window" · "128,000 max output tokens" · ">272K input tokens are priced at 2x input and 1.5x output"; no Status
+    //   line. https://developers.openai.com/api/docs/deprecations.md names no `gpt-5.4` row (its `gpt-5.4-cyber` row is
+    //   another id). Every value unchanged. (was: '2026-05-17', until alpha.137.)
+    verifiedAgainstDocs: '2026-11-26',
     provider: 'openai',
     status: 'current',
     // alpha.127 — providerLifecycle NOT written: a lifecycle word not read on a page is not written. Read
@@ -3082,6 +3129,9 @@ const PROFILES_RAW: ModelProfile[] = [
     // not name `gpt-5.4`. No page states a lifecycle word for this model, so none is written.
     // alpha.124 — read 2026-10-24 on https://developers.openai.com/api/docs/models/gpt-5.4 — the page says 'Input modalities: text, image'.
     inputModalities: ['text', 'image'],
+    // alpha.138 (R3) — no maxInputTokens: read 2026-11-26T06:56:20Z (curl -sL, HTTP 200) on
+    //   https://developers.openai.com/api/docs/models/gpt-5.4.md: "1,050,000 context window" · "128,000 max output
+    //   tokens"; the page states no maximum input (its 272K sentence is a price step, `costTiers`).
     maxContextTokens: 1_050_000,
     maxOutputTokens: 128_000,
     maxTools: 64,
@@ -3162,7 +3212,15 @@ const PROFILES_RAW: ModelProfile[] = [
           'Measured 2026-08-28: served 3 of 3 demanded tools from a 20-tool menu, 3/3 trials, direct route.',
       },
     ],
-    verifiedAgainstDocs: '2026-05-17',
+    // alpha.137 (R3) — read 2026-11-26T03:44Z (curl -sL, HTTP 200): https://developers.openai.com/api/docs/pricing.md,
+    //   Standard row "gpt-5.4-mini | $0.75 | $4.50 | $0.075", Batch row "gpt-5.4-mini | $0.375 | $2.25 | $0.0375";
+    //   https://developers.openai.com/api/docs/models/gpt-5.4-mini.md: "Input modalities: text, image" · "400,000 context
+    //   window" · "Maximum input tokens: 272,000" · "128,000 max output tokens"; no Status line.
+    //   https://developers.openai.com/api/docs/deprecations.md names no `gpt-5.4-mini` row. Every value unchanged.
+    //   maxContextTokens holds the context window, as on gpt-6.1-sol; the page's maximum input is `maxInputTokens`
+    //   below (alpha.138). (was: "The page's maximum input (272,000) has no field here", until alpha.138.)
+    //   (was: '2026-05-17', until alpha.137.)
+    verifiedAgainstDocs: '2026-11-26',
     provider: 'openai',
     status: 'current',
     // alpha.127 — providerLifecycle NOT written: a lifecycle word not read on a page is not written. Read
@@ -3173,6 +3231,10 @@ const PROFILES_RAW: ModelProfile[] = [
     // alpha.124 — read 2026-10-24 on https://developers.openai.com/api/docs/models/gpt-5.4-mini — the page says 'Input modalities: text, image'.
     inputModalities: ['text', 'image'],
     maxContextTokens: 400_000,
+    // alpha.138 (R3) — read 2026-11-26T06:56:19Z (curl -sL, HTTP 200) on
+    //   https://developers.openai.com/api/docs/models/gpt-5.4-mini.md: "400,000 context window" ·
+    //   "Maximum input tokens: 272,000" · "128,000 max output tokens".
+    maxInputTokens: 272_000,
     maxOutputTokens: 128_000,
     maxTools: 64,
     parallelToolCalls: true,
@@ -3236,7 +3298,17 @@ const PROFILES_RAW: ModelProfile[] = [
           'Measured 2026-08-28: served 3 of 3 demanded tools from a 20-tool menu, 3/3 trials, direct route.',
       },
     ],
-    verifiedAgainstDocs: '2026-05-17',
+    // alpha.137 (R3) — read 2026-11-26T03:44Z (curl -sL, HTTP 200): https://developers.openai.com/api/docs/pricing.md,
+    //   Standard row "gpt-5.4-nano | $0.20 | $1.25 | $0.02", Batch row "gpt-5.4-nano | $0.10 | $0.625 | $0.01";
+    //   https://developers.openai.com/api/docs/models/gpt-5.4-nano.md: "Status: Deprecated" · "Input modalities: text,
+    //   image" · "400,000 context window" · "Maximum input tokens: 272,000" · "128,000 max output tokens";
+    //   https://developers.openai.com/api/docs/deprecations.md row "Apr 1, 2027 | `gpt-5.4-nano`, `gpt-5.4-nano-2026-03-17`
+    //   | Deprecated | `gpt-6-luna` | Oct 1, 2026" (Shutdown date | Affected model | Status | Recommended replacement |
+    //   Notice date). Every value unchanged, providerLifecycle below included (its readOn stays the 11-03 read: the
+    //   word, floor and replacement read today are the same). The page's maximum input is `maxInputTokens` below
+    //   (alpha.138). (was: "The page's maximum input (272,000) has no field here", until alpha.138.)
+    //   (was: '2026-05-17', until alpha.137.)
+    verifiedAgainstDocs: '2026-11-26',
     provider: 'openai',
     status: 'current',
     // alpha.127 — the provider's word, read 2026-11-03 on this model's page
@@ -3252,6 +3324,10 @@ const PROFILES_RAW: ModelProfile[] = [
     // alpha.124 — read 2026-10-24 on https://developers.openai.com/api/docs/models/gpt-5.4-nano — the page says 'Input modalities: text, image'.
     inputModalities: ['text', 'image'],
     maxContextTokens: 400_000,
+    // alpha.138 (R3) — read 2026-11-26T06:56:19Z (curl -sL, HTTP 200) on
+    //   https://developers.openai.com/api/docs/models/gpt-5.4-nano.md: "Status: Deprecated" · "400,000 context window" ·
+    //   "Maximum input tokens: 272,000" · "128,000 max output tokens".
+    maxInputTokens: 272_000,
     maxOutputTokens: 128_000,
     maxTools: 64,
     parallelToolCalls: true,
@@ -3322,6 +3398,10 @@ const PROFILES_RAW: ModelProfile[] = [
     // alpha.124 — read 2026-10-24 on https://developers.openai.com/api/docs/models/gpt-5.6-luna — the page says 'Input modalities: text, image'.
     inputModalities: ['text', 'image'],
     maxContextTokens: 1_050_000,
+    // alpha.138 (R3, fix pass 4) — read 2026-11-26T07:29:33Z (curl -sL, HTTP 200) on
+    //   https://developers.openai.com/api/docs/models/gpt-5.6-luna.md: "1,050,000 context window" ·
+    //   "Maximum input tokens: 922,000" · "128,000 max output tokens". Tighter than 0.9 × window (945,000).
+    maxInputTokens: 922_000,
     maxOutputTokens: 128_000,
     maxTools: 64,
     parallelToolCalls: true,

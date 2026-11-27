@@ -1,6 +1,7 @@
 import { LIBRARY_VERSION } from '@warmdrift/kgauto-compiler';
 import { retirementFloorClause } from '@warmdrift/kgauto-compiler/profiles';
-import { analyseModel, rowStateIn, definitionStateIn, daysSinceRead, pageLineQuote, printedText, idSpans, platformSentences, LOWER_CASE_STEP } from './engine.js';
+import { analyseModel, rowStateIn, definitionStateIn, daysSinceRead, pageLineQuote, printedText, idSpans, platformSentences, noticeQuoted, LOWER_CASE_STEP } from './engine.js';
+import { noticeHolds, sentenceAround } from './ledger-check.mjs';
 import type { LedgerRow } from './lifecycle-types.js';
 import { PROVIDER_NAME, LEDGER_READ_ON, PARTNER_NAME, GATEWAYS, partnerPage, pageName, pagesName, WORD_DEFINITION } from './lifecycle.js';
 import { unreadAll, NOT_READ_BY_CALLER, readInThisRun, pagesCount, lastReadAt, minuteOf, type PageRead, type RowState } from './pages.js';
@@ -58,6 +59,24 @@ function wordWords(r: LedgerRow, P: string): string {
   return `${P}'s word: **${r.word}**`;
 }
 
+/**
+ * 0.4.8 (R4): where the notice quoted above the price says the requests are billed at another model's rates, the price line
+ * says whose figure it shows, then quotes the notice's own sentence; the routed model's price follows only when the catalog
+ * holds that model, labelled as the catalog's figure. '' for every other row, and when the notice is not quoted.
+ */
+function billedAt(row: LedgerRow | undefined, noticeShown: boolean): string {
+  if (!noticeShown || !row?.notice || !row.routesTo) return '';
+  const flatNotice = row.notice.replace(/\s+/g, ' ');
+  const at = flatNotice.search(/\bbilled at\b/);
+  if (at === -1) return '';
+  const sentence = sentenceAround(flatNotice, at, 'billed at'.length);
+  // the routed model's own catalog entry, found under its own id (never a near match)
+  const routed = analyseModel(row.routesTo);
+  const to = routed.canonical === row.routesTo ? routed.profile : undefined;
+  const toPrice = to ?` · the catalog's figure for \`${row.routesTo}\`: $${to.costInputPer1m}/M input · $${to.costOutputPer1m}/M output` : '';
+  return ` (the catalog's figure for this id); the notice quoted above says: “${printedText(sentence)}”${toPrice}`;
+}
+
 /** 0.4.3 (R1/R2): the lookup's last line — the catalog, and the pages as this run read them (or did not). */
 function factsFooter(read: PageRead, surface: 'cli' | 'mcp'): string {
   const cat = `_Catalog: @warmdrift/kgauto-compiler ${LIBRARY_VERSION}, bundled; deprecation pages bundled ${LEDGER_READ_ON}`;
@@ -82,6 +101,8 @@ function factsFooter(read: PageRead, surface: 'cli' | 'mcp'): string {
 export function renderModelFacts(model: string, opts: { pages?: PageRead; surface?: 'cli' | 'mcp'; today?: string } = {}): string {
   const read = opts.pages ?? unreadAll('none', NOT_READ_BY_CALLER);
   const surface = opts.surface ?? 'cli';
+  /** 0.4.8 (R4): set when the source line quotes the notice above the row. */
+  let noticeShown = false;
   const today = opts.today ?? new Date().toISOString().slice(0, 10);
   const a = analyseModel(model, { pages: read, today });
   const out: string[] = [];
@@ -141,16 +162,25 @@ export function renderModelFacts(model: string, opts: { pages?: PageRead; surfac
     const st = rowStateIn(read, r.id);
     // 0.4.4 (R4): when one of the row's pages was read in this run and another was not, the line names the one not read
     const partly = st.state === 'unread' && (st.read?.length ?? 0) > 0;
+    // 0.4.8 (R4, R5): the notice above the row is quoted as the card quotes it; one no longer on the page is not, and is said
+    noticeShown = noticeQuoted(r, st);
+    const noticeGone = st.state === 'changed' && st.gone.length > 0 && st.gone.every((g) => g.what === 'notice');
     const when =
       st.state === 'confirmed'
         ? `read in this run, ${minuteOf(st.at)} UTC`
-        : st.state === 'changed'
+        : noticeGone
+          ? `read ${r.readOn}; the page has changed since — it no longer carries the notice above this row as it was read, so read the page before acting on the date`
+          : st.state === 'changed'
           ? `read ${r.readOn}; the page has changed since — it no longer carries this line as it was read, so read the page before acting on the date`
           : partly
             ? `read in this run, ${minuteOf(st.read!.map((x) => x.at).sort().at(-1)!)} UTC; ${pagesName(r.provider, (st.notRead ?? []).map((n) => n.url))} not read in this run (${st.reason}), as read ${r.readOn}, ${daysBeforeLookup(today, r.readOn)}`
             : `read ${r.readOn}, ${daysBeforeLookup(today, r.readOn)}; not read in this run (${st.reason})`;
     // 0.4.4 (R2): the quote as the card prints it — never cut inside a word or an id (until 0.4.3: `.slice(0, 300)`)
-    out.push(`- source: ${r.url} (${when}) — “${pageLineQuote(r)}”`);
+    out.push(
+      noticeShown
+        ? `- source: ${r.url} (${when}) — the page's notice above the row: “${printedText(r.notice!)}”${noticeHolds(r.notice!, r) ? '' : ` · the page's line: “${pageLineQuote(r)}”`}`
+        : `- source: ${r.url} (${when}) — “${pageLineQuote(r)}”`,
+    );
     // 0.4.6 (R7): a second page says when it was read, as the source line does — in this run, or the day it was read and
     // why it was not read now (until 0.4.6: "(read <day>)" whatever this run read, so a page that answered 404 was not said)
     if (r.alsoUrl) {
@@ -208,7 +238,7 @@ export function renderModelFacts(model: string, opts: { pages?: PageRead; surfac
   out.push(
     `- provider: ${p.provider}${p.verifiedAgainstDocs ? ` · prices and limits verified against provider docs ${p.verifiedAgainstDocs}` : ''}`,
   );
-  out.push(`- price: $${p.costInputPer1m}/M input · $${p.costOutputPer1m}/M output`);
+  out.push(`- price: $${p.costInputPer1m}/M input · $${p.costOutputPer1m}/M output${billedAt(a.row, noticeShown)}`);
   out.push(`- limits: ${p.maxContextTokens.toLocaleString()} context · ${p.maxOutputTokens.toLocaleString()} max output`);
   out.push(
     `- tool definitions per call the catalog's router sends to it: ${p.maxTools === 0 ? 'none (the router’s own wire for this model sends no tools; that is not a limit of the model)' : `up to ${p.maxTools} (a routing default, not a provider-stated limit)`}`,

@@ -29,6 +29,10 @@ export declare function googlePageRows(dep: string): string[];
 export declare function googleTableRows(dep: string): { h2: string | null; h3: string | null; cells: string[] }[];
 export declare function googleRowCells(r: { cells: string[] }): string[];
 export declare function pageTextOf(file: string, raw: string): string;
+/** 0.4.8 (R1, R2): Google's callouts, and the notice each routed row carries. */
+export declare function googleCallouts(dep: string): { h2: string | null; h3: string | null; text: string }[];
+export declare function noticeHolds(notice: string, row: { routesTo?: string; dateText?: string }): boolean;
+export declare function googleNotices(dep: string): { notices: { id: string; section: string; notice: string }[]; stops: string[]; notes: string[] };
 
 /** 0.4.6 (R6): the generator's table parsers, exported. */
 export declare function anthropicStatusRows(text: string): { id: string; state: string; dep: string; ret: string; line: string }[];
@@ -64,17 +68,19 @@ export interface QuotedRow {
   alsoQuote?: string;
   /** 0.4.7 (R3): the page's second row for the id, checked like the first. */
   secondRow?: { quote: string };
+  /** 0.4.8 (R5): the notice above the row, checked on the row's page like its quote. */
+  notice?: string;
 }
 export interface RowTest {
   url: string;
   quote: string;
-  what: 'quote' | 'second' | 'note' | 'also' | 'definition';
+  what: 'quote' | 'notice' | 'second' | 'note' | 'also' | 'definition';
   table: boolean;
 }
 export declare function isGoogleTableRow(r: QuotedRow): boolean;
 export declare function rowTests(r: QuotedRow): RowTest[];
 export declare function rowPages(r: QuotedRow): string[];
-export declare function quoteStands(text: string, quote: string, table: boolean): boolean;
+export declare function quoteStands(text: string, quote: string, table: boolean, what?: RowTest['what']): boolean;
 
 export type PageAnswer = { ok: true; text: string; at: string } | { ok: false; reason: string };
 /** 0.4.4 (R4): a page a row rests on that was read in this run, and whether it still carries its part of the row. */

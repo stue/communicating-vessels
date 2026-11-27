@@ -36,6 +36,9 @@
  * line came from first (until 0.4.5: one line, a line with the id in backticks preferred, so an Anthropic
  * status row was shown as its history row); and the summary line names each page that was not saved, with
  * its status (`HTTP 404`, a failed request, not the page this version reads, not in the folder).
+ * 0.4.8 (R5): a row's `notice` (the page's notice above it) is checked on the row's page like its quote, with the link
+ * strip (src/ledger-check.mjs `quoteStands`, what 'notice'); a notice not on its page moves its row, printed as `ledger
+ * notice`. The line before the summary counts them: `N notices moved — M notices checked of K` (K: the rows that carry one).
  * Exit 0: nothing moved and every row was checked · 1: a row or a definition moved · 2: a page
  * was not saved (or not the page this version reads), so some rows were not checked (never reported
  * as 0 moved), or a usage error.
@@ -194,16 +197,26 @@ function currentLines(row) {
 const moved = [];
 const notChecked = new Map(); // file → count
 let checked = 0;
+// 0.4.8 (R5): the notices, counted on a line of their own
+const notices = { all: 0, checked: 0, moved: 0 };
 for (const r of ROWS) {
   const gone = [];
   let missing = false;
+  if (r.notice) notices.all++;
   for (const t of rowTests(r)) {
     const text = pageText(t.url);
     if (text === undefined) {
       const f = pageFileOf(t.url) ?? t.url;
       notChecked.set(f, (notChecked.get(f) ?? 0) + 1);
       missing = true;
-    } else if (!quoteStands(text, t.quote, t.table)) gone.push(t);
+    } else {
+      const stands = quoteStands(text, t.quote, t.table, t.what);
+      if (t.what === 'notice') {
+        notices.checked++;
+        if (!stands) notices.moved++;
+      }
+      if (!stands) gone.push(t);
+    }
   }
   if (missing) continue;
   checked++;
@@ -243,7 +256,8 @@ for (const { r, gone } of moved) {
   console.log(`MOVED ${r.provider} ${r.id} — ${r.url}`);
   for (const g of gone) {
     // 0.4.7 (R3): a row's second row on the same page is checked like its first
-    const label = g.what === 'quote' ? 'ledger' : g.what === 'second' ? 'ledger, second row' : g.what === 'note' ? 'ledger note' : `ledger, also ${g.url}`;
+    const label =
+      g.what === 'quote' ? 'ledger' : g.what === 'notice' ? 'ledger notice' : g.what === 'second' ? 'ledger, second row' : g.what === 'note' ? 'ledger note' : `ledger, also ${g.url}`;
     console.log(`  ${label} (read ${g.what === 'also' ? r.alsoReadOn ?? r.readOn : r.readOn}): ${flat(g.quote)}`);
   }
   const now = currentLines(r) ?? [];
@@ -276,6 +290,8 @@ const notSaved = [...notChecked.keys()].map(
     `${urlOfFile(f)} (${unsaved.get(f) ?? (notThePage.has(f) ? 'not the page this version reads' : f.includes('://') ? 'not an address this version reads' : `not in ${PAGES}`)})`,
 );
 const code = moved.length || defsMoved ? 1 : notChecked.size ? 2 : 0;
+const noticeWord = (n) => `notice${n === 1 ? '' : 's'}`;
+console.log(`${notices.moved} ${noticeWord(notices.moved)} moved — ${notices.checked} ${noticeWord(notices.checked)} checked of ${notices.all}`);
 // Amendment A1: a clean run removes the folder it created itself; the summary stays the last line.
 if (DISCARD && CREATED && code === 0) {
   rmSync(CREATED, { recursive: true, force: true });

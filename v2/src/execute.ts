@@ -541,8 +541,12 @@ function normalizeOpenAILike(raw: unknown): NormalizedResponse {
  * Shallow-merge providerOverrides into the request matching its provider.
  * Per-provider keys are independent — overrides for 'google' don't touch an
  * 'anthropic' request.
+ *
+ * alpha.137 (R1) — exported: this is the request as `execute()` sends it, and
+ * `call()`'s truncation-retry check reads the output cap through this same
+ * function, so the check and the wire cannot read two different requests.
  */
-function applyOverrides(request: CompiledRequest, overrides?: ProviderOverrides): CompiledRequest {
+export function applyOverrides(request: CompiledRequest, overrides?: ProviderOverrides): CompiledRequest {
   if (!overrides) return request;
   const layer = overrides[request.provider];
   if (!layer) return request;
@@ -555,6 +559,43 @@ function applyOverrides(request: CompiledRequest, overrides?: ProviderOverrides)
     return { ...merged, thinking } as CompiledRequest;
   }
   return merged;
+}
+
+/**
+ * alpha.137 (R1) — the output cap a request carries, in its provider's own
+ * field: Anthropic `max_tokens`, Google `generationConfig.maxOutputTokens`,
+ * OpenAI `max_completion_tokens` (or the older `max_tokens` a caller may still
+ * send), the OpenAI-compatible providers `max_tokens`. `undefined` = the
+ * request names no cap (the provider's default applies). Read it on
+ * `applyOverrides(request, overrides)` for the cap as sent.
+ */
+export function outputCapOf(request: CompiledRequest): number | undefined {
+  const num = (v: unknown): number | undefined => (typeof v === 'number' && Number.isFinite(v) ? v : undefined);
+  const r = request as Record<string, unknown>;
+  switch (request.provider) {
+    case 'anthropic':
+      return num(r.max_tokens);
+    case 'google': {
+      const gc = r.generationConfig;
+      return gc && typeof gc === 'object' ? num((gc as Record<string, unknown>).maxOutputTokens) : undefined;
+    }
+    case 'openai':
+      return num(r.max_completion_tokens) ?? num(r.max_tokens);
+    default:
+      return num(r.max_tokens);
+  }
+}
+
+/**
+ * alpha.137 (R1) — the output cap the CALLER set: the cap field in the
+ * `providerOverrides` layer for this request's provider, read by the same
+ * field rule as `outputCapOf`. `undefined` when the caller set none (a Google
+ * `generationConfig` override without `maxOutputTokens` sets none).
+ */
+export function callerOutputCap(request: CompiledRequest, overrides?: ProviderOverrides): number | undefined {
+  const layer = overrides?.[request.provider];
+  if (!layer) return undefined;
+  return outputCapOf({ ...layer, provider: request.provider } as CompiledRequest);
 }
 
 /**

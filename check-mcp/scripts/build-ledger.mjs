@@ -44,6 +44,10 @@
  * the generator stops on one that is not. What this script writes in its own words goes to `ourWord`.
  * 0.4.7 (R3): an id the page carries on two rows keeps the first; the second is written onto it as `secondRow`, read by
  * the same parsers the table sweep reads (`tableIds`). A third row for one id stops the generator.
+ * 0.4.8 (R1, R2): a routed Google row carries `notice`, the page's callout above it, whole (src/ledger-check.mjs
+ * `googleNotices`: whitespace flattened, links reduced to their text). A callout under a section heading that names an id
+ * with no row there (and no route target there), names only rows that do not route, or does not give its row's route target
+ * and date, stops the generator with its text and the row's line; so does a callout above every section that names an id.
  */
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
@@ -73,6 +77,7 @@ import {
   fineTuneNoteTie,
   fineTuneNoteTies,
   sentenceAround,
+  googleNotices,
 } from '../src/ledger-check.mjs';
 
 const args = process.argv.slice(2);
@@ -444,6 +449,28 @@ const unbacktick = (s) =>
       // order inside a single segment between the page's own row separators, not cell by cell.
       _text: oneRow(cells) ? cells.join(' | ') : '',
     });
+  }
+
+  // 0.4.8 (R1, R2): the notice above a routed row — a callout under the row's section heading that names it — kept whole on
+  // the row; a callout this version does not read stops the generator with its text, and no ledger is written.
+  {
+    const { notices, stops, notes } = googleNotices(dep);
+    for (const s of stops) console.error(`stop: ${fd}: ${s}`);
+    if (stops.length) {
+      console.error(`stop: ${stops.length} callout(s) on ${fd} are not a shape this version reads. No ledger written.`);
+      process.exit(1);
+    }
+    for (const { id, section, notice } of notices) {
+      const r = rows.find((x) => x.provider === 'google' && x.url === URL.google && x.id === id);
+      if (!r || r.section !== section || !r.routesTo) {
+        console.error(`stop: ${fd}: the notice under "## ${section}" names \`${id}\`, and the ledger's row for it ${r ? `sits under "${r.section}"${r.routesTo ? '' : ' and does not route'}` : 'was not written'}\n  notice: ${notice}. No ledger written.`);
+        process.exit(1);
+      }
+      if (!wordOn(dep, notice)) throw new Error(`notice for ${id} not found on ${fd}: ${notice}`);
+      r.notice = notice;
+    }
+    for (const n of notes) log.push(n);
+    log.push(`google: ${notices.length} notice(s) above a routed row: ${notices.map((n) => n.id).join(', ') || 'none'}`);
   }
 
   // Release-notes rows for ids the deprecations page no longer lists.

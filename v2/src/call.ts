@@ -48,7 +48,7 @@ import {
   shouldCaptureGolden,
   captureGoldenIr,
 } from './golden.js';
-import { execute, type ExecuteOk, type ExecuteResult } from './execute.js';
+import { execute, applyOverrides, outputCapOf, callerOutputCap, type ExecuteOk, type ExecuteResult } from './execute.js';
 import { isModelReachable, isSameModelRetryEnabledFromEnv, resolveProviderKey } from './env.js';
 import { keyFingerprintSync } from './key-health.js';
 import { inferProviderFromId } from './profiles.js';
@@ -204,6 +204,10 @@ export async function call(ir: PromptIR, opts: CallOptions = {}): Promise<CallRe
   // (2026-05-14): drop unreachable silently, surface only when chain empties.
   let unreachableFiltered: string[] | undefined;
   let targetsToTry: string[];
+  // alpha.138 (R2) — provider-native blocks (`Message.parts`) are lowered
+  // verbatim for whichever provider serves, so a call that carries them stays
+  // on one provider unless the caller lifts the guard.
+  const nativePartsGuard = !opts.allowCrossProviderParts && irCarriesNativeParts(ir);
   if (opts.noAutoFilter) {
     targetsToTry = rawTargets;
   } else {
@@ -254,8 +258,10 @@ export async function call(ir: PromptIR, opts: CallOptions = {}): Promise<CallRe
     // cross-provider target available, append it. Prevents alpha.14's
     // chain-walk-on-401 from exhausting against a mono-provider chain —
     // the auth-walk needs somewhere different to walk TO.
+    // alpha.138 (R2) — no cross-provider tail for a call that carries native
+    // blocks: the tail's whole point is a model of ANOTHER provider.
     const archetypeName = ir.intent?.archetype;
-    if (archetypeName) {
+    if (archetypeName && !nativePartsGuard) {
       const ensured = ensureCrossProviderTail({
         chain: targetsToTry,
         archetype: archetypeName as IntentArchetypeName,
@@ -349,6 +355,69 @@ export async function call(ir: PromptIR, opts: CallOptions = {}): Promise<CallRe
     }
   }
 
+  // alpha.138 (R2, fix pass 1) — the native-parts guard. The provider kept is
+  // the one the blocks were written for, which the ranking does not know:
+  // `partsProvider` when the caller names it, else the provider of the first
+  // model the caller listed, else (no `models`) compile's first target. Every
+  // target of another provider is removed before the first request, a higher-
+  // ranked one included; the first target is then the best-ranked model of the
+  // kept provider. With none left, call() fails here, before any request: the
+  // blocks are never sent elsewhere. The removal is said (a mutation on the
+  // result, on a CallError, and in the brain row's mutations_applied); a chain
+  // already on the kept provider is left as it is and nothing is said.
+  const callMutations: MutationApplied[] = [];
+  let partsWithheld: string[] = [];
+  if (nativePartsGuard && targetsToTry.length > 0) {
+    const keep = partsKeptProvider(ir, opts, initial.target);
+    const kept: string[] = [];
+    const withheld: string[] = [];
+    for (const t of targetsToTry) {
+      if (providerOfTarget(t) === keep.provider) kept.push(t);
+      else withheld.push(t);
+    }
+    if (withheld.length > 0) {
+      partsWithheld = withheld;
+      callMutations.push(nativePartsWithheldMutation(keep, withheld));
+    }
+    if (kept.length === 0) {
+      const latencyMs = Date.now() - start;
+      await record({
+        handle: initial.handle,
+        source: opts.source,
+        endUserId: opts.endUserId,
+        route: opts.route,
+        tokensIn: 0,
+        tokensOut: 0,
+        latencyMs,
+        success: false,
+        errorType: 'no_target_on_parts_provider',
+        promptPreview: extractPromptPreview(ir),
+        mutationsApplied: [...initial.mutationsApplied, ...callMutations].map((m) => m.id),
+      });
+      const also = [
+        unreachableFiltered && unreachableFiltered.length > 0 ? `auto-filtered, no API key: [${unreachableFiltered.join(', ')}]` : '',
+        policyBlockedFiltered && policyBlockedFiltered.length > 0 ? `policy-blocked: [${policyBlockedFiltered.join(', ')}]` : '',
+      ].filter(Boolean);
+      const kp = keep.provider ?? 'an unknown provider';
+      throw new CallError(
+        `call(): the messages carry provider-native blocks (Message.parts) written for ${kp} (${partsKeptHowWords(keep)}), ` +
+          `and no ${kp} model is left in the chain: [${withheld.join(', ')}] are of another provider and were not sent the blocks` +
+          `${also.length > 0 ? ` (also ${also.join('; ')})` : ''}. ` +
+          `Add a ${kp} model or its key, name the provider with CallOptions.partsProvider, or set CallOptions.allowCrossProviderParts when every provider in your chain accepts these blocks.`,
+        withheld.map((m) => ({
+          model: m,
+          status: 'terminal' as const,
+          errorCode: 'native_parts_other_provider',
+          message: `Skipped before the wire — ${m} is not a ${kp} model, and the messages carry native blocks for ${kp}`,
+        })),
+        undefined,
+        'no_target_on_parts_provider',
+        callMutations,
+      );
+    }
+    targetsToTry = kept;
+  }
+
   let activeCompile: CompileResult = initial;
   let lastErr: Extract<ExecuteResult, { ok: false }> | undefined;
 
@@ -380,6 +449,12 @@ export async function call(ir: PromptIR, opts: CallOptions = {}): Promise<CallRe
   const sameModelRetryEnabled =
     opts.sameModelRetry ?? isSameModelRetryEnabledFromEnv();
   let retriedSameModel = false;
+
+  // alpha.138 (R1) — one validator for every exec of this call (first try,
+  // the thinking-strip re-send, the same-model retry), so the option cannot be
+  // honoured on one path and missed on another.
+  const validate = (e: ExecuteOk): Validated =>
+    validateStructuredContract(e, ir, { lengthIsFailure: opts.lengthIsFailure === true });
 
   // alpha.132 (R3c) — the one bounded recovery for a thinking block's prefix
   // check: a `thinking_prefix_mismatch` 400 re-sends the SAME target once with
@@ -534,7 +609,7 @@ export async function call(ir: PromptIR, opts: CallOptions = {}): Promise<CallRe
     // or unparseable JSON on a structured call is a contract violation —
     // route it through the fallback chain instead of returning success
     // with a sentinel null. PB-Cairn contract-gaps brief 2026-05-12.
-    let validated = exec.ok ? validateStructuredContract(exec, ir) : exec;
+    let validated: Validated = exec.ok ? validate(exec) : exec;
     let servedByRetry = false;
 
     // alpha.132 (R3c) — the prefix-check 400. The provider says retrying the
@@ -570,7 +645,7 @@ export async function call(ir: PromptIR, opts: CallOptions = {}): Promise<CallRe
           );
           safeEmit(() => emitExecuteAttempt(traceId, ir.appId, { model: targetModel, attemptIndex: i }));
           const stripExec = await execute(activeCompile.request, mkExecOpts());
-          validated = stripExec.ok ? validateStructuredContract(stripExec, ir) : stripExec;
+          validated = stripExec.ok ? validate(stripExec) : stripExec;
         } catch (err) {
           validated = {
             ok: false,
@@ -616,10 +691,12 @@ export async function call(ir: PromptIR, opts: CallOptions = {}): Promise<CallRe
     // evidence would remove a retry that a raw caller would have made, on
     // evidence about a different question: the never-worse-than-raw rule
     // applied to a decision that looked like it was already justified.
+    // alpha.138 (R1) — a text truncation under `lengthIsFailure` is treated as
+    // the structured truncation is, here and in the two checks below.
     let retrySuppressionNote: string | undefined;
     if (
       !validated.ok &&
-      isStructuredContractViolation(validated.errorCode) &&
+      qualifiesForSameModelRetry(validated.errorCode) &&
       sameModelRetryEnabled &&
       !retriedSameModel &&
       getMeasuredFailureVerdict({
@@ -632,9 +709,33 @@ export async function call(ir: PromptIR, opts: CallOptions = {}): Promise<CallRe
         ' [sameModelRetry suppressed: this model carries an active measured-failure gate (quality axis) for this archetype — retrying it would near-certainly bill a second doomed inference; walking the chain instead]';
     }
 
+    // alpha.137 (R1) — a truncation retry the caller's cap cancels is not made.
+    // `providerOverrides` are merged at execute() time AFTER the raise, so a
+    // caller who set an output cap sends the retry under the same cap that just
+    // truncated the answer, and is billed for it (cc advisory 2026-07-30, item 1:
+    // a recorded trace with a caller cap of 700). Both caps are read as execute()
+    // sends them (`applyOverrides`, the function execute() itself merges with).
+    const retryRequest =
+      !validated.ok && isTruncationCode(validated.errorCode)
+        ? raiseOutputBudget(activeCompile.request, targetProfile)
+        : activeCompile.request;
+    if (
+      !retrySuppressionNote &&
+      !validated.ok &&
+      isTruncationCode(validated.errorCode) &&
+      sameModelRetryEnabled &&
+      !retriedSameModel
+    ) {
+      const cancelled = callerCapCancelsRaise(activeCompile.request, retryRequest, overrideGate.overrides);
+      if (cancelled !== undefined) {
+        retrySuppressionNote =
+          ` [sameModelRetry not made: the caller's output cap (providerOverrides, ${cancelled} tokens) outranks the raise — the retry would leave under the same cap that truncated this answer; walking the chain instead]`;
+      }
+    }
+
     if (
       !validated.ok &&
-      isStructuredContractViolation(validated.errorCode) &&
+      qualifiesForSameModelRetry(validated.errorCode) &&
       sameModelRetryEnabled &&
       !retriedSameModel &&
       !retrySuppressionNote
@@ -649,16 +750,13 @@ export async function call(ir: PromptIR, opts: CallOptions = {}): Promise<CallRe
         message: validated.message,
               ...attemptClassOf(validated),
         ...takeStripTag(),
+        ...truncatedTextOf(validated),
       });
-      const retryRequest =
-        validated.errorCode === 'max_tokens_on_structured_output'
-          ? raiseOutputBudget(activeCompile.request, targetProfile)
-          : activeCompile.request;
       safeEmit(() =>
         emitExecuteAttempt(traceId, ir.appId, { model: targetModel, attemptIndex: i }),
       );
       const retryExec = await execute(retryRequest, mkExecOpts());
-      validated = retryExec.ok ? validateStructuredContract(retryExec, ir) : retryExec;
+      validated = retryExec.ok ? validate(retryExec) : retryExec;
       servedByRetry = true;
     }
 
@@ -714,15 +812,18 @@ export async function call(ir: PromptIR, opts: CallOptions = {}): Promise<CallRe
       // <first>` mutation ("Ranking picked …") described a failure as a ranking
       // choice; on a fallover it is replaced by one that says which model failed
       // and why. The brain's fallback row carries the same list.
-      const servedMutations = fellOver
+      const legMutations = fellOver
         ? fallbackLegMutations(activeCompile.mutationsApplied, {
             from: initial.target,
             to: targetModel,
             attempts,
             unreachableFiltered,
             policyBlockedFiltered,
+            partsWithheld,
           })
         : activeCompile.mutationsApplied;
+      // alpha.138 (R2) — the chain changes call() made before the first request.
+      const servedMutations = callMutations.length > 0 ? [...legMutations, ...callMutations] : legMutations;
 
       // alpha.62 (eval spine) — golden-capture decision. The rate resolves
       // from CallOptions.goldenCapture.sampleRate, falling back to the
@@ -751,8 +852,9 @@ export async function call(ir: PromptIR, opts: CallOptions = {}): Promise<CallRe
         toolsCalled: validated.response.toolCalls.map((tc) => tc.name),
         actualModel:
           targetModel !== initial.target ? targetModel : undefined,
+        // alpha.138 (R2) — also written when call() changed the chain itself.
         mutationsApplied:
-          targetModel !== initial.target
+          targetModel !== initial.target || callMutations.length > 0
             ? servedMutations.map((m) => m.id)
             : undefined,
         // alpha.135 (migration 104) — on a fallback row the effort on the wire is the SERVING
@@ -933,6 +1035,7 @@ export async function call(ir: PromptIR, opts: CallOptions = {}): Promise<CallRe
         fellOver,
         unreachableFiltered,
         policyBlockedFiltered,
+        partsWithheld,
         compile: activeCompile,
         shapeDrops,
         thinkingStripped,
@@ -990,6 +1093,7 @@ export async function call(ir: PromptIR, opts: CallOptions = {}): Promise<CallRe
       ...(servedByRetry ? { sameModelRetry: true } : {}),
       ...attemptClassOf(validated),
       ...takeStripTag(),
+      ...truncatedTextOf(validated),
     });
     lastErr = validated;
 
@@ -1083,6 +1187,11 @@ export async function call(ir: PromptIR, opts: CallOptions = {}): Promise<CallRe
     fellOverFrom: chainWalked ? initial.target : undefined,
     fallbackReason: chainWalked ? normalizeFallbackReason(attempts) : undefined,
     fellOverErrorCode: chainWalked ? firstFailureErrorCode(attempts) : undefined,
+    // alpha.138 (R2) — the guard's removal reaches the failure row too.
+    mutationsApplied:
+      callMutations.length > 0
+        ? [...initial.mutationsApplied, ...callMutations].map((m) => m.id)
+        : undefined,
   });
 
   const filteredNote =
@@ -1093,11 +1202,16 @@ export async function call(ir: PromptIR, opts: CallOptions = {}): Promise<CallRe
     policyBlockedFiltered && policyBlockedFiltered.length > 0
       ? ` (also policy-blocked: [${policyBlockedFiltered.join(', ')}])`
       : '';
+  const partsNote =
+    partsWithheld.length > 0
+      ? ` (also withheld, the messages carry native parts: [${partsWithheld.join(', ')}])`
+      : '';
   throw new CallError(
-    `call(): all attempts failed${lastErr ? ` — ${lastErr.errorCode}: ${lastErr.message}` : ''}${filteredNote}${blockedNote}`,
+    `call(): all attempts failed${lastErr ? ` — ${lastErr.errorCode}: ${lastErr.message}` : ''}${filteredNote}${blockedNote}${partsNote}`,
     attempts,
     lastErr?.status,
     lastErr?.errorCode,
+    callMutations,
   );
 }
 
@@ -1210,6 +1324,8 @@ interface ProbeExecOpts {
   apiKeys?: ApiKeys;
   fetchImpl?: typeof fetch;
   providerOverrides?: ProviderOverrides;
+  /** alpha.138 (R2) — lifts the native-parts guard on the probe too (`CallOptions.allowCrossProviderParts`). */
+  allowCrossProviderParts?: boolean;
 }
 
 /** Default probe latency budget (ms) when the consumer doesn't pin one. */
@@ -1287,6 +1403,17 @@ async function runProbeCandidates(args: {
     const candidates = normalizeProbeCandidates(args.cfg.candidates);
     const promptHash = hashForProbe(args.ir.currentTurn?.content ?? '');
 
+    // alpha.138 (R2, fix pass 4) — the native-parts guard on the probe. The
+    // probe recompiles the same IR for each candidate, and lowering passes
+    // `parts` verbatim, so a candidate of another provider than the one that
+    // served would be sent blocks it does not read (the cold read on c560488:
+    // a claude-sonnet-4-6 call with parts and a gpt-5.4 candidate sent the parts
+    // to api.openai.com). The served model's provider is the kept one (call()
+    // serves only kept-provider models; probeShadow's caller served it). Such a
+    // candidate is skipped before any request, as an unreachable one is.
+    const partsGuard = !args.exec.allowCrossProviderParts && irCarriesNativeParts(args.ir);
+    const partsProvider = partsGuard ? providerOfTarget(args.servedModel) : undefined;
+
     // alpha — sync-mode latency budget. The deadline bounds the WHOLE probe path
     // (all candidates collectively), because in sync mode call() does
     // `await runShadowProbe(...)` — the probe's total awaited time is what gates
@@ -1332,6 +1459,8 @@ async function runProbeCandidates(args: {
       if (deriveFamilyFromModelId(candidate) === 'claude-opus') continue;
       // Reachability — skip candidates whose provider has no key.
       if (!isModelReachable(candidate, { apiKeys: args.exec.apiKeys })) continue;
+      // alpha.138 (R2) — native parts are never probed on another provider.
+      if (partsGuard && providerOfTarget(candidate) !== partsProvider) continue;
 
       // alpha — sync-mode slow-tier skip: a `latency_tier='slow'` candidate
       // can't fit a sane inline budget, so don't even start it. Record a
@@ -1546,6 +1675,12 @@ export interface ProbeShadowOptions {
   toolRelevanceThreshold?: number;
   compressHistoryAfter?: number;
   compressHistoryKeepRecent?: number;
+  /**
+   * alpha.138 (R2) — when the IR's messages carry native blocks (`parts`), a
+   * candidate of another provider than the served model's is skipped; `true`
+   * probes it anyway (`CallOptions.allowCrossProviderParts`).
+   */
+  allowCrossProviderParts?: boolean;
 }
 
 /**
@@ -1608,6 +1743,7 @@ export async function probeShadow(ir: PromptIR, opts: ProbeShadowOptions): Promi
         apiKeys: opts.apiKeys,
         fetchImpl: opts.fetchImpl,
         providerOverrides: opts.providerOverrides,
+        allowCrossProviderParts: opts.allowCrossProviderParts,
       },
       // alpha — probeShadow() is ALWAYS off the user-facing critical path: the
       // consumer fires it from `onFinish` wrapped in `after()`/`waitUntil()`,
@@ -1633,7 +1769,11 @@ export async function probeShadow(ir: PromptIR, opts: ProbeShadowOptions): Promi
  * length / max_tokens) — output is cut mid-token, no valid JSON possible;
  * (2) JSON.parse fails on the text body.
  *
- * Non-structured calls and empty-text responses pass through unchanged.
+ * Non-structured calls and empty-text responses pass through unchanged —
+ * except (alpha.138, R1) a text answer cut at the cap, empty or not, when the
+ * caller set `lengthIsFailure`: `max_tokens_on_text_output`, retryable, the
+ * cut text on `truncatedText` (the empty string when nothing was written).
+ * (was: "a non-empty text answer", until alpha.138's fix pass 2.)
  * Empty-text is signaled separately via brain's `empty_response` flag.
  *
  * Source: PB-Cairn contract-gaps brief 2026-05-12 (briefs/pb-kgauto-contract-gaps.md).
@@ -1641,18 +1781,37 @@ export async function probeShadow(ir: PromptIR, opts: ProbeShadowOptions): Promi
 function validateStructuredContract(
   exec: ExecuteOk,
   ir: PromptIR,
-):
-  | { ok: true; response: NormalizedResponse }
-  | Extract<ExecuteResult, { ok: false }> {
-  if (!ir.constraints?.structuredOutput) {
-    return { ok: true, response: exec.response };
-  }
-
+  opts: { lengthIsFailure?: boolean } = {},
+): Validated {
   // Gap 2: truncated output is unusable for structured. Anthropic emits
   // `max_tokens`, Google emits `MAX_TOKENS`, OpenAI emits `length`. Compare
   // case-insensitively so we catch all three.
   const finish = (exec.response.finishReason ?? '').toLowerCase();
-  if (finish === 'max_tokens' || finish === 'length') {
+  const cutAtCap = finish === 'max_tokens' || finish === 'length';
+
+  if (!ir.constraints?.structuredOutput) {
+    // alpha.138 (R1) — a text answer cut at the cap is a failure only when the
+    // caller asked for it, and then whether its text is empty or not: a model
+    // that thinks spends the cap thinking and returns "" with a cap finish, the
+    // commonest shape of the case (the seat's real run, 2026-11-26T07:21Z:
+    // claude-haiku-5-5 at max_tokens 30 → text "", stop_reason max_tokens).
+    // (was: `&& exec.response.text` — an empty answer served — until fix pass 2.)
+    if (opts.lengthIsFailure && cutAtCap) {
+      return {
+        ok: false,
+        status: exec.status,
+        errorType: 'retryable',
+        errorCode: 'max_tokens_on_text_output',
+        message: `Provider returned finishReason="${exec.response.finishReason}" on a text call with lengthIsFailure — the answer was cut at the output cap after ${(exec.response.text ?? '').length} characters (kept on the attempt row as truncatedText)`,
+        raw: exec.response.raw,
+        tokens: { input: exec.response.tokens.input, output: exec.response.tokens.output },
+        truncatedText: exec.response.text ?? '',
+      };
+    }
+    return { ok: true, response: exec.response };
+  }
+
+  if (cutAtCap) {
     return {
       ok: false,
       status: exec.status,
@@ -1713,6 +1872,93 @@ function isStructuredContractViolation(code: string | undefined): boolean {
 }
 
 /**
+ * alpha.138 (R1) — the codes the one-shot same-model retry acts on: the two
+ * structured-contract violations, and a text answer cut at the cap under
+ * `lengthIsFailure` (treated as the structured truncation is).
+ */
+function qualifiesForSameModelRetry(code: string | undefined): boolean {
+  return isStructuredContractViolation(code) || code === 'max_tokens_on_text_output';
+}
+
+/** alpha.138 (R1) — an answer cut at the output cap, structured or text: the retry raises the cap. */
+function isTruncationCode(code: string | undefined): boolean {
+  return code === 'max_tokens_on_structured_output' || code === 'max_tokens_on_text_output';
+}
+
+/** The result of validating one exec: served, or a failure (a synthesized one may carry the cut text). */
+type Validated =
+  | { ok: true; response: NormalizedResponse }
+  | (Extract<ExecuteResult, { ok: false }> & { truncatedText?: string });
+
+/** alpha.138 (R1) — the cut text for the attempt row, only on a failure that carries it. */
+function truncatedTextOf(v: Validated): Pick<CallAttempt, 'truncatedText'> {
+  return !v.ok && typeof v.truncatedText === 'string' ? { truncatedText: v.truncatedText } : {};
+}
+
+/** alpha.138 (R2) — does any message of the IR carry a non-empty `parts`? */
+function irCarriesNativeParts(ir: Pick<PromptIR, 'history' | 'currentTurn'>): boolean {
+  const has = (m: { parts?: unknown[] } | undefined): boolean => Array.isArray(m?.parts) && m!.parts!.length > 0;
+  return (ir.history ?? []).some(has) || has(ir.currentTurn);
+}
+
+/** alpha.138 (R2) — a chain target's provider: its profile's, else read from the id. */
+function providerOfTarget(id: string): string | undefined {
+  return tryGetProfile(id)?.provider ?? inferProviderFromId(id);
+}
+
+/** alpha.138 (R2) — the provider a call's native blocks stay with, and how it was chosen. */
+interface PartsKept {
+  provider: string | undefined;
+  how: 'partsProvider' | 'first listed model' | 'first target';
+  /** The model (or family) the provider was read from; absent for `partsProvider`. */
+  from?: string;
+}
+
+/**
+ * alpha.138 (R2, fix pass 1) — the provider the blocks were written for, which
+ * the ranking does not know: `CallOptions.partsProvider`, else the provider of
+ * the first entry of the caller's own `ir.models` (the order written, before
+ * any ranking; a `{ family }` entry reads its family's provider), else — no
+ * `models` — compile's first target's.
+ */
+function partsKeptProvider(ir: PromptIR, opts: CallOptions, firstTarget: string): PartsKept {
+  if (opts.partsProvider) return { provider: opts.partsProvider, how: 'partsProvider' };
+  const first = ir.models?.[0];
+  if (typeof first === 'string') return { provider: providerOfTarget(first), how: 'first listed model', from: first };
+  if (first && typeof first === 'object' && 'family' in first) {
+    const member = allProfiles().find((p) => (p.family ?? deriveFamilyFromModelId(p.id)) === first.family);
+    return { provider: member?.provider ?? inferProviderFromId(first.family), how: 'first listed model', from: `{ family: ${first.family} }` };
+  }
+  return { provider: providerOfTarget(firstTarget), how: 'first target', from: firstTarget };
+}
+
+/** How the kept provider was chosen, in words. */
+function partsKeptHowWords(k: PartsKept): string {
+  if (k.how === 'partsProvider') return 'named by CallOptions.partsProvider';
+  if (k.how === 'first listed model') return `the provider of ${k.from}, the first model you listed`;
+  return `the provider of ${k.from}, compile's first target (you listed no models)`;
+}
+
+const PARTS_WITHHELD_WHY = 'the messages carry native blocks for another provider';
+
+/**
+ * alpha.138 (R2) — the native-parts guard's mutation. The id lists the
+ * removed models; the description names the kept provider, how it was chosen,
+ * and how to lift the guard.
+ */
+function nativePartsWithheldMutation(keep: PartsKept, withheld: string[]): MutationApplied {
+  return {
+    id: `native-parts-withheld-from-${withheld.join(',')}`,
+    source: 'call_guard',
+    passName: 'call',
+    description:
+      `The messages carry provider-native blocks (Message.parts), which lowering passes verbatim to whichever provider serves; ` +
+      `kgauto kept this call on ${keep.provider ?? 'an unknown provider'} (${partsKeptHowWords(keep)}) and removed ${listWords(withheld)} from the chain ` +
+      `(no cross-provider tail either). Set CallOptions.allowCrossProviderParts when every provider in your chain accepts these blocks.`,
+  };
+}
+
+/**
  * alpha.66 — for a truncation-class retry, raise any EXPLICIT wire output
  * cap that sits below the profile's maxOutputTokens ceiling (e.g. a cliff
  * terse-clamp, or a historical compile that capped conservatively). Returns
@@ -1724,7 +1970,9 @@ function isStructuredContractViolation(code: string | undefined): boolean {
  *     re-roll relies on sampling nondeterminism instead).
  *
  * Consumer sovereignty note: `providerOverrides` are shallow-merged at
- * execute() time AFTER this raise, so an explicit consumer cap still wins.
+ * execute() time AFTER this raise, so an explicit consumer cap still wins —
+ * and since alpha.137 a retry whose raise that cap cancels is not made
+ * (`callerCapCancelsRaise`).
  */
 function raiseOutputBudget(
   request: CompiledRequest,
@@ -1751,9 +1999,36 @@ function raiseOutputBudget(
     }
     return request;
   }
-  // OpenAI-family variants (openai/deepseek/zai/moonshot): lowering never
-  // emits an output cap — the provider default (model ceiling) applies.
+  // OpenAI-family variants (openai/deepseek/zai/moonshot/openrouter): not
+  // raised. Lowering emits a cap here only from `constraints.maxOutputTokens`
+  // (`max_completion_tokens` / `max_tokens`, alpha.101); without one the
+  // provider default applies. (was: "lowering never emits an output cap",
+  // until alpha.137 — false since alpha.101.)
   return request;
+}
+
+/**
+ * alpha.137 (R1) — the caller's output cap when it cancels a truncation
+ * retry's raise, else `undefined`. Both requests are read as execute() sends
+ * them: `applyOverrides` (the merge execute() performs) with the same gated
+ * overrides, then `outputCapOf`. The retry is cancelled when the caller set a
+ * cap in `providerOverrides`, the failing attempt went out under it, and the
+ * retry's cap as sent is not larger. A request with no caller cap is never
+ * cancelled here (a raise that is empty for another reason — the cap already
+ * at the profile's ceiling — is outside this rule).
+ */
+function callerCapCancelsRaise(
+  failing: CompiledRequest,
+  retry: CompiledRequest,
+  overrides: ProviderOverrides | undefined,
+): number | undefined {
+  const callerCap = callerOutputCap(failing, overrides);
+  if (callerCap === undefined) return undefined;
+  const failingCap = outputCapOf(applyOverrides(failing, overrides));
+  if (failingCap !== callerCap) return undefined;
+  const retryCap = outputCapOf(applyOverrides(retry, overrides));
+  if (retryCap !== undefined && retryCap > failingCap) return undefined;
+  return callerCap;
 }
 
 /**
@@ -1800,7 +2075,7 @@ export function firstFailureQuotaId(attempts: CallAttempt[]): string | undefined
  */
 function attemptClassOf(err: { errorCode: string; fallbackClass?: CallAttempt['fallbackClass']; quotaId?: string }): Pick<CallAttempt, 'fallbackClass' | 'quotaId'> {
   if (err.fallbackClass) return { fallbackClass: err.fallbackClass, ...(err.quotaId ? { quotaId: err.quotaId } : {}) };
-  if (isStructuredContractViolation(err.errorCode) || err.errorCode === 'empty_response' || err.errorCode === 'structured_output_parse_failed') return { fallbackClass: 'quality' };
+  if (qualifiesForSameModelRetry(err.errorCode) || err.errorCode === 'empty_response' || err.errorCode === 'structured_output_parse_failed') return { fallbackClass: 'quality' };
   return {};
 }
 
@@ -1837,6 +2112,10 @@ export function attemptFailureInWords(a: Pick<CallAttempt, 'errorCode'>): { verb
       return { verb: 'failed', why: 'the provider rejected the request as invalid' };
     case 'max_tokens_on_structured_output':
       return { verb: 'failed', why: 'its answer was cut off before the JSON was complete' };
+    case 'max_tokens_on_text_output':
+      return { verb: 'failed', why: 'its answer was cut off at the output cap' };
+    case 'native_parts_other_provider':
+      return { verb: 'was skipped', why: PARTS_WITHHELD_WHY };
     case 'structured_output_parse_failed':
       return { verb: 'failed', why: 'its answer was not valid JSON' };
     case 'empty_response':
@@ -1912,6 +2191,8 @@ export function fallbackLegMutations(
     attempts: CallAttempt[];
     unreachableFiltered?: string[];
     policyBlockedFiltered?: string[];
+    /** alpha.138 (R2) — removed because the messages carry native parts for another provider. */
+    partsWithheld?: string[];
   },
 ): MutationApplied[] {
   const failed = failedAttemptsByModel(ctx.attempts, ctx.to);
@@ -1923,6 +2204,7 @@ export function fallbackLegMutations(
   if (!failed.some((a) => a.model === ctx.from)) {
     if (ctx.unreachableFiltered?.includes(ctx.from)) parts.unshift(`${ctx.from} was not tried: no API key for its provider is set`);
     else if (ctx.policyBlockedFiltered?.includes(ctx.from)) parts.unshift(`${ctx.from} was not tried: your policy blocks it`);
+    else if (ctx.partsWithheld?.includes(ctx.from)) parts.unshift(`${ctx.from} was not tried: ${PARTS_WITHHELD_WHY}`);
   }
   const why = parts.length > 0 ? parts.join('; ') : `${ctx.from} did not serve this call`;
   // Amendment A 4 — a model that was never called did not fail: the id says
@@ -1986,6 +2268,8 @@ export interface CallSummaryInput {
   fellOver: boolean;
   unreachableFiltered?: string[];
   policyBlockedFiltered?: string[];
+  /** alpha.138 (R2) — removed because the messages carry native parts for another provider. */
+  partsWithheld?: string[];
   /** The compile that served. */
   compile: Pick<CompileResult, 'mutationsApplied' | 'advisories' | 'diagnostics' | 'request'>;
   /** Settings dropped because the served model rejects them. */
@@ -2007,6 +2291,7 @@ export function isDecisionOnlyMutation(m: Pick<MutationApplied, 'id' | 'passName
   if (m.id.startsWith('family-resolved-')) return true;
   if (m.id.startsWith('strategy-promotion-applied-')) return true; // its rewrite is a `translator:` entry
   if (m.id.startsWith('best_effort_profile_')) return true;
+  if (m.id.startsWith('native-parts-withheld-from-')) return true; // alpha.138 (R2): the chain, not the request
   return [
     'stable-prefix-passes-withheld',
     'cliff-withheld-unevidenced',
@@ -2083,6 +2368,7 @@ export function buildCallSummary(x: CallSummaryInput): string {
     if (!failed.some((a) => a.model === x.initialTarget)) {
       if (x.unreachableFiltered?.includes(x.initialTarget)) parts.unshift(`${x.initialTarget} was not tried (no API key for its provider is set)`);
       else if (x.policyBlockedFiltered?.includes(x.initialTarget)) parts.unshift(`${x.initialTarget} was not tried (your policy blocks it)`);
+      else if (x.partsWithheld?.includes(x.initialTarget)) parts.unshift(`${x.initialTarget} was not tried (${PARTS_WITHHELD_WHY})`);
     }
     first = parts.length > 0
       ? `${x.servedBy} answered as the fallback, after ${listWords(parts)}.`
@@ -2236,7 +2522,8 @@ function normalizeFallbackReason(
   if (code === 'rate_limit_429' || code === 'rate_limit') return 'rate_limit';
   if (
     code === 'max_tokens_on_structured_output' ||
-    code === 'structured_output_parse_failed'
+    code === 'structured_output_parse_failed' ||
+    code === 'max_tokens_on_text_output' // alpha.138 (R1)
   ) {
     return 'cliff';
   }
@@ -2295,7 +2582,12 @@ export const _internal = {
   compileAndRegister,
   validateStructuredContract,
   isStructuredContractViolation,
+  qualifiesForSameModelRetry,
+  isTruncationCode,
+  irCarriesNativeParts,
+  partsKeptProvider,
   raiseOutputBudget,
+  callerCapCancelsRaise,
   extractPromptPreview,
   normalizeFallbackReason,
   generateTraceId,

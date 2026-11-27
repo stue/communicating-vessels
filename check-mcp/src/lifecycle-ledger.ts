@@ -3577,7 +3577,8 @@ export const LEDGER: readonly LedgerRow[] = [
     "url": "https://aistudio.google.com/docs/deprecations",
     "readOn": "2026-11-25",
     "section": "Gemini 2.5 Pro models",
-    "quote": "`gemini-2.5-pro` | June 17, 2025 | December 1, 2026 | `gemini-3.8-flash` (`gemini-2.5-pro` is no longer available in Google AI Studio; effective December 1, 2026, API requests to `gemini-2.5-pro` will automatically route to `gemini-3.8-flash`)"
+    "quote": "`gemini-2.5-pro` | June 17, 2025 | December 1, 2026 | `gemini-3.8-flash` (`gemini-2.5-pro` is no longer available in Google AI Studio; effective December 1, 2026, API requests to `gemini-2.5-pro` will automatically route to `gemini-3.8-flash`)",
+    "notice": "`gemini-2.5-pro` is deprecated and is no longer available to select in Google AI Studio. Access through the API is limited to existing users who have actively used it in the past. Effective December 1, 2026, all API requests to `gemini-2.5-pro` will automatically route to `gemini-3.8-flash` and be billed at Gemini 3.8 Flash rates. Review the breaking API changes in the Gemini 3.8 Flash migration guide before December 1, 2026."
   },
   {
     "id": "gemini-2.5-computer-use-preview-10-2025",
@@ -3647,7 +3648,8 @@ export const LEDGER: readonly LedgerRow[] = [
     "url": "https://aistudio.google.com/docs/deprecations",
     "readOn": "2026-11-25",
     "section": "Gemini 2.5 Flash models",
-    "quote": "`gemini-2.5-flash` | June 17, 2025 | December 1, 2026 | `gemini-3.5-flash-lite` (`gemini-2.5-flash` is no longer available in Google AI Studio; effective December 1, 2026, API requests to `gemini-2.5-flash` will automatically route to `gemini-3.5-flash-lite`)"
+    "quote": "`gemini-2.5-flash` | June 17, 2025 | December 1, 2026 | `gemini-3.5-flash-lite` (`gemini-2.5-flash` is no longer available in Google AI Studio; effective December 1, 2026, API requests to `gemini-2.5-flash` will automatically route to `gemini-3.5-flash-lite`)",
+    "notice": "`gemini-2.5-flash` is deprecated and is no longer available to select in Google AI Studio. Effective December 1, 2026, all API requests to `gemini-2.5-flash` will automatically route to `gemini-3.5-flash-lite` and be billed at Gemini 3.5 Flash-Lite rates. Review the breaking API changes in the Gemini 3.5 Flash-Lite migration guide before December 1, 2026. Access to the 2.5 models is limited to users who have actively used them in the past. `gemini-2.5-flash-lite` is not deprecated and remains available through the API until further notice."
   },
   {
     "id": "gemini-2.5-flash-lite",

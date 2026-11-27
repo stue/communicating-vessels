@@ -135,7 +135,12 @@ export interface ToolDefinition {
 export interface Message {
   role: 'system' | 'user' | 'assistant' | 'tool';
   content: string;
-  /** Optional structured parts (provider-native blocks) — passed through to lowering verbatim; wins over the neutral tool fields. */
+  /**
+   * Optional structured parts (provider-native blocks) — passed through to lowering verbatim; wins over the neutral tool fields.
+   * alpha.138 — because they are passed verbatim, `call()` keeps a call whose messages carry them on the provider they
+   * were written for (`CallOptions.partsProvider`, else your first listed model's); `CallOptions.allowCrossProviderParts`
+   * lifts that.
+   */
   parts?: unknown[];
   /** alpha.120 — on an `assistant` message: the tool calls it made (the `response.toolCalls` shape). */
   toolCalls?: ToolCall[];
@@ -1777,12 +1782,83 @@ export interface CallOptions {
    * is bad enough to pay that.
    *
    * Bounds: at most ONE retry per call(), on whichever target hits the
-   * contract violation first. Truncation-class retries additionally raise
-   * any explicit wire output cap sitting below the profile's
-   * `maxOutputTokens` (e.g. a terse-clamp or providerOverrides cap);
-   * requests already at the profile ceiling re-roll unchanged.
+   * contract violation first. Truncation-class retries raise a cap kgauto
+   * itself put on an Anthropic or Google request (a terse-clamp or
+   * `constraints.maxOutputTokens`) to the profile's `maxOutputTokens`; any
+   * other request is re-sent unchanged. A caller's own output cap in
+   * `providerOverrides` outranks the raise (overrides are merged after it),
+   * and since alpha.137 a truncation retry under that cap is not made: the
+   * attempt row says so and the chain walks. (was: "raise any explicit wire
+   * output cap … (e.g. a terse-clamp or providerOverrides cap)", until
+   * alpha.137 — a providerOverrides cap was never raised.)
+   *
+   * alpha.138 — with `lengthIsFailure` on, a text answer cut at the cap
+   * (`max_tokens_on_text_output`) is retried exactly as a structured
+   * truncation is, under the same bounds and the same alpha.137 rule.
    */
   sameModelRetry?: boolean;
+  /**
+   * alpha.138 (R1) — a text answer cut at the output cap is a failure. Default
+   * OFF: without it a text call (no `constraints.structuredOutput`) whose
+   * provider stopped at the cap — Anthropic `stop_reason: "max_tokens"`, OpenAI
+   * `finish_reason: "length"`, Google `MAX_TOKENS` — returns the cut text as
+   * the answer, as it always has, even when that text is EMPTY. On a model that
+   * thinks, an empty answer at the cap is the commonest shape: the model spends
+   * the cap thinking and returns "" (or a few words) under HTTP 200.
+   *
+   * With it on, such an answer is not a success: the attempt gets a row with
+   * `errorCode: 'max_tokens_on_text_output'`, classed as a structured
+   * truncation is (retryable, fall-over class `quality`, `fallbackReason`
+   * `'cliff'`), and the chain walks; `sameModelRetry` treats it as it treats
+   * `max_tokens_on_structured_output`. The cut text is not lost: it rides on
+   * that attempt row as `truncatedText`, so a caller under `noFallback` reads
+   * it from `CallError.attempts`. An EMPTY answer at the cap is a failure too,
+   * with `truncatedText: ''` (present, empty). A structured call is unchanged.
+   * (was: "An EMPTY cut answer keeps its existing handling (served, as
+   * before)", until alpha.138's fix pass 2.)
+   *
+   * Streaming (`onChunk`): the finish reason arrives after the chunks, so the
+   * option cannot un-send them. A streaming caller has already received the
+   * cut text through `onChunk` when the attempt is ruled a failure; if the
+   * chain walks (or the same-model retry fires), `onChunk` fires again from the
+   * next attempt's first chunk. Read `CallResult.fellOverFrom` / `attempts`, or
+   * the `CallError`, to know the first stream was discarded.
+   */
+  lengthIsFailure?: boolean;
+  /**
+   * alpha.138 (R2) — let a call whose messages carry provider-native blocks
+   * (`Message.parts`) walk to a model of another provider. Default OFF: when
+   * any message in `history` or `currentTurn` carries a non-empty `parts`,
+   * `call()` keeps the chain on the provider the blocks were written for —
+   * `partsProvider` when you name it, else the provider of the FIRST model you
+   * listed in `ir.models` (your order, before any ranking), else (no `models`)
+   * the provider of compile's first target — because lowering passes those
+   * blocks verbatim to whatever provider serves. Every model of another
+   * provider is removed before the first request, a higher-ranked one
+   * included, and no cross-provider tail is appended; the first request goes
+   * to the best-ranked model of the kept provider. When no model of the kept
+   * provider is left (filtered for no key, blocked, or never listed), `call()`
+   * throws a `CallError` with `lastErrorCode: 'no_target_on_parts_provider'`
+   * before any request: the blocks are never sent elsewhere. What was removed
+   * is said: a mutation `native-parts-withheld-from-<ids>` naming the kept
+   * provider and how it was chosen, on `CallResult.mutationsApplied` (and
+   * `CallError.mutationsApplied`), in the brain row's `mutations_applied`.
+   * The `shadowProbe` follows the same rule: a candidate of another provider
+   * than the model that served is skipped (not called) while the messages
+   * carry `parts`.
+   * Set `true` only for blocks you know every provider in your chain accepts;
+   * it lifts all of the above, the probe's skip included. (was: "keeps the chain on the provider of its
+   * first target", until alpha.138's fix pass 1 — the ranking does not know
+   * whom the blocks were written for.)
+   */
+  allowCrossProviderParts?: boolean;
+  /**
+   * alpha.138 (R2) — the provider your native blocks (`Message.parts`) were
+   * written for. Read only when a message carries a non-empty `parts` and
+   * `allowCrossProviderParts` is not set; it outranks the first model you
+   * listed as the provider the call is kept on.
+   */
+  partsProvider?: Provider;
 }
 
 export interface CallAttempt {
@@ -1807,6 +1883,13 @@ export interface CallAttempt {
    * (same model) carries the 400.
    */
   thinkingStrippedRetry?: number;
+  /**
+   * alpha.138 (R1) — on a `max_tokens_on_text_output` row (`lengthIsFailure`):
+   * the text the model wrote before the cap cut it, verbatim — the empty string
+   * when it wrote none (a thinking model at a small cap). Absent on every
+   * other row.
+   */
+  truncatedText?: string;
 }
 
 /**
@@ -1816,7 +1899,9 @@ export interface CallAttempt {
  *   - `provider_error`       5xx, network, or other retryable upstream issue
  *   - `cost_cap`             preflight policy.maxCostPerCallUsd rejected target
  *   - `cliff`                alpha.8 contract violation (MAX_TOKENS on
- *                            structured output, parse-failed JSON)
+ *                            structured output, parse-failed JSON); alpha.138:
+ *                            a text answer cut at the cap under
+ *                            `CallOptions.lengthIsFailure`
  *   - `contract_violation`   other compile-time-contract failures (reserved
  *                            for alpha.10+ — e.g. mid-stream policy rejects)
  *   - `provider_auth_failed` alpha.14 — initial provider returned 401/403
@@ -2051,12 +2136,26 @@ export class CallError extends Error {
   readonly attempts: CallAttempt[];
   readonly lastErrorCode?: string;
   readonly lastStatus?: number;
-  constructor(message: string, attempts: CallAttempt[], lastStatus?: number, lastErrorCode?: string) {
+  /**
+   * alpha.138 (R2) — the changes `call()` made to the chain before the first
+   * request, said on the error as on the result: today only the native-parts
+   * guard's `native-parts-withheld-from-<ids>`. Undefined when `call()` made
+   * none (the compile's own mutations are not repeated here).
+   */
+  readonly mutationsApplied?: MutationApplied[];
+  constructor(
+    message: string,
+    attempts: CallAttempt[],
+    lastStatus?: number,
+    lastErrorCode?: string,
+    mutationsApplied?: MutationApplied[],
+  ) {
     super(message);
     this.name = 'CallError';
     this.attempts = attempts;
     this.lastStatus = lastStatus;
     this.lastErrorCode = lastErrorCode;
+    if (mutationsApplied && mutationsApplied.length > 0) this.mutationsApplied = mutationsApplied;
   }
 }
 

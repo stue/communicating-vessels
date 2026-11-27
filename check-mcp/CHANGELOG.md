@@ -1,5 +1,11 @@
 # @warmdrift/kgauto-check — changelog
 
+## 0.4.8 — 2026-11-27
+
+**For `gemini-2.5-pro` and `gemini-2.5-flash`, whose requests Google routes to another model from 2026-12-01, the card and `--model-facts` now quote, whole, the notice Google prints above their rows, where 0.4.7 quoted the table row alone: the notice is where the page says the requests will *"be billed at Gemini 3.8 Flash rates"* (or *"Gemini 3.5 Flash-Lite rates"*), points to *"the breaking API changes"* in a migration guide, and limits access to users who have used the model before.** `--model-facts` also puts beside the old id's price the notice's own sentence on billing and the catalog's price for the model the requests route to, and a run that finds the notice gone from the page says so and quotes the row instead.
+
+Requires `@warmdrift/kgauto-compiler@2.0.0-alpha.134`, exactly (unchanged).
+
 ## 0.4.7 — 2026-11-25
 
 **A line now quotes the sentence that carries its word, from the page that holds it, says a second row of the page when there is one, and never says a date before the run in the future tense; and the exported `LEDGER` rows changed shape: `pageWord` holds only the page's own words, or is absent, and what the check wrote in its own words is `ourWord`.** On 0.4.6 `gemini-3.1-flash-image` was called *deprecated* above a table row that does not say so, and on a run after 2026-12-11 `gpt-5` still printed *"is deprecated and shuts down on 2026-12-11"*.

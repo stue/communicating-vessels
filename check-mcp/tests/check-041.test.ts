@@ -410,11 +410,13 @@ describe('R7 — the share path says what it stores', () => {
 });
 
 describe('R9 — version, changelog, readme', () => {
-  it('the package is 0.4.7 and the changelog says so first', () => {
-    expect(pkg.version).toBe('0.4.7'); // 0.4.7 (R7; until 0.4.7: 0.4.6; until 0.4.6: 0.4.5)
+  it('the package is 0.4.8 and the changelog says so first', () => {
+    expect(pkg.version).toBe('0.4.8'); // 0.4.8 (R8; until 0.4.8: 0.4.7; until 0.4.7: 0.4.6; until 0.4.6: 0.4.5)
     const log = readFileSync(join(PKG_DIR, 'CHANGELOG.md'), 'utf8');
     // 0.4.4 Amendment B2: dated the day the ledger was read and the release ships (0.4.7: the ledger read 2026-11-25; 0.4.6: 2026-11-24; 0.4.5: 2026-11-20)
-    expect(log.split('\n').find((l) => l.startsWith('## '))).toBe('## 0.4.7 — 2026-11-25');
+    // 0.4.8: the day the ledger was rebuilt with the notices, from the pages read 2026-11-25; Google's deprecations page read
+    // 2026-11-27T09:35:10Z is byte for byte the page of 2026-11-25 (sha256 4518e0d1…), so no row's read day moved
+    expect(log.split('\n').find((l) => l.startsWith('## '))).toBe('## 0.4.8 — 2026-11-27');
   });
 
   it("the README's example card is this build's output on the stored example extract, byte for byte", async () => {

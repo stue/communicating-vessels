@@ -132,6 +132,12 @@ export interface LedgerRow {
   replacementForm?: 'text' | 'ids-in-text';
   /** Where the page says requests to this id are now routed. */
   routesTo?: string;
+  /**
+   * 0.4.8 (R1): the notice the page prints above this row — on Google's page, a `{% callout %}` under the row's section
+   * heading that names the row's id and its route target — verbatim, whitespace flattened, links reduced to their text,
+   * nothing cut. Set only on a routed row. Checked on the row's page in each run like `quote` (R5).
+   */
+  notice?: string;
   /** DeepSeek: the model the page said the name pointed to when it announced the discontinuation. */
   pointedTo?: string;
   /** How the id was matched when the page names it by display name ("GPT-4o (…)"). */

@@ -61,7 +61,7 @@ import {
   type Resolution,
 } from './lifecycle.js';
 import type { LedgerRow, DefinitionWord } from './lifecycle-types.js';
-import { rowPages, unlinked, fineTuneNoteTies } from './ledger-check.mjs';
+import { rowPages, unlinked, fineTuneNoteTies, noticeHolds } from './ledger-check.mjs';
 import {
   unreadAll,
   NOT_READ_BY_CALLER,
@@ -342,7 +342,7 @@ function daysBefore(today: string, readOn: string): string {
  * sentence and in the basis. The tier rule is unchanged: such a row is unread, and never Certain.
  */
 function stateWords(
-  row: { provider: string; readOn: string; url: string; quote: string; note?: string; section?: string; alsoUrl?: string; alsoQuote?: string },
+  row: { provider: string; readOn: string; url: string; quote: string; note?: string; section?: string; alsoUrl?: string; alsoQuote?: string; notice?: string },
   st: RowState,
   today: string,
 ): { titlePrefix: string; tail: string; basis: string } {
@@ -351,6 +351,13 @@ function stateWords(
   const at = (us: readonly string[]) => us.join(' and ');
   if (st.state === 'confirmed')
     return { titlePrefix: '', tail: '', basis: `${all}, read in this run (${minuteOf(st.at)} UTC): ${at(urls)}` };
+  // 0.4.8 (R5): the row is on the page and the notice above it is not — the line quotes the row and says so
+  if (st.state === 'changed' && st.gone.length > 0 && st.gone.every((g) => g.what === 'notice'))
+    return {
+      titlePrefix: `As read on ${row.readOn} (the page has changed since): `,
+      tail: `This line quotes the row: the notice above it on ${pageName(row.provider, row.url)}, as read on ${row.readOn}, is not on the page as read in this run (${minuteOf(st.at)} UTC). Read the page before acting on the date: ${row.url}. A newer version of the check carries a newer read.`,
+      basis: `${all} as read ${row.readOn}, changed when read in this run (${minuteOf(st.at)} UTC): ${at(urls)}`,
+    };
   if (st.state === 'changed')
     return {
       titlePrefix: `As read on ${row.readOn} (the page has changed since): `,
@@ -611,6 +618,14 @@ function definitionBasis(basis: string, provider: LedgerRow['provider'], word: s
   return `${basis}; ${pageName(provider, url)}, for the definition the line quotes, ${when}: ${url}`;
 }
 
+/**
+ * 0.4.8 (R3, R5): is the notice above a row quoted? When the row has one, unless the page as read in this run no longer
+ * carries it (the row is then quoted, and the line says so).
+ */
+export function noticeQuoted(row: LedgerRow, st: RowState): row is LedgerRow & { notice: string } {
+  return row.notice !== undefined && !(st.state === 'changed' && st.gone.some((g) => g.what === 'notice'));
+}
+
 /** R2: one ledger row → the provider's word about its own API, when, and the replacement the page names. */
 function ledgerLine(a: {
   shown: string;
@@ -723,10 +738,19 @@ function ledgerLine(a: {
     // 0.4.4 (R6): the page by its own title
     parts.push(`${pageName(row.provider, row.url)}: the name is "temporarily routed to ${row.routesTo}".`);
   }
-  if (parts.length === 0 || (!def && row.word !== 'legacy' && !a.via))
-    // 0.4.4 (R2): never cut inside a word or an id (until 0.4.3: `.slice(0, 240)`, which cut Google's reroute of gemini-2.5-flash inside an id)
-    // 0.4.7 (R2): a row whose word is its second page's quotes that page's sentence first, then its row by its columns
-    parts.unshift(...(secondPageQuote(row, a.state) ?? [`The page's line: “${pageLineQuote(row)}”.`]));
+  // 0.4.4 (R2): never cut inside a word or an id (until 0.4.3: `.slice(0, 240)`, which cut Google's reroute of gemini-2.5-flash inside an id)
+  // 0.4.7 (R2): a row whose word is its second page's quotes that page's sentence first, then its row by its columns
+  const rowQuote = () => secondPageQuote(row, a.state) ?? [`The page's line: “${pageLineQuote(row)}”.`];
+  // 0.4.8 (R3): a row with a notice above it quotes the notice, whole (never cut: what it says of billing, breaking changes
+  // and access is at its end), introduced as the page's; the row too when the notice does not give the row's date and
+  // target. Nothing about billing, changes or access is said in the check's own words. (R5) A notice no longer on the
+  // page as read in this run is not quoted; the row is.
+  if (noticeQuoted(row, a.state)) {
+    const n = printedText(row.notice);
+    // the notice's own full stop ends the sentence (as a release-notes sentence does in secondPageQuote); none is added after it
+    parts.unshift(`The page's notice above the row: “${n}”${/[.!?]$/.test(n) ? '' : '.'}`, ...(noticeHolds(row.notice, row) ? [] : rowQuote()));
+  }
+  else if (parts.length === 0 || (!def && row.word !== 'legacy' && !a.via)) parts.unshift(...rowQuote());
   // 0.4.7 (R3): an id on two rows of its page says the second
   const second = secondRowSentence(row);
   if (second) parts.push(second);

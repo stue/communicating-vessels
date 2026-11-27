@@ -969,6 +969,23 @@ export function effectiveConventions(profile: ModelProfile): ArchetypeConvention
   return rep?.archetypeConventions ?? [];
 }
 
+/**
+ * alpha.138 (R3) — the most input tokens one request to this model may carry:
+ * `min(0.9 × maxContextTokens, maxInputTokens)`, and which bound that is. The
+ * one definition of the bound, read by the context-budget test in
+ * `passScoreTargets` and by compile()'s final size check, so the two cannot
+ * disagree.
+ */
+export function inputTokenBound(
+  profile: Pick<ModelProfile, 'maxContextTokens' | 'maxInputTokens'>,
+): { limit: number; by: 'maxInputTokens' | 'window' } {
+  const windowBound = profile.maxContextTokens * 0.9;
+  if (typeof profile.maxInputTokens === 'number' && profile.maxInputTokens < windowBound) {
+    return { limit: profile.maxInputTokens, by: 'maxInputTokens' };
+  }
+  return { limit: windowBound, by: 'window' };
+}
+
 export function passScoreTargets(
   ir: PromptIR,
   opts: ScoreTargetsOptions,
@@ -1045,8 +1062,16 @@ export function passScoreTargets(
       blockedByProvider.set(profile.provider, ids);
     }
 
-    if (opts.estimatedInputTokens > profile.maxContextTokens * 0.9) {
-      reasons.push(`exceeds context budget (${opts.estimatedInputTokens} > 0.9*${profile.maxContextTokens})`);
+    // alpha.138 (R3) — the input bound is min(0.9 × window, the page's maximum
+    // input) where the profile carries one; the reason names the bound that refused.
+    // One function (`inputTokenBound`), read here and by compile()'s final check.
+    const bound = inputTokenBound(profile);
+    if (opts.estimatedInputTokens > bound.limit) {
+      reasons.push(
+        bound.by === 'maxInputTokens'
+          ? `exceeds maximum input (${opts.estimatedInputTokens} > maxInputTokens ${bound.limit})`
+          : `exceeds context budget (${opts.estimatedInputTokens} > 0.9*${profile.maxContextTokens})`,
+      );
     }
     if ((ir.tools?.length ?? 0) > profile.maxTools) {
       reasons.push(`exceeds maxTools (${ir.tools?.length} > ${profile.maxTools})`);

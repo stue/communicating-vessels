@@ -153,6 +153,14 @@ describe('R2 — a quote is never cut inside a word or an id', () => {
     const bad: string[] = [];
     for (const r of LEDGER) {
       const out = renderModelFacts(r.id, { pages: confirmed, today: '2026-11-17' });
+      // 0.4.8 (R4): a row with a notice above it quotes the notice, whole, on its source line (the row does not, its notice
+      // holding the row's date and target); every other row quotes its own line as before
+      if (r.notice !== undefined) {
+        const n = /^- source: \S+ \([^\n]*?\) — the page's notice above the row: “([^\n]*)”$/m.exec(out);
+        if (!n) bad.push(`${r.id}: no source line quoting its notice`);
+        else if (n[1] !== r.notice) bad.push(`${r.id}: the notice is not printed whole: “…${n[1]!.slice(-40)}”`);
+        continue;
+      }
       const m = /^- source: \S+ \([^\n]*?\) — “([^\n]*)”$/m.exec(out);
       if (!m) bad.push(`${r.id}: no source line`);
       else if (!fair(norm(r), m[1]!)) bad.push(`${r.id}: “…${m[1]!.slice(-40)}”`);
@@ -161,9 +169,13 @@ describe('R2 — a quote is never cut inside a word or an id', () => {
   });
 
   it('Google’s reroute of gemini-2.5-flash is printed whole', () => {
-    const g = printed.find((p) => p.r.id === 'gemini-2.5-flash')!;
-    expect(g.q).toBe(norm(g.r));
-    expect(g.q).toContain('API requests to `gemini-2.5-flash` will automatically route to `gemini-3.5-flash-lite`)');
+    // 0.4.8 (R3): the card quotes the notice above the row, whole, in place of the row (the notice holds its date and target)
+    const g = LEDGER.find((r) => r.id === 'gemini-2.5-flash')!;
+    const line = analyseModel(g.id, { pages: confirmed, today: '2026-11-17' }, { platform: 'provider-api' }).lines[0]!;
+    const q = /The page's notice above the row: “([\s\S]*?)”(?: |$)/.exec(line.detail)?.[1];
+    expect(q).toBe(g.notice);
+    expect(q).toContain('all API requests to `gemini-2.5-flash` will automatically route to `gemini-3.5-flash-lite` and be billed at Gemini 3.5 Flash-Lite rates.');
+    expect(q).toContain('until further notice.');
   });
 
   it('a quote over the limit is cut at its last cell boundary or sentence end before the limit, never inside code marks, and ends with “…”', () => {

@@ -241,6 +241,109 @@ export function googleTableRows(dep) {
   return tableRows;
 }
 
+// ── 0.4.8 (R1, R2): the notice above a routed row ───────────────────────
+// Google's page prints a `{% callout %}` block under some "## " headings, above that section's table. Two of them, on the
+// page read 2026-11-25 and again 2026-11-27, name a row whose requests route to another model and say what the row does
+// not: that the requests are billed at the new model's rates, that the API has breaking changes, that access is limited.
+
+/** Every callout on Google's page (as htmlToText gives it): { h2, h3, text } — `text` flattened, links reduced to their text. */
+export function googleCallouts(dep) {
+  const out = [];
+  let h2 = null;
+  let h3 = null;
+  let cur = null;
+  for (const ln of dep.split('\n')) {
+    if (cur === null && ln.startsWith('## ')) {
+      h2 = ln.slice(3).replace(/\{%.*%\}/, '').trim();
+      h3 = null;
+      continue;
+    }
+    if (cur === null && ln.startsWith('### ')) {
+      h3 = ln.slice(4).replace(/\{%.*%\}/, '').trim();
+      continue;
+    }
+    if (cur === null && /^\{% callout\b/.test(ln)) {
+      cur = [];
+      continue;
+    }
+    if (cur !== null && /^\{% \/callout %\}/.test(ln)) {
+      out.push({ h2, h3, text: unlinked(flat(cur.join(' '))) });
+      cur = null;
+      continue;
+    }
+    if (cur !== null) cur.push(ln);
+  }
+  return out;
+}
+
+/**
+ * Does a notice hold its row's route target (in code marks) and its row's date as the page writes it? The generator stops
+ * on a notice that does not (R2); the card quotes the row beside a notice that does not (R3).
+ * @param {string} notice  @param {{ routesTo?: string, dateText?: string }} row
+ */
+export function noticeHolds(notice, row) {
+  const n = flat(notice);
+  return !!row.routesTo && !!row.dateText && n.includes(`\`${row.routesTo}\``) && n.includes(flat(row.dateText));
+}
+
+/**
+ * R1, R2: the notices of Google's page, read from its callouts and its tables — `notices`, one per routed row a callout
+ * names: { id, section, notice }; `stops`, a callout this version does not read, in words with its text and its rows; and
+ * `notes`, what was read and not written. A callout that names no id is no row's notice. A callout under a section heading
+ * is the notice of each row of the table under the same heading that it names and whose requests route (the replacement
+ * cell says so); an id it names that is a route target of one of those rows is read as the target. Stops: a callout above
+ * every section that names an id; an id with no row under the callout's heading and not a route target there; a callout
+ * that names rows of which none routes; a notice that does not hold its row's target and date; a row named by two callouts.
+ * @param {string} dep the page's text, as pageTextOf gives it
+ */
+export function googleNotices(dep) {
+  const tables = googleTableRows(dep).filter((r) => /`/.test(r.cells[0] ?? ''));
+  const notices = [];
+  const stops = [];
+  const notes = [];
+  const lineOf = (r) => googleRowCells(r).join(' | ');
+  for (const c of googleCallouts(dep)) {
+    const ids = [...new Set([...c.text.matchAll(/`([^`]+)`/g)].map((m) => m[1]).filter((t) => TABLE_ID.test(t)))];
+    if (ids.length === 0) continue;
+    const where = c.h2 === null ? 'above every "## " heading' : `under "## ${c.h2}${c.h3 ? ` › ${c.h3}` : ''}"`;
+    if (c.h2 === null) {
+      stops.push(`a callout ${where} names ${ids.map((i) => `\`${i}\``).join(', ')}; this version reads a notice under a section heading only\n  notice: ${c.text}`);
+      continue;
+    }
+    const section = tables.filter((r) => r.h2 === c.h2 && (r.h3 ?? null) === c.h3);
+    const rowOf = (id) => section.find((r) => (r.cells[0] ?? '').includes(`\`${id}\``));
+    const routeOf = (r) => (/rout/i.test(r.cells[3] ?? '') ? (/`([^`]+)`/.exec(r.cells[3]) ?? [])[1] : undefined);
+    const named = ids.map((id) => ({ id, r: rowOf(id) })).filter((x) => x.r);
+    const routed = named.filter((x) => routeOf(x.r));
+    const targets = new Set(section.map(routeOf).filter(Boolean));
+    const stray = ids.filter((id) => !rowOf(id) && !targets.has(id));
+    const rowsText = named.map((x) => `\n  row: ${lineOf(x.r)}`).join('');
+    if (stray.length)
+      stops.push(
+        `a callout ${where} names ${stray.map((i) => `\`${i}\``).join(', ')}, ${stray.length === 1 ? 'which has no row in that section\'s table and is no row\'s route target there' : 'which have no row in that section\'s table and are no row\'s route target there'}\n  notice: ${c.text}${rowsText}`,
+      );
+    if (routed.length === 0) {
+      if (named.length) stops.push(`a callout ${where} names ${named.map((x) => `\`${x.id}\``).join(', ')}, a row whose requests do not route; this version reads a notice above a routed row only\n  notice: ${c.text}${rowsText}`);
+      continue;
+    }
+    for (const { id, r } of routed) {
+      const to = routeOf(r);
+      if (!noticeHolds(c.text, { routesTo: to, dateText: r.cells[2] ?? '' })) {
+        stops.push(`the notice ${where} names \`${id}\` and does not give its row's route target \`${to}\` and its date "${flat(r.cells[2] ?? '')}"\n  notice: ${c.text}\n  row: ${lineOf(r)}`);
+        continue;
+      }
+      if (notices.some((n) => n.id === id)) {
+        stops.push(`\`${id}\` is named by a second callout ${where}; this version reads one notice per row\n  notice: ${c.text}`);
+        continue;
+      }
+      notices.push({ id, section: c.h3 ? `${c.h2} › ${c.h3}` : c.h2, notice: c.text });
+    }
+    for (const { id } of named.filter((x) => !routeOf(x.r)))
+      notes.push(`google: the notice ${where} also names \`${id}\`, a row of that table whose requests do not route; it is not that row's notice`);
+  }
+  return { notices, stops, notes };
+}
+
 // ── 0.4.6 (R6): the generator's table parsers, exported ─────────────────
 // scripts/build-ledger.mjs reads every table row through these (until 0.4.6 the same loops were inline in it), and
 // scripts/table-sweep.mjs reads the ids of each provider's tables through them, never through the ledger.
@@ -633,14 +736,20 @@ export const isGoogleTableRow = (r) => r.url === PAGE_URL.google && r.section !=
  */
 export function rowTests(r) {
   const tests = [{ url: r.url, quote: r.quote, what: 'quote', table: isGoogleTableRow(r) }];
+  // 0.4.8 (R5): the notice above the row, on the row's own page, read with the link strip (it is kept as `unlinked` gives it)
+  if (r.notice) tests.push({ url: r.url, quote: r.notice, what: 'notice', table: false });
   if (r.secondRow) tests.push({ url: r.url, quote: r.secondRow.quote, what: 'second', table: isGoogleTableRow(r) });
   if (r.note) tests.push({ url: r.url, quote: r.note, what: 'note', table: false });
   if (r.alsoUrl && r.alsoQuote) tests.push({ url: r.alsoUrl, quote: r.alsoQuote, what: 'also', table: false });
   return tests;
 }
 
-/** Is the quote on the page's text, by the generator's own check for that kind of row? */
-export function quoteStands(text, quote, table) {
+/**
+ * Is the quote on the page's text, by the generator's own check for that kind of row? 0.4.8 (R5): a notice (`what`
+ * 'notice') by `wordOn`, the link strip on both sides, as it was written.
+ */
+export function quoteStands(text, quote, table, what) {
+  if (what === 'notice') return wordOn(text, quote);
   return table ? oneRowIn(googlePageRows(text), quote.split(' | ')) : quoteOn(text, quote);
 }
 
@@ -665,11 +774,11 @@ export function rowState(r, pageOf) {
   const answers = urls.map((url) => ({ url, p: pageOf(url) }));
   const read = answers
     .filter((a) => a.p.ok)
-    .map((a) => ({ url: a.url, at: a.p.at, stands: tests.filter((t) => t.url === a.url).every((t) => quoteStands(a.p.text, t.quote, t.table)) }));
+    .map((a) => ({ url: a.url, at: a.p.at, stands: tests.filter((t) => t.url === a.url).every((t) => quoteStands(a.p.text, t.quote, t.table, t.what)) }));
   const notRead = answers.filter((a) => !a.p.ok).map((a) => ({ url: a.url, reason: a.p.reason }));
   if (notRead.length) return { state: 'unread', reason: notRead[0].reason, notRead, read };
   const at = pageOf(r.url).at;
-  const gone = tests.filter((t) => !quoteStands(pageOf(t.url).text, t.quote, t.table));
+  const gone = tests.filter((t) => !quoteStands(pageOf(t.url).text, t.quote, t.table, t.what));
   return gone.length ? { state: 'changed', at, gone, read } : { state: 'confirmed', at, read };
 }
 

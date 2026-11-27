@@ -85,6 +85,9 @@ interface RawModelRow {
   cost_cache_write_per_1m?: unknown;
   cost_batch_per_1m?: unknown;
   cost_tiers?: unknown;
+  // alpha.138 — the page's maximum input (migration 107). Pre-107 rows omit it,
+  // and a NULL is not "no maximum": both keep the bundled value (rowToProfile).
+  max_input_tokens?: unknown;
 }
 
 /**
@@ -138,6 +141,8 @@ export interface ModelBrainRow {
   cost_batch_per_1m?: BatchPrice | null;
   /** alpha.128 — the page's prompt-length price steps (migration 093 jsonb). NULL = the page states none. */
   cost_tiers?: PriceTier[] | null;
+  /** alpha.138 — the page's maximum input tokens (migration 107 integer). NULL = none stated; the reader keeps a bundled value. */
+  max_input_tokens?: number | null;
 }
 
 export interface ProfileToRowOptions {
@@ -265,10 +270,27 @@ function rowToProfile(row: RawModelRow): ModelProfile | null {
       costCacheWritePer1m: normalizeCacheWrite(row.cost_cache_write_per_1m),
       costBatchPer1m: normalizeBatch(row.cost_batch_per_1m),
       costTiers: normalizeTiers(row.cost_tiers),
+      // alpha.138 (R3) — the page's maximum input. A positive integer in the
+      // brain wins; NULL, an absent column (pre-107 brain, or an endpoint not yet
+      // redeployed with the column) or a malformed value keeps the BUNDLED value
+      // for this id. A NULL here would otherwise erase a bound the bundle reads
+      // from the page and widen the budget past it on every warm process; a
+      // bound is removed by a release, never by a missing cell.
+      maxInputTokens: normalizeMaxInput(row.max_input_tokens) ?? bundledMaxInput(row.model_id),
     };
   } catch {
     return null;
   }
+}
+
+/** alpha.138 — narrow `max_input_tokens` to a positive integer, else undefined. */
+function normalizeMaxInput(v: unknown): number | undefined {
+  return typeof v === 'number' && Number.isInteger(v) && v > 0 ? v : undefined;
+}
+
+/** alpha.138 — the bundled profile's `maxInputTokens` for this id (undefined when not bundled or not set). */
+function bundledMaxInput(id: string): number | undefined {
+  return allProfilesRaw().find((p) => p.id === id)?.maxInputTokens;
 }
 
 /**
@@ -414,6 +436,9 @@ export function profileToRow(
     cost_cache_write_per_1m: profile.costCacheWritePer1m ? { ...profile.costCacheWritePer1m } : null,
     cost_batch_per_1m: profile.costBatchPer1m ? { ...profile.costBatchPer1m } : null,
     cost_tiers: profile.costTiers ? profile.costTiers.map((t) => JSON.parse(JSON.stringify(t)) as PriceTier) : null,
+    // alpha.138 — rule 11's second place: the page's maximum input round-trips,
+    // absent → NULL (none stated).
+    max_input_tokens: profile.maxInputTokens ?? null,
   };
   if (opts.verifiedAgainstDocs !== undefined) {
     row.verified_against_docs = opts.verifiedAgainstDocs;

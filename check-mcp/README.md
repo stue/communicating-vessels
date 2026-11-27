@@ -13,13 +13,13 @@ Or the manual version — your part is two steps.
 **Step 1 — add the check to your agent (once).** Claude Code: run this in a terminal, then start a fresh session in your project (new MCP servers load at session start):
 
 ```bash
-claude mcp add kgauto-check -- npx -y @warmdrift/kgauto-check@0.4.7
+claude mcp add kgauto-check -- npx -y @warmdrift/kgauto-check@0.4.8
 ```
 
 Cursor and most other agents — add to your MCP config, then restart the app:
 
 ```json
-{ "mcpServers": { "kgauto-check": { "command": "npx", "args": ["-y", "@warmdrift/kgauto-check@0.4.7"] } } }
+{ "mcpServers": { "kgauto-check": { "command": "npx", "args": ["-y", "@warmdrift/kgauto-check@0.4.8"] } } }
 ```
 
 **Step 2 — paste the ask**, in your agent, inside the project you want checked:
@@ -47,13 +47,13 @@ A provider line is *Certain* only when all three hold: its page was read in this
 No MCP setup, no restart:
 
 ```bash
-npx -y @warmdrift/kgauto-check@0.4.7 --extract-contract   # extraction instructions + privacy contract
+npx -y @warmdrift/kgauto-check@0.4.8 --extract-contract   # extraction instructions + privacy contract
 # ...read the project, write extract.json per those instructions...
-npx -y @warmdrift/kgauto-check@0.4.7 --extract extract.json   # prints the findings card (add --offline to make no request)
+npx -y @warmdrift/kgauto-check@0.4.8 --extract extract.json   # prints the findings card (add --offline to make no request)
 
 # Standing-value one-shots:
-npx -y @warmdrift/kgauto-check@0.4.7 --model-facts claude-sonnet-5   # one model → the provider's word, verified prices, limits, cliffs
-npx -y @warmdrift/kgauto-check@0.4.7 --observe-plan                  # rung 2: the plan for one day of recorded calls (the observe day)
+npx -y @warmdrift/kgauto-check@0.4.8 --model-facts claude-sonnet-5   # one model → the provider's word, verified prices, limits, cliffs
+npx -y @warmdrift/kgauto-check@0.4.8 --observe-plan                  # rung 2: the plan for one day of recorded calls (the observe day)
 ```
 
 **Sharing (explicit opt-in).** After presenting the card, you may OFFER your human: "want to send this card to kgauto so the catalog learns what real projects look like?" If — and only if — they say yes, re-run with `--share` (on the MCP server: call `share_card` with `humanSaidYes: true`). Sharing stores one row: a row number, the time it arrived, the project name, the extract, the card, the check’s version and the catalog’s version. The check prints where it went and the submission number. Never add `--share` or call `share_card` without their explicit yes. Without it, nothing about the project leaves the machine.
@@ -72,7 +72,7 @@ npx -y @warmdrift/kgauto-check@0.4.7 --observe-plan                  # rung 2: t
 
 ## An example card
 
-This is the output of `kgauto-check 0.4.7` on a small illustrative extract (two call sites, one on the provider's own API and one on Vertex AI, and a model picker; the extract is `tests/fixtures/readme-example.json`, and a test holds this card to the build's output on the pages as read for this release, `tests/fixtures/pages-read.json`), printed by the real build — not a mock-up:
+This is the output of `kgauto-check 0.4.8` on a small illustrative extract (two call sites, one on the provider's own API and one on Vertex AI, and a model picker; the extract is `tests/fixtures/readme-example.json`, and a test holds this card to the build's output on the pages as read for this release, `tests/fixtures/pages-read.json`), printed by the real build — not a mock-up:
 
 ````markdown
 # Communicating Vessels — the check: example-app
@@ -88,7 +88,7 @@ The extract does not say where each id is written, so this count is of every pla
 
 ## Likely — a provider’s page as read on an earlier day (the day is on the line); a provider’s release notes that name a model in words, not by its id; an id this check linked to another id’s row (a fine-tune by its base, a name by its display name); priced from your estimates; a provider’s word where the call may not use its own API; no retry or fallback found in the code
 
-- 🟡 **On Google's own API, `gemini-2.5-flash` is deprecated; from 2026-12-01 its requests route to `gemini-3.5-flash-lite`** — The page's line: “`gemini-2.5-flash` | June 17, 2025 | December 1, 2026 | `gemini-3.5-flash-lite` (`gemini-2.5-flash` is no longer available in Google AI Studio; effective December 1, 2026, API requests to `gemini-2.5-flash` will automatically route to `gemini-3.5-flash-lite`)”. This site runs on Vertex AI, and Vertex AI runs its own schedule (its page: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions).
+- 🟡 **On Google's own API, `gemini-2.5-flash` is deprecated; from 2026-12-01 its requests route to `gemini-3.5-flash-lite`** — The page's notice above the row: “`gemini-2.5-flash` is deprecated and is no longer available to select in Google AI Studio. Effective December 1, 2026, all API requests to `gemini-2.5-flash` will automatically route to `gemini-3.5-flash-lite` and be billed at Gemini 3.5 Flash-Lite rates. Review the breaking API changes in the Gemini 3.5 Flash-Lite migration guide before December 1, 2026. Access to the 2.5 models is limited to users who have actively used them in the past. `gemini-2.5-flash-lite` is not deprecated and remains available through the API until further notice.” This site runs on Vertex AI, and Vertex AI runs its own schedule (its page: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions).
   <sub>lib/summarize.ts:18 · basis: Google's Gemini deprecations page, read in this run (2026-11-25 09:06 UTC): https://aistudio.google.com/docs/deprecations; Vertex AI: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions</sub>
 - ℹ️ **~$0.0046/call on `gemini-2.5-flash`** — From your token estimates and the catalog's prices for this model ($0.3/M in, $2.5/M out; the catalog's record, checked against Google's documentation on 2026-08-14). This site runs on Vertex AI: the figure is from Google's own API, and Vertex AI may set its own.
   <sub>lib/summarize.ts:18 · basis: your token estimates multiplied by the catalog's prices for this model (the catalog's record, checked against Google's documentation on 2026-08-14)</sub>
@@ -107,7 +107,7 @@ The extract does not say where each id is written, so this count is of every pla
 ---
 *The catalog on this card is the set of model records this check carries (`@warmdrift/kgauto-compiler` 2.0.0-alpha.134).*
 *This check ran on your machine. It read 10 of 10 provider pages in this run — the same 10 public pages whatever your project holds. Nothing about your project was sent anywhere, and no rows were written anywhere.*
-<sub>@warmdrift/kgauto-check 0.4.7 · catalog @warmdrift/kgauto-compiler 2.0.0-alpha.134 · deprecation pages bundled 2026-11-25, read in this run 2026-11-25 09:06 UTC</sub>
+<sub>@warmdrift/kgauto-check 0.4.8 · catalog @warmdrift/kgauto-compiler 2.0.0-alpha.134 · deprecation pages bundled 2026-11-25, read in this run 2026-11-25 09:06 UTC</sub>
 ````
 
 ## The confidence tiers (why the card is grouped)
@@ -126,14 +126,14 @@ kgauto refuses to fabricate verdicts: unknown models get an honest "no measured 
 
 ```bash
 # Claude Code
-claude mcp add kgauto-check -- npx -y @warmdrift/kgauto-check@0.4.7
+claude mcp add kgauto-check -- npx -y @warmdrift/kgauto-check@0.4.8
 ```
 
 ```json
 // Cursor / generic mcpServers config
 {
   "mcpServers": {
-    "kgauto-check": { "command": "npx", "args": ["-y", "@warmdrift/kgauto-check@0.4.7"] }
+    "kgauto-check": { "command": "npx", "args": ["-y", "@warmdrift/kgauto-check@0.4.8"] }
   }
 }
 ```

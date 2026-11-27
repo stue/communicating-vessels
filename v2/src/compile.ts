@@ -33,6 +33,7 @@ import {
   compareByRankThenCallerOrder,
   estimateInputTokens,
   computeShape,
+  inputTokenBound,
   type TargetScore,
 } from './passes.js';
 import { lower } from './lower.js';
@@ -1237,10 +1238,17 @@ function pickTarget(ir: PromptIR, scores: TargetScore[]): TargetScore | undefine
   return fitting[0];
 }
 
-function validateFinalFit(ir: PromptIR, profile: ModelProfile, tokens: number): void {
-  if (tokens > profile.maxContextTokens) {
+/** compile()'s final size + tool check; exported for its own test (alpha.138). */
+export function validateFinalFit(ir: PromptIR, profile: ModelProfile, tokens: number): void {
+  // alpha.138 (fix pass 1) — the same bound as the context-budget test
+  // (`inputTokenBound`: min(0.9 × window, maxInputTokens)). (was: `tokens >
+  // profile.maxContextTokens`, the whole window, until alpha.138.)
+  const bound = inputTokenBound(profile);
+  if (tokens > bound.limit) {
     throw new Error(
-      `compile(): final IR is ${tokens} tokens, exceeds ${profile.id} context (${profile.maxContextTokens})`,
+      bound.by === 'maxInputTokens'
+        ? `compile(): final IR is ${tokens} tokens, exceeds ${profile.id} maximum input (maxInputTokens ${bound.limit})`
+        : `compile(): final IR is ${tokens} tokens, exceeds ${profile.id} context budget (0.9*${profile.maxContextTokens})`,
     );
   }
   if ((ir.tools?.length ?? 0) > profile.maxTools) {
